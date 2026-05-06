@@ -8,6 +8,69 @@ Before starting any session, ask Claude Code to read `SPEC.md`, `ARCHITECTURE.md
 
 ---
 
+## Progress
+
+Tick each task as it's completed. **The first unchecked item is the current task.** Update this list with `- [x]` immediately after a task is finished.
+
+Implementation plans for each phase are written just-in-time and live in `docs/superpowers/plans/`. Each plan contains bite-sized step checkboxes; tick those as you work through them.
+
+### Phase 1 — Project Shell  ·  Plan: [`2026-05-05-couloir-phase-1-project-shell.md`](docs/superpowers/plans/2026-05-05-couloir-phase-1-project-shell.md)
+
+- [ ] [1.1 Scaffold the project](#task-11---scaffold-the-project)
+- [ ] [1.2 App layout shell](#task-12---app-layout-shell)
+- [ ] [1.3 MapLibre map with Maptiler](#task-13---maplibre-map-with-maptiler)
+- [ ] [1.4 3D terrain](#task-14---3d-terrain)
+- [ ] [1.5 Basemap switcher](#task-15---basemap-switcher)
+- [ ] [1.6 Settings panel](#task-16---settings-panel)
+- [ ] [1.7 Layer panel scaffold](#task-17---layer-panel-scaffold)
+
+### Phase 2 — Storage Foundation  ·  Plan: not yet written
+
+- [ ] [2.1 wa-sqlite setup](#task-21---wa-sqlite-setup)
+- [ ] [2.2 Route and track CRUD](#task-22---route-and-track-crud)
+- [ ] [2.3 Waypoint and photo CRUD](#task-23---waypoint-and-photo-crud)
+- [ ] [2.4 Tags and backup](#task-24---tags-and-backup)
+- [ ] [2.5 Zustand store wiring](#task-25---zustand-store-wiring)
+
+### Phase 3 — Routes and Tracks  ·  Plan: not yet written
+
+- [ ] [3.1 GPX parser](#task-31---gpx-parser)
+- [ ] [3.2 GPX import UI](#task-32---gpx-import-ui)
+- [ ] [3.3 Routes layer](#task-33---routes-layer)
+- [ ] [3.4 Tracks layer](#task-34---tracks-layer)
+- [ ] [3.5 Route detail panel](#task-35---route-detail-panel)
+- [ ] [3.6 Track detail panel](#task-36---track-detail-panel)
+- [ ] [3.7 Layer panel counts](#task-37---layer-panel-counts)
+
+### Phase 4 — Waypoints  ·  Plan: not yet written
+
+- [ ] [4.1 Waypoint placement mode](#task-41---waypoint-placement-mode)
+- [ ] [4.2 Waypoint creation form](#task-42---waypoint-creation-form)
+- [ ] [4.3 Waypoints layer](#task-43---waypoints-layer)
+- [ ] [4.4 Waypoint detail panel](#task-44---waypoint-detail-panel)
+- [ ] [4.5 Waypoint count badge](#task-45---waypoint-count-badge)
+
+### Phase 5 — Photos  ·  Plan: not yet written
+
+- [ ] [5.1 Photo placement mode and EXIF processing](#task-51---photo-placement-mode-and-exif-processing)
+- [ ] [5.2 Photo creation form](#task-52---photo-creation-form)
+- [ ] [5.3 Photos layer with clustering](#task-53---photos-layer-with-clustering)
+- [ ] [5.4 Photo viewer](#task-54---photo-viewer)
+- [ ] [5.5 Photo count badge](#task-55---photo-count-badge)
+
+### Phase 6 — Polish and MVP Completion  ·  Plan: not yet written
+
+- [ ] [6.1 Tag management](#task-61---tag-management)
+- [ ] [6.2 Tag filtering](#task-62---tag-filtering)
+- [ ] [6.3 Global search](#task-63---global-search)
+- [ ] [6.4 Export and import (ZIP backup)](#task-64---export-and-import-zip-backup)
+- [ ] [6.5 PWA manifest and icons](#task-65---pwa-manifest-and-icons)
+- [ ] [6.6 Mobile layout](#task-66---mobile-layout)
+- [ ] [6.7 Empty states and onboarding](#task-67---empty-states-and-onboarding)
+- [ ] [6.8 Final QA pass](#task-68---final-qa-pass)
+
+---
+
 ## Phase 1 - Project Shell
 
 **Goal**: A running Vite + React app with MapLibre rendering a 3D Maptiler map. No data yet. Just the skeleton.

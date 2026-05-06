@@ -27,7 +27,11 @@ Before writing any code in a new session, read these documents in order:
 
 ## Current Phase
 
-Check `TASKS.md` to see which phase is in progress. Always confirm the current task before starting work.
+Always check the `## Progress` section near the top of `TASKS.md` first — the first unchecked task is the current one. Update it with `- [x]` immediately after each task is completed.
+
+The detailed implementation plan for the phase in flight lives in `docs/superpowers/plans/` (the Progress section links to the active plan). Each plan has bite-sized checkbox steps — tick those as you work through them.
+
+If no plan exists yet for the current phase, write one (`superpowers:writing-plans`) before starting implementation. Plans are written just-in-time, one phase at a time.
 
 ## Coding Style
 
