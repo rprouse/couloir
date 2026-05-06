@@ -16,7 +16,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 
 ### Phase 1 — Project Shell  ·  Plan: [`2026-05-05-couloir-phase-1-project-shell.md`](docs/superpowers/plans/2026-05-05-couloir-phase-1-project-shell.md)
 
-- [ ] [1.1 Scaffold the project](#task-11---scaffold-the-project)
+- [x] [1.1 Scaffold the project](#task-11---scaffold-the-project)
 - [ ] [1.2 App layout shell](#task-12---app-layout-shell)
 - [ ] [1.3 MapLibre map with Maptiler](#task-13---maplibre-map-with-maptiler)
 - [ ] [1.4 3D terrain](#task-14---3d-terrain)
