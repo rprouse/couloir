@@ -1,0 +1,6 @@
+# Claude Code
+settings.local.json
+
+# Visual Studio
+.vs/
+*.sln
