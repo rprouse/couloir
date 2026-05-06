@@ -4,7 +4,7 @@
 
 - **Local-first**: All data lives in the browser. No network dependency for core functionality.
 - **Storage abstraction**: All data access goes through a storage interface. The implementation is swappable without touching application code.
-- **Sync-ready schema**: The local SQLite schema is designed to be a valid Postgres schema when the time comes to add a sync backend.
+- **Sync-aware schema**: The local SQLite schema is shaped so that adopting a sync backend is a code change, not a schema redesign. We pay the costs that are nearly free now and defer those that aren't (see "Sync-deferred items" below).
 - **One codebase**: The same React app runs as a desktop web app, a PWA, and (eventually) a Capacitor mobile app.
 
 ---
@@ -16,13 +16,15 @@
 | Framework | React 18 + Vite | Component model suits a panel-heavy map app; Vite is fast; good PWA support |
 | Language | TypeScript | Type safety is worth it for a data-model-heavy app |
 | Map renderer | MapLibre GL JS | Open source, Maptiler-compatible, excellent 3D terrain support |
-| Terrain & tiles | Maptiler | RGB terrain tiles, satellite, topo, and winter basemaps; origin-locked API key |
-| Local database | SQLite via OPFS (wa-sqlite) | True SQLite in the browser via Origin Private File System; fast; sync-compatible schema |
-| Photo storage | OPFS blobs alongside SQLite | Simple, self-contained, no server required |
+| Terrain & tiles | Maptiler | RGB terrain tiles, satellite, topo, and winter basemaps |
+| Local database | wa-sqlite with `OPFSCoopSyncVFS` | Stable (1.0+), does not require COOP/COEP cross-origin-isolation, recommended in late-2025 sources for general-purpose browser SQLite |
+| Photo storage | OPFS blobs alongside SQLite | Self-contained, no server required |
 | State management | Zustand | Lightweight, no boilerplate, works well with async storage layer |
 | Styling | CSS Modules + CSS custom properties | Scoped styles, no runtime cost, easy theming |
 | Charts | Recharts | Elevation profiles; React-native, lightweight |
-| GPX parsing | Custom parser (DOMParser) | GPX is simple XML; no need for a library dependency |
+| GPX parsing | Custom parser (`DOMParser`) | GPX is simple XML; no library dependency needed |
+| EXIF parsing | `exifr` | Small, fast, reads only the tags we need (orientation, GPS, bearing, altitude, date) |
+| ZIP backup | `fflate` | ~9 KB minified, streaming-capable; used for the export bundle |
 | Build | Vite | Fast HMR, good PWA plugin support |
 
 ---
@@ -40,14 +42,16 @@ couloir/
 │   ├── storage/
 │   │   ├── interface.ts       # StorageProvider interface (the abstraction)
 │   │   ├── opfs.ts            # OPFS + wa-sqlite implementation
-│   │   └── schema.sql         # SQLite schema (source of truth)
+│   │   └── migrations/
+│   │       └── 1.sql          # Initial schema (source of truth for v1)
 │   ├── store/
 │   │   ├── index.ts           # Zustand store root
 │   │   ├── routes.ts          # Route slice
 │   │   ├── tracks.ts          # Track slice
 │   │   ├── waypoints.ts       # Waypoint slice
 │   │   ├── photos.ts          # Photo slice
-│   │   └── ui.ts              # UI state (panels, active layer, etc.)
+│   │   ├── tags.ts            # Tag slice
+│   │   └── ui.ts              # Panel state, placement state, layer toggles, etc.
 │   ├── map/
 │   │   ├── MapView.tsx        # MapLibre GL JS wrapper
 │   │   ├── layers/
@@ -61,14 +65,14 @@ couloir/
 │   │   └── mapConfig.ts       # Maptiler styles, source definitions
 │   ├── panels/
 │   │   ├── LayerPanel/        # Layer toggles, item counts, filter by tag
-│   │   ├── DetailPanel/       # Route/track/waypoint/photo detail view
-│   │   ├── SettingsPanel/     # API key, map defaults, export/import
+│   │   ├── DetailPanel/       # Route/track/waypoint/photo view/edit/create
+│   │   ├── SettingsPanel/     # API key, map defaults, export/import, tags
 │   │   └── SearchPanel/       # Global search
 │   ├── features/
 │   │   ├── routes/            # Route import, form, list
 │   │   ├── tracks/            # Track import, form, list
 │   │   ├── waypoints/         # Waypoint creation, form
-│   │   └── photos/            # Photo upload, placement, viewer
+│   │   └── photos/            # Photo upload, EXIF processing, placement, viewer
 │   ├── components/
 │   │   ├── ElevationProfile/  # Recharts elevation chart
 │   │   ├── TagPicker/
@@ -77,11 +81,17 @@ couloir/
 │   ├── hooks/
 │   │   ├── useStorage.ts      # Storage provider hook
 │   │   ├── useMap.ts          # MapLibre map instance access
-│   │   └── useGpx.ts          # GPX parsing hook
+│   │   ├── useGpx.ts          # GPX parsing hook
+│   │   └── useEscapeKey.ts    # Global ESC handler with placement/edit/close precedence
 │   ├── utils/
 │   │   ├── gpx.ts             # GPX parser
+│   │   ├── exif.ts            # EXIF reading (orientation, GPS, bearing, altitude, date)
+│   │   ├── image.ts           # Re-encode JPEG with applied orientation, generate thumbnails
+│   │   ├── hash.ts            # SHA-256 of bytes (for source_hash)
 │   │   ├── geo.ts             # Coordinate utilities, distance, elevation
-│   │   └── format.ts          # Distance, elevation, duration formatting
+│   │   ├── format.ts          # Distance, elevation, duration formatting; isValidHex
+│   │   ├── debug.ts           # Debug-logging helper, gated by localStorage flag
+│   │   └── backup.ts          # ZIP read/write via fflate
 │   └── types/
 │       └── index.ts           # Shared TypeScript types
 ```
@@ -101,12 +111,14 @@ export interface StorageProvider {
   getRoute(id: string): Promise<Route | null>
   saveRoute(route: Route): Promise<void>
   deleteRoute(id: string): Promise<void>
+  getRouteBySourceHash(hash: string): Promise<Route | null>
 
   // Tracks
   getTracks(): Promise<Track[]>
   getTrack(id: string): Promise<Track | null>
   saveTrack(track: Track): Promise<void>
   deleteTrack(id: string): Promise<void>
+  getTrackBySourceHash(hash: string): Promise<Track | null>
 
   // Waypoints
   getWaypoints(): Promise<Waypoint[]>
@@ -117,27 +129,45 @@ export interface StorageProvider {
   // Photos
   getPhotos(): Promise<Photo[]>
   getPhoto(id: string): Promise<Photo | null>
-  savePhoto(photo: Photo, blob: Blob): Promise<void>
+  savePhoto(photo: Photo, blob: Blob, thumb: Blob): Promise<void>
   getPhotoBlob(id: string): Promise<Blob | null>
+  getPhotoThumb(id: string): Promise<Blob | null>
   deletePhoto(id: string): Promise<void>
 
   // Tags
   getTags(): Promise<Tag[]>
   saveTag(tag: Tag): Promise<void>
   deleteTag(id: string): Promise<void>
-
-  // Associations
-  linkPhotoToRoute(photoId: string, routeId: string): Promise<void>
-  linkPhotoToTrack(photoId: string, trackId: string): Promise<void>
-  unlinkPhoto(photoId: string, targetId: string): Promise<void>
+  setEntityTags(entityType: EntityType, entityId: string, tagIds: string[]): Promise<void>
+  // Reads of tag arrays are baked into the entity getters above (the storage layer
+  // hydrates `tags: string[]` from the entity_tags junction table).
 
   // Backup
-  exportAll(): Promise<ExportBundle>
-  importAll(bundle: ExportBundle): Promise<void>
+  exportAll(): Promise<{ bundle: ExportBundle; photos: Map<string, Blob>; thumbs: Map<string, Blob> }>
+  importAll(bundle: ExportBundle, photos: Map<string, Blob>, thumbs: Map<string, Blob>): Promise<void>
 }
 ```
 
-The OPFS implementation (`src/storage/opfs.ts`) is the only file that contains SQLite calls. When a sync backend is added, a new implementation file is created and injected at the app root - zero changes to feature code.
+The OPFS implementation (`src/storage/opfs.ts`) is the only file that contains SQLite calls. When a sync backend is added, a new implementation file is created and injected at the app root — zero changes to feature code.
+
+**Notable absences**: there are no `linkPhotoToRoute` / `linkPhotoToTrack` / `unlinkPhoto` methods. Photos do not link to routes, tracks, or waypoints; spatial proximity on the map is the relationship.
+
+---
+
+## VFS Choice and OPFS Caveats
+
+The `OPFSCoopSyncVFS` is `wa-sqlite`'s general-purpose OPFS backend. Two important properties:
+
+- It does **not** require COOP/COEP (cross-origin-isolation) headers. The Vite dev server can stay simple, and third-party iframes/images keep working.
+- It uses a single dedicated database worker per page. Opening Couloir in two tabs at once will cause the second tab to fail to acquire the access handle. Acceptable for a single-user app; not acceptable for multi-tab use without coordination.
+
+**Browser support caveats**:
+
+- **Safari incognito**: OPFS is unavailable. The app cannot operate in Safari private browsing.
+- **Chrome incognito**: 100 MB OPFS quota cap.
+- **All browsers**: OPFS quotas are dynamic and can be reclaimed by the OS under storage pressure. Backups (the ZIP export) are the user's only protection against this.
+
+These limitations are documented in the user-facing settings panel as "Storage requirements."
 
 ---
 
@@ -168,7 +198,17 @@ map.setTerrain({
 })
 ```
 
-The map will not initialize if no API key is set. The app will show the settings panel with a prompt to enter the key.
+The map will not initialize if no API key is set. The app shows the settings panel with a prompt to enter the key.
+
+### Error handling
+
+API key and tile failures are surfaced explicitly rather than producing a silent dark map:
+
+1. **Startup style fetch**: when loading a basemap style URL, a non-2xx response surfaces an inline error message ("Couldn't load Maptiler style — your key may be invalid or revoked") and auto-opens the Settings panel with the key field focused.
+2. **Runtime tile errors**: subscribe to MapLibre's `error` event. If three or more tile errors occur within a 10-second rolling window, show a non-modal banner at the top of the map area: "Tile loading is failing — your key may be invalid or over quota. Open Settings."
+3. **Key change**: when the user updates the key in Settings, re-create the map sources in place (no full page reload). The active basemap and all custom layers persist.
+
+The error banner is dismissable but reappears if errors continue.
 
 ---
 
@@ -176,33 +216,109 @@ The map will not initialize if no API key is set. The app will show the settings
 
 Zustand is used for all application state. The store is divided into slices:
 
-- **routes, tracks, waypoints, photos**: mirror the storage layer with loaded entity arrays plus loading/error state. Mutations call through to the storage provider then update local state.
-- **ui**: active panel, selected entity, layer visibility toggles, active basemap, terrain exaggeration, map placement mode (used when dropping a waypoint or photo pin).
+- **routes, tracks, waypoints, photos, tags**: mirror the storage layer. Each slice loads on app startup, and mutations call through to the storage provider then update local state.
+- **ui**: panel state, placement state, layer visibility toggles, active basemap, terrain exaggeration, error banner state.
+
+### Panel and placement state
+
+The detail panel doubles as a viewer, an editor, and a creation form. Placement mode runs in parallel on the map. To prevent invalid combinations, both states are modeled as discriminated unions:
 
 ```typescript
-// Map placement mode - used for waypoint and photo pin creation
-type PlacementMode = 
-  | { type: 'idle' }
-  | { type: 'waypoint' }
-  | { type: 'photo'; blob: Blob }
+type PanelState =
+  | { mode: 'idle' }
+  | { mode: 'view';   entityType: EntityType; entityId: string }
+  | { mode: 'edit';   entityType: EntityType; entityId: string; draft: EntityDraft }
+  | { mode: 'create'; entityType: 'waypoint' | 'photo'; draft: EntityDraft }
+
+type PlacementState =
+  | { mode: 'idle' }
+  | { mode: 'waypoint' }
+  | { mode: 'photo'; blob: Blob; exif: ExifData; preview: string }
 ```
 
-When placement mode is active, the map cursor changes and the next map click creates the entity at that coordinate.
+All transitions go through explicit actions on the UI slice:
+
+| Action | From → to |
+|---|---|
+| `openEntity(type, id)` | any → `panel.view` |
+| `editCurrent()` | `panel.view` → `panel.edit` |
+| `closePanel()` | any → `panel.idle` |
+| `startWaypointPlacement()` | `placement.idle` → `placement.waypoint` |
+| `startPhotoPlacement(blob, exif)` | `placement.idle` → `placement.photo` |
+| `completePlacement(lat, lng)` | `placement.*` → `panel.create` (placement → idle) |
+| `cancelPlacement()` | `placement.*` → `placement.idle` |
+
+The map subscribes only to `PlacementState` (cursor and click handling). The detail panel subscribes only to `PanelState`. They communicate via actions, never via shared mutable state.
+
+### Global ESC key handler
+
+`useEscapeKey()` owns the ESC key with this precedence:
+
+1. If `placement.mode !== 'idle'`, cancel placement.
+2. Else if `panel.mode === 'edit'`, exit to view.
+3. Else if `panel.mode !== 'idle'`, close the panel.
+4. Else no-op.
 
 ---
 
-## GPX Parsing
+## GPX Parsing and Import
 
 GPX files are parsed client-side using the browser's `DOMParser`. No external library is needed.
 
 - `<rte>` / `<rtept>` elements → Route geometry
 - `<trk>` / `<trkpt>` elements → Track geometry
-- `<wpt>` elements → imported as Waypoints (optional - user can choose to import waypoints from GPX)
+- `<wpt>` elements → ignored in MVP (post-MVP: optional waypoint import)
 - Elevation from `<ele>` child elements
 - Timestamps from `<time>` child elements (tracks)
 - Name from `<name>`, description from `<desc>`
 
-Parsed geometry is stored as a GeoJSON LineString in the database for efficient MapLibre rendering. The raw GPX XML is also stored as a backup.
+Parsed geometry is stored as a GeoJSON `LineString` with elevation in the Z coordinate. The raw GPX XML is **not** stored; the SHA-256 hash of the imported file bytes is stored as `source_hash` for duplicate detection.
+
+### Multi-segment tracks
+
+Trackpoints from all `<trkseg>` elements are concatenated into one `LineString`. Time fields are computed across all trackpoints (see below) — segment boundaries are not preserved.
+
+### Time computation
+
+For tracks with timestamps:
+
+- `duration_s` = total elapsed time = `last_ts - first_ts`. Includes any gap.
+- `moving_time_s` = sum of inter-point durations where instantaneous speed (haversine distance / dt) is at or above `MOVING_SPEED_THRESHOLD_M_S` (defined in `DATA-MODEL.md`). Excludes both recorder-paused gaps *and* within-segment idle.
+
+Both fields are nullable when the GPX has no timestamps.
+
+### Duplicate detection
+
+On import, the app computes the SHA-256 of the file bytes, then checks for an existing route or track with the same hash. If found, the user is prompted: replace, skip, or import as a new copy. This prevents accidental duplicate libraries when re-importing from external tools.
+
+---
+
+## Photo Import Pipeline
+
+```
+file dropped/picked
+  → reject if not JPEG or PNG (HEIC: show guidance message and abort)
+  → read EXIF: orientation, GPSLat/GPSLng, GPSImgDirection, GPSAltitude, DateTimeOriginal
+  → decode → canvas → apply orientation → re-encode JPEG with EXIF stripped
+  → generate thumbnail (max 128 px on longest edge)
+  → if EXIF GPS present:
+      • dispatch startPhotoPlacement with blob/exif/preview
+      • map flies to GPS coordinates
+      • subject pin auto-drops at GPS location (this seeds lat/lng)
+      • completePlacement(lat, lng) immediately, transitioning to panel.create
+      • bearing/elevation/taken_at prefilled from EXIF in the create form
+      • user can drag the subject pin and edit any field, then save
+  → if EXIF GPS absent:
+      • startPhotoPlacement (placement.photo mode active)
+      • thumbnail-follow-cursor placement; click map → completePlacement(lat, lng)
+      • subject pin appears at clicked location; bearing input requires user
+  → on save:
+      • storage.savePhoto writes blob to OPFS (photos/{id}.jpg) and thumb (photos/{id}_thumb.jpg)
+      • SQLite row written with subject lat/lng, camera_lat/camera_lng/camera_elevation_m,
+        bearing, taken_at, dimensions
+```
+
+Re-encoded JPEGs have all EXIF stripped before storage — both for privacy (no embedded GPS, device serial, or photographer identification) and for size.
 
 ---
 
@@ -214,24 +330,128 @@ Each data type is a self-contained MapLibre layer component that subscribes to i
 RoutesLayer    → source: 'routes-source'    → layer: 'routes-line'
 TracksLayer    → source: 'tracks-source'    → layer: 'tracks-line'
 WaypointsLayer → source: 'waypoints-source' → layer: 'waypoints-symbols'
-PhotosLayer    → source: 'photos-source'    → layer: 'photos-symbols'
+
+PhotosLayer    → source: 'photos-source' (cluster: true, clusterMaxZoom: 13, clusterRadius: 50)
+                 ├── 'photos-clusters'      (circle layer, filter ['has', 'point_count'])
+                 ├── 'photos-cluster-count' (text layer, shows point_count)
+                 └── 'photos-thumbnails'    (symbol layer, filter ['!', ['has', 'point_count']])
 ```
 
 Each layer uses a GeoJSON source. When data changes in the Zustand store, the layer updates the source data via `map.getSource(id).setData(geojson)`.
 
-Click handlers on layers trigger the detail panel to open with the selected entity.
+Click handlers:
+
+- Route / track / waypoint click → `openEntity(type, id)`.
+- Individual photo thumbnail click → `openEntity('photo', id)`.
+- Photo cluster click → fly map to cluster bounds (so the cluster splits naturally on zoom in).
 
 ---
 
 ## Photo Storage Detail
 
-Photos are stored as blobs in OPFS alongside the SQLite database file. The SQLite `photos` table stores metadata and a filename reference. The OPFS implementation stores the blob at a predictable path: `photos/{id}.jpg`.
+Photos are stored as blobs in OPFS alongside the SQLite database file. The SQLite `photos` table stores metadata and a `blob_ref` filename. The OPFS implementation stores blobs at predictable paths:
+
+- `photos/{id}.jpg` — full-size, EXIF-stripped JPEG
+- `photos/{id}_thumb.jpg` — thumbnail (max 128 px on longest edge)
 
 When the app moves to cloud sync:
-- The `photos` table syncs via PowerSync/ElectricSQL to Postgres
-- The blob is uploaded to S3 on save, the `blob_url` column is populated
-- The OPFS blob implementation is swapped for an S3 presigned URL fetcher
-- The storage interface does not change
+- The `photos` table syncs via PowerSync/ElectricSQL to Postgres.
+- Blobs are uploaded to S3 on save; `blob_ref` becomes a stable S3 key.
+- The OPFS blob accessor is replaced with an S3 fetcher.
+- The storage interface does not change.
+
+---
+
+## Schema Migrations
+
+```typescript
+// src/storage/opfs.ts (sketch)
+
+const SCHEMA_VERSION = 1
+
+async function ensureSchema(db) {
+  const current = await readSchemaVersion(db)   // 0 if table missing/empty
+  if (current === 0) {
+    await applyMigration(db, 1)                 // src/storage/migrations/1.sql
+    await writeSchemaVersion(db, SCHEMA_VERSION)
+    return
+  }
+  if (current === SCHEMA_VERSION) return
+  if (current > SCHEMA_VERSION) {
+    throw new SchemaVersionError(
+      `Database is v${current}; this build expects v${SCHEMA_VERSION}. ` +
+      `Refresh or downgrade the app.`
+    )
+  }
+  for (let v = current + 1; v <= SCHEMA_VERSION; v++) {
+    await applyMigration(db, v)                 // src/storage/migrations/{v}.sql, in a transaction
+    await writeSchemaVersion(db, v)
+  }
+}
+```
+
+**Conventions**:
+
+- Each migration is a single `.sql` file at `src/storage/migrations/{n}.sql`, applied in numeric order.
+- Each migration runs inside a transaction; partial application is impossible.
+- The app's `SCHEMA_VERSION` constant is bumped in the same commit that adds a migration file.
+- The `schema_version` table is single-row (PK on `version`); writing a new version replaces, not appends.
+
+---
+
+## Backup Format
+
+`exportAll()` produces a single ZIP archive written via `fflate`:
+
+```
+couloir-backup-2026-05-05.zip
+  manifest.json          — { bundle_version, app_version, exported_at, photo_count, total_size_bytes }
+  metadata.json          — ExportBundle (entities, tags, entity_tags rows, settings)
+  photos/{id}.jpg        — one full-size blob per photo
+  photos/{id}_thumb.jpg  — one thumbnail per photo (regenerable on import if missing)
+```
+
+`fflate`'s streaming API is used for both write (so we don't allocate the full archive in memory before download) and read (so we can restore very large bundles without OOM).
+
+The Settings UI shows a pre-export size estimate ("Backup will be ~412 MB. Continue?") computed by summing photo `file_size_bytes` plus a small overhead.
+
+**Import behavior**: additive, not destructive. For each entity in the bundle:
+
+- If no row with this UUID exists → insert.
+- If a row with this UUID exists and the bundle's `updated_at` is newer → update.
+- Otherwise → skip.
+
+Thumbnails are regenerated from full-size blobs at import time if missing from the bundle (older bundles, or bundles where the user manually trimmed the archive).
+
+---
+
+## Debug Logging
+
+`CLAUDE.md` requires no `console.log` in committed code. Use the `debug()` helper instead:
+
+```typescript
+// src/utils/debug.ts
+const ENABLED = typeof localStorage !== 'undefined' &&
+                localStorage.getItem('couloir_debug') === '1'
+
+export function debug(...args: unknown[]): void {
+  if (ENABLED) console.log('[couloir]', ...args)
+}
+```
+
+Enable from DevTools: `localStorage.setItem('couloir_debug', '1')` (then reload). No build flag, no env var. Disabled output is a no-op short-circuit.
+
+---
+
+## Sync-deferred items
+
+These items are intentionally not implemented now; each is cheap to add when sync arrives:
+
+- **`deleted_at TEXT` column** on every entity table, plus `WHERE deleted_at IS NULL` on every list query. Migration: a single `ALTER TABLE` per entity table.
+- **Sync-state tracking** (per the chosen sync engine — PowerSync or ElectricSQL).
+- **Multi-tab coordination** via Web Locks if multiple-tab use becomes a real workflow.
+
+The schema *is* prepared for sync in the cheap ways (`user_id`, ISO 8601 timestamps), and the storage interface is already abstracted.
 
 ---
 
@@ -239,20 +459,20 @@ When the app moves to cloud sync:
 
 When cloud sync is added, the recommended path is:
 
-1. **PowerSync** or **ElectricSQL** for SQLite → Postgres sync with offline-first conflict resolution
-2. **MinIO on Unraid** (S3-compatible) or **AWS S3** for photo blob storage
-3. **Hono** on a Docker container (Unraid) as the lightweight API/auth layer
-4. A new `StorageProvider` implementation (`src/storage/sync.ts`) is injected at app root
-5. Auth is added (simple JWT or Clerk for multi-user)
+1. **PowerSync** or **ElectricSQL** for SQLite → Postgres sync with offline-first conflict resolution.
+2. **MinIO on Unraid** (S3-compatible) or **AWS S3** for photo blob storage.
+3. **Hono** on a Docker container (Unraid) as the lightweight API/auth layer.
+4. A new `StorageProvider` implementation (`src/storage/sync.ts`) is injected at app root.
+5. Auth is added (simple JWT or Clerk for multi-user).
 
-No feature code changes are required for the sync migration - only the storage implementation and app root provider injection change.
+No feature code changes are required — only the storage implementation, the deferred-items migration, and app-root provider injection.
 
 ---
 
 ## PWA Configuration
 
-- Vite PWA plugin (`vite-plugin-pwa`) with Workbox
-- App shell cached for offline use
-- Maptiler tiles cached with a network-first strategy (tiles are cached as visited)
-- OPFS data is inherently offline-capable
-- `manifest.json` configured with name "Couloir", dark theme color, appropriate icons
+- Vite PWA plugin (`vite-plugin-pwa`) with Workbox.
+- App shell cached for offline use.
+- Maptiler tiles cached with a network-first strategy (tiles cache as visited).
+- OPFS data is inherently offline-capable.
+- `manifest.json` configured with name "Couloir", dark theme color, appropriate icons.
