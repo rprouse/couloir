@@ -4,8 +4,9 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import styles from './MapView.module.css'
 import { useSettingsStore } from '../store/settings'
 import { useUiStore } from '../store/ui'
-import { styleUrl } from './mapConfig'
+import { styleUrl, terrainSourceUrl } from './mapConfig'
 import { createTileErrorMonitor, type TileErrorMonitor } from './errors/tileErrorMonitor'
+import { TerrainControl } from './controls/TerrainControl'
 import { MAP_DEFAULTS } from '../types'
 import { debug } from '../utils/debug'
 
@@ -15,6 +16,8 @@ export function MapView() {
   const monitorRef = useRef<TileErrorMonitor | null>(null)
   const maptilerKey = useSettingsStore((s) => s.maptilerKey)
   const setActiveTab = useUiStore((s) => s.setActiveTab)
+  const terrainEnabled = useUiStore((s) => s.terrainEnabled)
+  const terrainExaggeration = useUiStore((s) => s.terrainExaggeration)
   const [styleError, setStyleError] = useState<string | null>(null)
   const [tileBannerVisible, setTileBannerVisible] = useState(false)
 
@@ -22,7 +25,7 @@ export function MapView() {
   //   - null key: tear down any existing map (the empty-state JSX has unmounted the container).
   //   - key set, no map: create the map.
   //   - key changed, map exists: rebind the style on the existing map.
-  // The map is also destroyed on component unmount via the second effect below.
+  // The map is also destroyed on component unmount via the third effect below.
   useEffect(() => {
     if (!maptilerKey) {
       if (mapRef.current) {
@@ -56,6 +59,24 @@ export function MapView() {
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right')
     mapRef.current = map
 
+    // Re-install the DEM source on every style.load. setStyle() (key change in
+    // this task; basemap switch in Task 1.5) clears all sources, so reattaching
+    // here covers both the initial load and every subsequent style swap.
+    const installDem = () => {
+      if (!map.getSource('maptiler-dem')) {
+        map.addSource('maptiler-dem', {
+          type: 'raster-dem',
+          url: terrainSourceUrl(maptilerKey),
+          tileSize: 256,
+        })
+      }
+      const { terrainEnabled, terrainExaggeration } = useUiStore.getState()
+      if (terrainEnabled) {
+        map.setTerrain({ source: 'maptiler-dem', exaggeration: terrainExaggeration })
+      }
+    }
+    map.on('style.load', installDem)
+
     const monitor = createTileErrorMonitor({
       threshold: 3,
       windowMs: 10_000,
@@ -76,6 +97,17 @@ export function MapView() {
     }
     map.on('error', handleError)
   }, [maptilerKey, setActiveTab])
+
+  // React to terrain state changes (toggle + exaggeration slider).
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    if (terrainEnabled) {
+      map.setTerrain({ source: 'maptiler-dem', exaggeration: terrainExaggeration })
+    } else {
+      map.setTerrain(null)
+    }
+  }, [terrainEnabled, terrainExaggeration])
 
   // Destroy the map only on full component unmount.
   useEffect(() => {
@@ -111,6 +143,7 @@ export function MapView() {
   return (
     <div className={styles.container}>
       <div ref={containerRef} className={styles.canvas} data-testid="map-canvas" />
+      <TerrainControl />
       {styleError && (
         <div role="alert" className={styles.banner}>
           <span>{styleError}</span>

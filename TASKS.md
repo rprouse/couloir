@@ -19,7 +19,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [1.1 Scaffold the project](#task-11---scaffold-the-project)
 - [x] [1.2 App layout shell](#task-12---app-layout-shell)
 - [x] [1.3 MapLibre map with Maptiler](#task-13---maplibre-map-with-maptiler)
-- [ ] [1.4 3D terrain](#task-14---3d-terrain)
+- [x] [1.4 3D terrain](#task-14---3d-terrain)
 - [ ] [1.5 Basemap switcher](#task-15---basemap-switcher)
 - [ ] [1.6 Settings panel](#task-16---settings-panel)
 - [ ] [1.7 Layer panel scaffold](#task-17---layer-panel-scaffold)
