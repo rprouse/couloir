@@ -93,6 +93,7 @@ describe('ui store — basemap', () => {
 
 describe('ui store — layer visibility', () => {
   beforeEach(() => {
+    localStorage.clear()
     useUiStore.setState(useUiStore.getInitialState())
   })
 
