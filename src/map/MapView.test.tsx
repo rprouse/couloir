@@ -76,6 +76,41 @@ describe('MapView', () => {
     )
   })
 
+  it('re-installs the DEM source and terrain after a basemap switch', () => {
+    useSettingsStore.setState({ maptilerKey: 'KEY' })
+    render(<MapView />)
+
+    const map = MapMock.mock.results[0].value as {
+      emit: (e: string, p?: unknown) => void
+      addSource: ReturnType<typeof vi.fn>
+      setTerrain: ReturnType<typeof vi.fn>
+    }
+
+    // Clear any calls from initial setup so we observe only post-switch wiring.
+    map.addSource.mockClear()
+    map.setTerrain.mockClear()
+
+    act(() => {
+      useUiStore.getState().setBasemap('satellite')
+    })
+    // Simulate the style.load that MapLibre fires after setStyle.
+    act(() => {
+      map.emit('style.load')
+    })
+
+    expect(map.addSource).toHaveBeenCalledWith(
+      'maptiler-dem',
+      expect.objectContaining({
+        type: 'raster-dem',
+        url: 'https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=KEY',
+      }),
+    )
+    expect(map.setTerrain).toHaveBeenCalledWith({
+      source: 'maptiler-dem',
+      exaggeration: 1.5,
+    })
+  })
+
   it('initializes the map when the key transitions from null to set', () => {
     render(<MapView />)
     expect(MapMock).not.toHaveBeenCalled()

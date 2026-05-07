@@ -6,5 +6,7 @@ export const MAP_DEFAULTS = {
   pitch: 45,
   bearing: 0,
   terrainExaggeration: 1.5,
-  basemap: 'outdoor' as Basemap,
+  // Note: the default basemap lives in the UI store's initial state
+  // (`activeBasemap: 'outdoor'`) so that hydration from localStorage and the
+  // BasemapControl share a single source of truth. Don't reintroduce it here.
 } as const
