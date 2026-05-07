@@ -2,9 +2,6 @@
 -- Initial schema. Forward-compatible with Postgres when cloud sync arrives.
 -- Avoid SQLite-specific column types; use plain TEXT/REAL/INTEGER.
 
-PRAGMA journal_mode = WAL;
-PRAGMA foreign_keys = ON;
-
 CREATE TABLE schema_version (
   version     INTEGER PRIMARY KEY,
   applied_at  TEXT NOT NULL

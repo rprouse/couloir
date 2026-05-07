@@ -1,3 +1,4 @@
+import { SchemaVersionError } from './errors'
 import type {
   Request,
   Response,
@@ -5,6 +6,8 @@ import type {
   SqlRow,
   SqlValue,
 } from './workerProtocol'
+
+const SCHEMA_VERSION_ERROR_PREFIX = 'SchemaVersionError: '
 
 // Distributes `Omit` across a discriminated union so that variant-specific
 // fields (`sql`, `ops`, `path`, ...) are preserved on each branch.
@@ -23,6 +26,11 @@ export class WorkerClient {
 
   constructor(private worker: Worker) {
     this.worker.addEventListener('message', this.onMessage)
+    // If the worker dies (OOM, wasm trap, structured-clone failure, or an
+    // explicit terminate), every pending RPC promise would otherwise hang
+    // forever. Listen for both error events and reject all in-flight calls.
+    this.worker.addEventListener('error', this.onError)
+    this.worker.addEventListener('messageerror', this.onMessageError)
   }
 
   private onMessage = (event: MessageEvent<Response>): void => {
@@ -30,8 +38,28 @@ export class WorkerClient {
     const slot = this.pending.get(msg.id)
     if (!slot) return
     this.pending.delete(msg.id)
-    if (msg.ok) slot.resolve(msg.result)
-    else slot.reject(new Error(msg.error))
+    if (msg.ok) {
+      slot.resolve(msg.result)
+    } else if (msg.error.startsWith(SCHEMA_VERSION_ERROR_PREFIX)) {
+      slot.reject(
+        new SchemaVersionError(msg.error.slice(SCHEMA_VERSION_ERROR_PREFIX.length)),
+      )
+    } else {
+      slot.reject(new Error(msg.error))
+    }
+  }
+
+  private onError = (event: ErrorEvent): void => {
+    this.rejectAll(`worker error: ${event.message || 'unknown error'}`)
+  }
+
+  private onMessageError = (): void => {
+    this.rejectAll('worker messageerror: failed to deserialize message')
+  }
+
+  private rejectAll(reason: string): void {
+    for (const slot of this.pending.values()) slot.reject(new Error(reason))
+    this.pending.clear()
   }
 
   // `Request` is a discriminated union; `Omit<Request, 'id'>` collapses the
@@ -90,6 +118,7 @@ export class WorkerClient {
   }
 
   terminate(): void {
+    this.rejectAll('worker terminated')
     this.worker.terminate()
   }
 }

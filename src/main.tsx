@@ -17,7 +17,9 @@ useUiStore.getState().hydrateFromStorage()
   const storage = new OPFSStorageProvider()
   await storage.init()
   debug('storage initialized')
-})()
+})().catch((err) => {
+  debug('storage init failed', err)
+})
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -34,6 +34,10 @@ async function init(): Promise<void> {
   const handle = await api.open_v2(DB_FILENAME)
   sqlite3 = api
   dbHandle = handle
+  // foreign_keys is connection-scoped in SQLite, so it must be set per
+  // connection (here in init) rather than in a migration. The async OPFS
+  // VFS we use does not support WAL, so no journal_mode pragma is set.
+  await api.exec(handle, 'PRAGMA foreign_keys = ON;')
   await ensureSchema()
 }
 
@@ -61,8 +65,12 @@ async function exec(sql: string): Promise<void> {
 
 async function all(sql: string, params: SqlValue[] = []): Promise<SqlRow[]> {
   const rows: SqlRow[] = []
+  let index = 0
   for await (const stmt of api().statements(db(), sql)) {
-    if (params.length > 0) api().bind_collection(stmt, params)
+    // Only bind params to the first statement in multi-statement SQL.
+    // Subsequent statements must be parameterless; if they contain
+    // placeholders, that's a programmer error and wa-sqlite will throw.
+    if (index === 0 && params.length > 0) api().bind_collection(stmt, params)
     while ((await api().step(stmt)) === SQLite.SQLITE_ROW) {
       const cols = api().column_names(stmt)
       const values = api().row(stmt)
@@ -70,6 +78,7 @@ async function all(sql: string, params: SqlValue[] = []): Promise<SqlRow[]> {
       for (let i = 0; i < cols.length; i++) row[cols[i]] = values[i]
       rows.push(row)
     }
+    index++
   }
   return rows
 }
@@ -80,11 +89,16 @@ async function one(sql: string, params: SqlValue[] = []): Promise<SqlRow | null>
 }
 
 async function run(sql: string, params: SqlValue[] = []): Promise<void> {
+  let index = 0
   for await (const stmt of api().statements(db(), sql)) {
-    if (params.length > 0) api().bind_collection(stmt, params)
+    // Only bind params to the first statement in multi-statement SQL.
+    // Subsequent statements must be parameterless; if they contain
+    // placeholders, that's a programmer error and wa-sqlite will throw.
+    if (index === 0 && params.length > 0) api().bind_collection(stmt, params)
     while ((await api().step(stmt)) === SQLite.SQLITE_ROW) {
       // discard rows
     }
+    index++
   }
 }
 
@@ -94,7 +108,7 @@ async function tx(ops: SqlOp[]): Promise<void> {
     for (const op of ops) await run(op.sql, op.params ?? [])
     await exec('COMMIT')
   } catch (err) {
-    await exec('ROLLBACK')
+    try { await exec('ROLLBACK') } catch { /* swallow — preserve original */ }
     throw err
   }
 }
@@ -120,6 +134,9 @@ async function ensureSchema(): Promise<void> {
     )
   }
 
+  // Migration SQL must contain only transactional statements. Do not include
+  // VACUUM, ATTACH, or PRAGMAs that must run outside a transaction (e.g.
+  // journal_mode) — they'll be silently ignored or throw inside BEGIN/COMMIT.
   for (const m of MIGRATIONS) {
     if (m.version <= current) continue
     await exec('BEGIN')
@@ -132,7 +149,7 @@ async function ensureSchema(): Promise<void> {
       )
       await exec('COMMIT')
     } catch (err) {
-      await exec('ROLLBACK')
+      try { await exec('ROLLBACK') } catch { /* swallow — preserve original */ }
       throw err
     }
   }

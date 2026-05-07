@@ -13,6 +13,9 @@ import StorageWorker from './workerHost?worker'
 
 export class OPFSStorageProvider implements StorageProvider {
   private client: WorkerClient
+  // Once closed, the worker is terminated; further calls would hang forever
+  // waiting for replies. Track the state so close() is safely idempotent.
+  private closed = false
 
   constructor() {
     this.client = new WorkerClient(new StorageWorker())
@@ -23,8 +26,10 @@ export class OPFSStorageProvider implements StorageProvider {
   }
 
   async close(): Promise<void> {
+    if (this.closed) return
     await this.client.close()
     this.client.terminate()
+    this.closed = true
   }
 
   // --- Routes ---------------------------------------------------------------
