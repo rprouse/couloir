@@ -205,14 +205,20 @@ export class OPFSStorageProvider implements StorageProvider {
   async savePhoto(photo: Photo, blob: Blob, thumb: Blob): Promise<void> {
     // Write blobs first; if either fails we abort before touching SQL so
     // we never end up with a metadata row pointing at a missing file.
+    // Read both ArrayBuffers up front: if `blob.arrayBuffer()` rejects,
+    // no I/O has happened yet, so no rollback is needed. We assume both
+    // Blobs are byte-backed (from `new Blob([bytes])` or canvas .toBlob()),
+    // not stream-backed — those would be consumed by the first read.
     const fullBuf = await blob.arrayBuffer()
     const thumbBuf = await thumb.arrayBuffer()
     await this.client.writeBlob(this.photoFullPath(photo.id), fullBuf)
     try {
       await this.client.writeBlob(this.photoThumbPath(photo.id), thumbBuf)
     } catch (err) {
-      // Roll back the full-size write so we don't leak storage on retry.
-      await this.client.deleteBlob(this.photoFullPath(photo.id))
+      // Best-effort rollback — if deleteBlob itself rejects, swallow it so
+      // the original error wins. (The metadata row was never written, so
+      // a leaked blob is the only consequence — no UI will see it.)
+      try { await this.client.deleteBlob(this.photoFullPath(photo.id)) } catch { /* swallow */ }
       throw err
     }
 
@@ -233,9 +239,12 @@ export class OPFSStorageProvider implements StorageProvider {
         ...this.replaceTagsOps('photo', photo.id, photo.tags),
       ])
     } catch (err) {
-      // Roll back the blob writes if we couldn't record the metadata.
-      await this.client.deleteBlob(this.photoFullPath(photo.id))
-      await this.client.deleteBlob(this.photoThumbPath(photo.id))
+      // Best-effort rollback of both blobs. Either swallow may run if the
+      // file isn't present (worker tolerates that); if a rollback rejects
+      // for another reason, swallow it so the original tx-failure error
+      // wins and bubbles up unchanged.
+      try { await this.client.deleteBlob(this.photoFullPath(photo.id)) } catch { /* swallow */ }
+      try { await this.client.deleteBlob(this.photoThumbPath(photo.id)) } catch { /* swallow */ }
       throw err
     }
   }
@@ -251,6 +260,11 @@ export class OPFSStorageProvider implements StorageProvider {
   }
 
   async deletePhoto(id: string): Promise<void> {
+    // Row-first ordering: SQL row + entity_tags first, then OPFS blobs.
+    // A crash between the two leaves orphan files but no UI references
+    // them (getPhoto returns null), which is preferable to the inverse
+    // (rows pointing at missing blobs that getPhotoBlob would surface as
+    // broken images). Phase 6 backup/restore is the orphan-recovery path.
     await this.client.tx([
       {
         sql: `DELETE FROM entity_tags WHERE entity_type = 'photo' AND entity_id = ?`,
@@ -258,8 +272,10 @@ export class OPFSStorageProvider implements StorageProvider {
       },
       { sql: `DELETE FROM photos WHERE id = ?`, params: [id] },
     ])
-    // Best-effort blob cleanup. If these fail (file already missing) we
-    // swallow — the worker's deleteBlob is already tolerant of that.
+    // Blob cleanup is post-tx because OPFS isn't transactional with SQLite.
+    // The worker's deleteBlob silently tolerates a missing file; other
+    // errors (quota, permissions) propagate, so a caller retry will be
+    // a no-op for the SQL side and re-attempt the blob delete.
     await this.client.deleteBlob(this.photoFullPath(id))
     await this.client.deleteBlob(this.photoThumbPath(id))
   }
