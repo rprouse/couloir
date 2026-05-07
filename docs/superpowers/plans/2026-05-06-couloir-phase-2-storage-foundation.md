@@ -1289,7 +1289,7 @@ EOF
 
 `saveRoute(route)` and `saveTrack(track)` write the entity row **and** overwrite the `entity_tags` rows for that entity (same transaction in OPFS). The Zustand layer (Task 2.5) calls `saveRoute(route)` with `route.tags` populated and trusts the storage to persist both. `setEntityTags` remains on the interface for callers who want to change tags only — Phase 6.1 uses it.
 
-- [ ] **Step 2.2.1: Add internal helpers and route methods to `src/storage/memory.ts`**
+- [x] **Step 2.2.1: Add internal helpers and route methods to `src/storage/memory.ts`**
 
 Keep the existing class shell and replace the route stubs. Add the helpers as private methods.
 
@@ -1365,7 +1365,7 @@ Add the private helpers (place them at the bottom of the class):
   }
 ```
 
-- [ ] **Step 2.2.2: Replace track stubs in `src/storage/memory.ts`** with the same pattern as routes
+- [x] **Step 2.2.2: Replace track stubs in `src/storage/memory.ts`** with the same pattern as routes
 
 ```typescript
   // --- Tracks ---------------------------------------------------------------
@@ -1394,7 +1394,7 @@ Add the private helpers (place them at the bottom of the class):
   }
 ```
 
-- [ ] **Step 2.2.3: Write the failing test `src/storage/memory.test.ts`**
+- [x] **Step 2.2.3: Write the failing test `src/storage/memory.test.ts`**
 
 ```typescript
 import { InMemoryStorageProvider } from './memory'
@@ -1578,12 +1578,12 @@ describe('InMemoryStorageProvider — tracks', () => {
 })
 ```
 
-- [ ] **Step 2.2.4: Run the test, verify it passes**
+- [x] **Step 2.2.4: Run the test, verify it passes**
 
 Run: `npm test src/storage/memory.test.ts`
 Expected: 14 tests passing.
 
-- [ ] **Step 2.2.5: Add SQL helpers and route methods to `src/storage/opfs.ts`**
+- [x] **Step 2.2.5: Add SQL helpers and route methods to `src/storage/opfs.ts`**
 
 Replace the route stubs in `OPFSStorageProvider`. We'll also add private serialize/deserialize helpers and a tag-syncing helper.
 
@@ -1717,7 +1717,7 @@ You'll need to add the imports for `SqlOp`, `SqlRow`, `SqlValue`:
 import type { SqlOp, SqlRow, SqlValue } from './workerProtocol'
 ```
 
-- [ ] **Step 2.2.6: Replace the route stubs in `src/storage/opfs.ts`**
+- [x] **Step 2.2.6: Replace the route stubs in `src/storage/opfs.ts`**
 
 ```typescript
   // --- Routes ---------------------------------------------------------------
@@ -1775,7 +1775,7 @@ import type { SqlOp, SqlRow, SqlValue } from './workerProtocol'
   }
 ```
 
-- [ ] **Step 2.2.7: Replace the track stubs in `src/storage/opfs.ts`**
+- [x] **Step 2.2.7: Replace the track stubs in `src/storage/opfs.ts`**
 
 ```typescript
   // --- Tracks ---------------------------------------------------------------
@@ -1833,12 +1833,12 @@ import type { SqlOp, SqlRow, SqlValue } from './workerProtocol'
   }
 ```
 
-- [ ] **Step 2.2.8: Run typecheck and tests**
+- [x] **Step 2.2.8: Run typecheck and tests**
 
 Run: `npm run typecheck && npm test`
 Expected: typecheck clean; all tests still pass (the OPFS impl isn't tested in vitest, but the in-memory tests cover the contract).
 
-- [ ] **Step 2.2.9: Write `src/dev/devConsole.ts`**
+- [x] **Step 2.2.9: Write `src/dev/devConsole.ts`**
 
 ```typescript
 import type { StorageProvider } from '../storage/interface'
@@ -1932,7 +1932,7 @@ export function installDevConsole(storage: StorageProvider): void {
 }
 ```
 
-- [ ] **Step 2.2.10: Wire the dev console into `src/main.tsx`**
+- [x] **Step 2.2.10: Wire the dev console into `src/main.tsx`**
 
 Replace the file contents (the Phase 1 baseline plus the dev-only storage init):
 
@@ -2017,12 +2017,12 @@ dup.id === a.id                // -> true
 await __couloir.storage.deleteRoute(a.id)
 ```
 
-- [ ] **Step 2.2.14: Run typecheck and the full test suite once more**
+- [x] **Step 2.2.14: Run typecheck and the full test suite once more**
 
 Run: `npm run typecheck && npm test`
 Expected: clean.
 
-- [ ] **Step 2.2.15: Commit**
+- [x] **Step 2.2.15: Commit**
 
 ```bash
 git add src/storage/memory.ts src/storage/memory.test.ts src/storage/opfs.ts src/dev/devConsole.ts src/main.tsx
