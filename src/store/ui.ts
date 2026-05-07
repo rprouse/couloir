@@ -34,6 +34,10 @@ export const useUiStore = create<UiState>((set) => ({
     set({ terrainExaggeration: next })
   },
   hydrateFromStorage: () => {
+    // Silent fallback to the in-memory default if the stored value is missing
+    // or unparseable. Keeps app load resilient to localStorage corruption or a
+    // future schema change that hasn't run yet; the user just sees the default
+    // and can re-set it from Settings.
     const raw = localStorage.getItem(TERRAIN_KEY)
     if (raw === null) return
     const n = Number(raw)

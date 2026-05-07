@@ -62,11 +62,15 @@ export function MapView() {
     // Re-install the DEM source on every style.load. setStyle() (key change in
     // this task; basemap switch in Task 1.5) clears all sources, so reattaching
     // here covers both the initial load and every subsequent style swap.
+    // Reads the key live from the settings store at call time rather than via
+    // closure, so a key change before this fires uses the up-to-date value.
     const installDem = () => {
+      const currentKey = useSettingsStore.getState().maptilerKey
+      if (!currentKey) return
       if (!map.getSource('maptiler-dem')) {
         map.addSource('maptiler-dem', {
           type: 'raster-dem',
-          url: terrainSourceUrl(maptilerKey),
+          url: terrainSourceUrl(currentKey),
           tileSize: 256,
         })
       }
@@ -99,9 +103,15 @@ export function MapView() {
   }, [maptilerKey, setActiveTab])
 
   // React to terrain state changes (toggle + exaggeration slider).
+  // Skips when the DEM source isn't installed yet — that case is handled by
+  // installDem on the first style.load. Without this guard, the effect runs
+  // synchronously after the lifecycle effect on initial mount and calls
+  // setTerrain against a source that hasn't been added yet, which MapLibre
+  // logs as an error.
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
+    if (!map.getSource('maptiler-dem')) return
     if (terrainEnabled) {
       map.setTerrain({ source: 'maptiler-dem', exaggeration: terrainExaggeration })
     } else {

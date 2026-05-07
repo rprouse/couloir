@@ -24,6 +24,11 @@
   width: 120px;
 }
 
+.slider input[type='range']:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .value {
   width: 32px;
   text-align: right;

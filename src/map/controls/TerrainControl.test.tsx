@@ -20,6 +20,7 @@ describe('TerrainControl', () => {
     render(<TerrainControl />)
     await user.click(screen.getByRole('switch', { name: /3d terrain/i }))
     expect(screen.getByRole('switch', { name: /3d terrain/i })).not.toBeChecked()
+    expect(useUiStore.getState().terrainEnabled).toBe(false)
   })
 
   it('updates exaggeration on slider change', () => {
