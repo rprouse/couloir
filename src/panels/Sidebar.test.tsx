@@ -5,7 +5,7 @@ import { useUiStore } from '../store/ui'
 
 describe('Sidebar', () => {
   beforeEach(() => {
-    useUiStore.setState({ activeTab: 'layers', sidebarCollapsed: false })
+    useUiStore.setState(useUiStore.getInitialState())
   })
 
   it('renders three tab buttons', () => {
@@ -23,17 +23,31 @@ describe('Sidebar', () => {
     )
   })
 
-  it('switches the active tab on click', async () => {
+  it('switches which tab is selected on click', async () => {
     const user = userEvent.setup()
     render(<Sidebar />)
     await user.click(screen.getByRole('button', { name: /settings/i }))
-    expect(useUiStore.getState().activeTab).toBe('settings')
+    expect(screen.getByRole('button', { name: /settings/i })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.getByRole('button', { name: /layers/i })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
   })
 
-  it('toggles collapse on the collapse button', async () => {
+  it('toggles the collapse button label and aside state on click', async () => {
     const user = userEvent.setup()
     render(<Sidebar />)
+    const aside = screen.getByRole('complementary')
+    expect(aside).toHaveAttribute('data-collapsed', 'false')
+
     await user.click(screen.getByRole('button', { name: /collapse sidebar/i }))
-    expect(useUiStore.getState().sidebarCollapsed).toBe(true)
+
+    expect(aside).toHaveAttribute('data-collapsed', 'true')
+    expect(
+      screen.getByRole('button', { name: /expand sidebar/i }),
+    ).toBeInTheDocument()
   })
 })

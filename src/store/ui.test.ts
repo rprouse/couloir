@@ -2,12 +2,13 @@ import { useUiStore } from './ui'
 
 describe('ui store — sidebar tabs', () => {
   beforeEach(() => {
-    useUiStore.setState({ activeTab: 'layers', sidebarCollapsed: false })
+    useUiStore.setState(useUiStore.getInitialState())
   })
 
-  it('defaults to the layers tab, expanded', () => {
-    expect(useUiStore.getState().activeTab).toBe('layers')
-    expect(useUiStore.getState().sidebarCollapsed).toBe(false)
+  it('initial state is the layers tab, expanded', () => {
+    const initial = useUiStore.getInitialState()
+    expect(initial.activeTab).toBe('layers')
+    expect(initial.sidebarCollapsed).toBe(false)
   })
 
   it('switches the active tab', () => {
