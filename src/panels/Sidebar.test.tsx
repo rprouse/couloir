@@ -9,14 +9,14 @@ describe('Sidebar', () => {
   })
 
   it('renders three tab buttons', () => {
-    render(<Sidebar />)
+    render(<Sidebar panels={{}} />)
     expect(screen.getByRole('button', { name: /layers/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /search/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /settings/i })).toBeInTheDocument()
   })
 
   it('marks the active tab as selected', () => {
-    render(<Sidebar />)
+    render(<Sidebar panels={{}} />)
     expect(screen.getByRole('button', { name: /layers/i })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -25,7 +25,7 @@ describe('Sidebar', () => {
 
   it('switches which tab is selected on click', async () => {
     const user = userEvent.setup()
-    render(<Sidebar />)
+    render(<Sidebar panels={{}} />)
     await user.click(screen.getByRole('button', { name: /settings/i }))
     expect(screen.getByRole('button', { name: /settings/i })).toHaveAttribute(
       'aria-pressed',
@@ -39,7 +39,7 @@ describe('Sidebar', () => {
 
   it('toggles the collapse button label and aside state on click', async () => {
     const user = userEvent.setup()
-    render(<Sidebar />)
+    render(<Sidebar panels={{}} />)
     const aside = screen.getByRole('complementary')
     expect(aside).toHaveAttribute('data-collapsed', 'false')
 
@@ -49,5 +49,17 @@ describe('Sidebar', () => {
     expect(
       screen.getByRole('button', { name: /expand sidebar/i }),
     ).toBeInTheDocument()
+  })
+
+  it('renders the panel for the active tab', () => {
+    useUiStore.setState({ activeTab: 'settings' })
+    render(<Sidebar panels={{ settings: <div>SETTINGS_PANEL</div> }} />)
+    expect(screen.getByText('SETTINGS_PANEL')).toBeInTheDocument()
+  })
+
+  it('does not render content when collapsed', () => {
+    useUiStore.setState({ sidebarCollapsed: true, activeTab: 'settings' })
+    render(<Sidebar panels={{ settings: <div>SETTINGS_PANEL</div> }} />)
+    expect(screen.queryByText('SETTINGS_PANEL')).not.toBeInTheDocument()
   })
 })

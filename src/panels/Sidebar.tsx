@@ -1,5 +1,6 @@
 import styles from './Sidebar.module.css'
 import { useUiStore, type SidebarTab } from '../store/ui'
+import { ReactNode } from 'react'
 
 const TABS: ReadonlyArray<{ id: SidebarTab; label: string; icon: string }> = [
   { id: 'layers',   label: 'Layers',   icon: '☰' },
@@ -7,7 +8,11 @@ const TABS: ReadonlyArray<{ id: SidebarTab; label: string; icon: string }> = [
   { id: 'settings', label: 'Settings', icon: '⚙' },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  panels: Partial<Record<SidebarTab, ReactNode>>
+}
+
+export function Sidebar({ panels }: SidebarProps) {
   const activeTab = useUiStore((s) => s.activeTab)
   const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed)
   const setActiveTab = useUiStore((s) => s.setActiveTab)
@@ -32,6 +37,9 @@ export function Sidebar() {
           </button>
         ))}
       </nav>
+      {!sidebarCollapsed && (
+        <div className={styles.content}>{panels[activeTab]}</div>
+      )}
       <button
         type="button"
         className={styles.collapseButton}
