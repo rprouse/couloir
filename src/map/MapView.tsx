@@ -5,13 +5,14 @@ import styles from './MapView.module.css'
 import { useSettingsStore } from '../store/settings'
 import { useUiStore } from '../store/ui'
 import { styleUrl } from './mapConfig'
-import { createTileErrorMonitor } from './errors/tileErrorMonitor'
+import { createTileErrorMonitor, type TileErrorMonitor } from './errors/tileErrorMonitor'
 import { MAP_DEFAULTS } from '../types'
 import { debug } from '../utils/debug'
 
 export function MapView() {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
+  const monitorRef = useRef<TileErrorMonitor | null>(null)
   const maptilerKey = useSettingsStore((s) => s.maptilerKey)
   const setActiveTab = useUiStore((s) => s.setActiveTab)
   const [styleError, setStyleError] = useState<string | null>(null)
@@ -28,13 +29,18 @@ export function MapView() {
         mapRef.current.remove()
         mapRef.current = null
       }
+      monitorRef.current = null
       return
     }
     if (!containerRef.current) return
 
     if (mapRef.current) {
+      // Key changed on an existing map: clear any error UI and reset the
+      // rolling-window monitor so stale tile-error timestamps from the
+      // previous key cannot trip the banner against the new key.
       setStyleError(null)
       setTileBannerVisible(false)
+      monitorRef.current?.reset()
       mapRef.current.setStyle(styleUrl(MAP_DEFAULTS.basemap, maptilerKey))
       return
     }
@@ -55,6 +61,7 @@ export function MapView() {
       windowMs: 10_000,
       onTrip: () => setTileBannerVisible(true),
     })
+    monitorRef.current = monitor
 
     const handleError = (event: { error?: { status?: number }; source?: { url?: string } }) => {
       const status = event.error?.status
@@ -77,6 +84,7 @@ export function MapView() {
         mapRef.current.remove()
         mapRef.current = null
       }
+      monitorRef.current = null
     }
   }, [])
 

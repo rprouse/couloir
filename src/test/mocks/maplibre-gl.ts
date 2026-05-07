@@ -1,5 +1,7 @@
 import { vi } from 'vitest'
 
+// Alias globalThis.Map so the JS Map constructor stays available inside this
+// module, which exports a MapLibre `Map` mock that would otherwise shadow it.
 const EventMap = globalThis.Map
 
 export class MockMap {

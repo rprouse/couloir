@@ -1,7 +1,9 @@
 import { render, screen, act } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import * as maplibre from 'maplibre-gl'
 import { MapView } from './MapView'
 import { useSettingsStore } from '../store/settings'
+import { useUiStore } from '../store/ui'
 
 const MapMock = maplibre.Map as unknown as ReturnType<typeof vi.fn>
 
@@ -9,6 +11,7 @@ describe('MapView', () => {
   beforeEach(() => {
     MapMock.mockClear()
     useSettingsStore.setState({ maptilerKey: null })
+    useUiStore.setState(useUiStore.getInitialState())
     localStorage.clear()
   })
 
@@ -29,17 +32,17 @@ describe('MapView', () => {
     expect(args.pitch).toBe(45)
   })
 
-  it('opens settings and surfaces an error when the style fetch fails', async () => {
+  it('opens settings and surfaces an error when the style fetch fails', () => {
     useSettingsStore.setState({ maptilerKey: 'BAD' })
-    const { rerender } = render(<MapView />)
+    render(<MapView />)
 
     const map = MapMock.mock.results[0].value as { emit: (e: string, p?: unknown) => void }
     act(() => {
       map.emit('error', { error: { status: 401 }, source: { url: 'style.json' } })
     })
-    rerender(<MapView />)
 
     expect(screen.getByRole('alert')).toHaveTextContent(/maptiler/i)
+    expect(useUiStore.getState().activeTab).toBe('settings')
   })
 
   it('rebinds the map style when the key changes', () => {
@@ -82,5 +85,29 @@ describe('MapView', () => {
     })
 
     expect(map.remove).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows a dismissable banner after sustained tile errors', async () => {
+    const user = userEvent.setup()
+    useSettingsStore.setState({ maptilerKey: 'KEY' })
+    render(<MapView />)
+
+    const map = MapMock.mock.results[0].value as {
+      emit: (e: string, p?: unknown) => void
+    }
+
+    act(() => {
+      map.emit('error', { error: { status: 500 }, source: { url: 'tile.png' } })
+      map.emit('error', { error: { status: 500 }, source: { url: 'tile.png' } })
+      map.emit('error', { error: { status: 500 }, source: { url: 'tile.png' } })
+    })
+
+    expect(screen.getByRole('status')).toHaveTextContent(/tile loading is failing/i)
+
+    await user.click(
+      screen.getByRole('button', { name: /dismiss tile-error banner/i }),
+    )
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 })
