@@ -118,6 +118,24 @@ describe('InMemoryStorageProvider — routes', () => {
     expect(fetched?.tags).toEqual(['t3'])
   })
 
+  it('deduplicates tag ids on save', async () => {
+    await storage.saveRoute(buildRoute({ tags: ['t1', 't1', 't2'] }))
+    const fetched = await storage.getRoute('route-1')
+    expect(fetched?.tags.sort()).toEqual(['t1', 't2'])
+  })
+
+  it('preserves null optional metadata round-trip', async () => {
+    await storage.saveRoute(buildRoute({
+      ates: null,
+      technical_difficulty: null,
+      source_filename: null,
+    }))
+    const fetched = await storage.getRoute('route-1')
+    expect(fetched?.ates).toBeNull()
+    expect(fetched?.technical_difficulty).toBeNull()
+    expect(fetched?.source_filename).toBeNull()
+  })
+
   it('removes tag links when the entity is deleted', async () => {
     await storage.saveRoute(buildRoute({ tags: ['t1'] }))
     await storage.deleteRoute('route-1')

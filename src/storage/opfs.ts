@@ -286,7 +286,10 @@ export class OPFSStorageProvider implements StorageProvider {
         params: [entityType, entityId],
       },
     ]
+    const seen = new Set<string>()
     for (const tagId of tagIds) {
+      if (seen.has(tagId)) continue
+      seen.add(tagId)
       ops.push({
         sql: `INSERT INTO entity_tags (entity_type, entity_id, tag_id) VALUES (?, ?, ?)`,
         params: [entityType, entityId, tagId],

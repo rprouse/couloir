@@ -26,7 +26,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 
 ### Phase 2 — Storage Foundation  ·  Plan: [`2026-05-06-couloir-phase-2-storage-foundation.md`](docs/superpowers/plans/2026-05-06-couloir-phase-2-storage-foundation.md)
 
-- [ ] [2.1 wa-sqlite setup](#task-21---wa-sqlite-setup)
+- [x] [2.1 wa-sqlite setup](#task-21---wa-sqlite-setup)
 - [x] [2.2 Route and track CRUD](#task-22---route-and-track-crud)
 - [ ] [2.3 Waypoint and photo CRUD](#task-23---waypoint-and-photo-crud)
 - [ ] [2.4 Tags and backup](#task-24---tags-and-backup)
