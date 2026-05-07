@@ -56,4 +56,31 @@ describe('MapView', () => {
       'https://api.maptiler.com/maps/outdoor-v2/style.json?key=KEY2',
     )
   })
+
+  it('initializes the map when the key transitions from null to set', () => {
+    render(<MapView />)
+    expect(MapMock).not.toHaveBeenCalled()
+
+    act(() => {
+      useSettingsStore.getState().setMaptilerKey('NEWKEY')
+    })
+
+    expect(MapMock).toHaveBeenCalledTimes(1)
+    const args = MapMock.mock.calls[0][0]
+    expect(args.style).toBe('https://api.maptiler.com/maps/outdoor-v2/style.json?key=NEWKEY')
+  })
+
+  it('tears down the map when the key is cleared', () => {
+    useSettingsStore.setState({ maptilerKey: 'KEY' })
+    render(<MapView />)
+    expect(MapMock).toHaveBeenCalledTimes(1)
+
+    const map = MapMock.mock.results[0].value as { remove: ReturnType<typeof vi.fn> }
+
+    act(() => {
+      useSettingsStore.getState().setMaptilerKey(null)
+    })
+
+    expect(map.remove).toHaveBeenCalledTimes(1)
+  })
 })

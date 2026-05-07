@@ -12,26 +12,36 @@ import { debug } from '../utils/debug'
 export function MapView() {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
-  // Keep a ref to the latest key so the mount effect always reads the current value
-  // without re-running when it changes.
-  const maptilerKeyRef = useRef<string | null>(null)
   const maptilerKey = useSettingsStore((s) => s.maptilerKey)
-  maptilerKeyRef.current = maptilerKey
   const setActiveTab = useUiStore((s) => s.setActiveTab)
-  const setActiveTabRef = useRef(setActiveTab)
-  setActiveTabRef.current = setActiveTab
   const [styleError, setStyleError] = useState<string | null>(null)
   const [tileBannerVisible, setTileBannerVisible] = useState(false)
 
-  // Mount effect: create map once. Runs only when containerRef becomes available.
-  // Does NOT depend on maptilerKey so it does not re-run on key changes.
+  // Map lifecycle driven by maptilerKey:
+  //   - null key: tear down any existing map (the empty-state JSX has unmounted the container).
+  //   - key set, no map: create the map.
+  //   - key changed, map exists: rebind the style on the existing map.
+  // The map is also destroyed on component unmount via the second effect below.
   useEffect(() => {
-    const key = maptilerKeyRef.current
-    if (!key || !containerRef.current) return
+    if (!maptilerKey) {
+      if (mapRef.current) {
+        mapRef.current.remove()
+        mapRef.current = null
+      }
+      return
+    }
+    if (!containerRef.current) return
+
+    if (mapRef.current) {
+      setStyleError(null)
+      setTileBannerVisible(false)
+      mapRef.current.setStyle(styleUrl(MAP_DEFAULTS.basemap, maptilerKey))
+      return
+    }
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: styleUrl(MAP_DEFAULTS.basemap, key),
+      style: styleUrl(MAP_DEFAULTS.basemap, maptilerKey),
       center: MAP_DEFAULTS.center,
       zoom: MAP_DEFAULTS.zoom,
       pitch: MAP_DEFAULTS.pitch,
@@ -52,27 +62,23 @@ export function MapView() {
       debug('map error', status, url)
       if (url.includes('style.json') && status && status >= 400) {
         setStyleError(`Maptiler returned ${status}. Check your API key.`)
-        setActiveTabRef.current('settings')
+        setActiveTab('settings')
         return
       }
       monitor.recordError()
     }
     map.on('error', handleError)
+  }, [maptilerKey, setActiveTab])
 
-    return () => {
-      map.off('error', handleError)
-      map.remove()
-      mapRef.current = null
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // When the key changes after the map is alive, rebind the style.
+  // Destroy the map only on full component unmount.
   useEffect(() => {
-    if (!mapRef.current || !maptilerKey) return
-    setStyleError(null)
-    setTileBannerVisible(false)
-    mapRef.current.setStyle(styleUrl(MAP_DEFAULTS.basemap, maptilerKey))
-  }, [maptilerKey])
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove()
+        mapRef.current = null
+      }
+    }
+  }, [])
 
   if (!maptilerKey) {
     return (
