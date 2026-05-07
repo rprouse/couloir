@@ -7,6 +7,7 @@ import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite-async.mjs'
 import * as SQLite from 'wa-sqlite'
 import { OriginPrivateFileSystemVFS } from 'wa-sqlite/src/examples/OriginPrivateFileSystemVFS.js'
 import wasmUrl from 'wa-sqlite/dist/wa-sqlite-async.wasm?url'
+import { SchemaVersionError } from './errors'
 import { MIGRATIONS, SCHEMA_VERSION } from './migrations'
 import type {
   Request,
@@ -128,9 +129,12 @@ async function ensureSchema(): Promise<void> {
 
   if (current === SCHEMA_VERSION) return
   if (current > SCHEMA_VERSION) {
-    throw new Error(
-      `SchemaVersionError: Database is v${current}; this build expects ` +
-      `v${SCHEMA_VERSION}. Refresh or downgrade the app.`,
+    // Throw the real class instance so String(err) produces
+    // "SchemaVersionError: <message>" via the class's `name`. The main-thread
+    // client unwraps this prefix and rehydrates a SchemaVersionError.
+    throw new SchemaVersionError(
+      `Database is v${current}; this build expects v${SCHEMA_VERSION}. ` +
+      `Refresh or downgrade the app.`,
     )
   }
 
