@@ -22,7 +22,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [1.4 3D terrain](#task-14---3d-terrain)
 - [x] [1.5 Basemap switcher](#task-15---basemap-switcher)
 - [x] [1.6 Settings panel](#task-16---settings-panel)
-- [ ] [1.7 Layer panel scaffold](#task-17---layer-panel-scaffold)
+- [x] [1.7 Layer panel scaffold](#task-17---layer-panel-scaffold)
 
 ### Phase 2 — Storage Foundation  ·  Plan: not yet written
 

@@ -90,3 +90,24 @@ describe('ui store — basemap', () => {
     expect(useUiStore.getState().activeBasemap).toBe('outdoor')
   })
 })
+
+describe('ui store — layer visibility', () => {
+  beforeEach(() => {
+    useUiStore.setState(useUiStore.getInitialState())
+  })
+
+  it('defaults all layers visible', () => {
+    const initial = useUiStore.getInitialState()
+    expect(initial.layerVisibility).toEqual({
+      routes: true, tracks: true, waypoints: true, photos: true,
+    })
+  })
+
+  it('toggles a single layer without affecting others', () => {
+    useUiStore.getState().toggleLayer('routes')
+    expect(useUiStore.getState().layerVisibility.routes).toBe(false)
+    expect(useUiStore.getState().layerVisibility.tracks).toBe(true)
+    expect(useUiStore.getState().layerVisibility.waypoints).toBe(true)
+    expect(useUiStore.getState().layerVisibility.photos).toBe(true)
+  })
+})

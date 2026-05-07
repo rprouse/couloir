@@ -8,6 +8,7 @@ const MIN = 1
 const MAX = 3
 
 export type SidebarTab = 'layers' | 'search' | 'settings'
+export type LayerKey = 'routes' | 'tracks' | 'waypoints' | 'photos'
 
 interface UiState {
   activeTab: SidebarTab
@@ -15,11 +16,13 @@ interface UiState {
   terrainEnabled: boolean
   terrainExaggeration: number
   activeBasemap: Basemap
+  layerVisibility: Record<LayerKey, boolean>
   setActiveTab: (tab: SidebarTab) => void
   toggleSidebar: () => void
   toggleTerrain: () => void
   setTerrainExaggeration: (value: number) => void
   setBasemap: (basemap: Basemap) => void
+  toggleLayer: (layer: LayerKey) => void
   hydrateFromStorage: () => void
 }
 
@@ -31,6 +34,7 @@ export const useUiStore = create<UiState>((set) => ({
   terrainEnabled: true,
   terrainExaggeration: 1.5,
   activeBasemap: 'outdoor',
+  layerVisibility: { routes: true, tracks: true, waypoints: true, photos: true },
   setActiveTab: (tab) => set({ activeTab: tab }),
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   toggleTerrain: () => set((s) => ({ terrainEnabled: !s.terrainEnabled })),
@@ -43,6 +47,10 @@ export const useUiStore = create<UiState>((set) => ({
     localStorage.setItem(BASEMAP_KEY, basemap)
     set({ activeBasemap: basemap })
   },
+  toggleLayer: (layer) =>
+    set((s) => ({
+      layerVisibility: { ...s.layerVisibility, [layer]: !s.layerVisibility[layer] },
+    })),
   hydrateFromStorage: () => {
     // Silent fallback to the in-memory default if a stored value is missing
     // or unparseable. Keeps app load resilient to localStorage corruption or
