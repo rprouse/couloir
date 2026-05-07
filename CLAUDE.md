@@ -33,6 +33,10 @@ The detailed implementation plan for the phase in flight lives in `docs/superpow
 
 If no plan exists yet for the current phase, write one (`superpowers:writing-plans`) before starting implementation. Plans are written just-in-time, one phase at a time.
 
+## Tooling
+
+- All `git` commands must be run via the PowerShell tool, not Bash. The 1Password agent that signs commits is wired into the PowerShell session; Bash invocations of `git commit` fail with "Could not connect to socket".
+
 ## Coding Style
 
 - TypeScript strict mode. No `any` types without a comment explaining why.
