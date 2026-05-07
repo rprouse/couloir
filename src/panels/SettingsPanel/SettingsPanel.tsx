@@ -3,6 +3,12 @@ import styles from './SettingsPanel.module.css'
 import { useSettingsStore } from '../../store/settings'
 import { useUiStore } from '../../store/ui'
 
+const MAPTILER_KEYS_URL = 'https://cloud.maptiler.com/account/keys/'
+// TODO: read from package.json or import.meta.env once a single source of
+// truth is established. Hardcoded to avoid the build-config noise of injecting
+// version into the bundle for an unreleased app.
+const APP_VERSION = '0.0.1'
+
 export function SettingsPanel() {
   const maptilerKey = useSettingsStore((s) => s.maptilerKey)
   const setMaptilerKey = useSettingsStore((s) => s.setMaptilerKey)
@@ -10,11 +16,27 @@ export function SettingsPanel() {
   const setTerrainExaggeration = useUiStore((s) => s.setTerrainExaggeration)
 
   const [draft, setDraft] = useState('')
-  const [editing, setEditing] = useState(maptilerKey === null)
+  const [editing, setEditing] = useState(false)
+
+  // Edit mode is true whenever the user has explicitly entered it OR no key
+  // is set yet. Deriving (rather than mirroring) keeps the panel in sync if
+  // the key is cleared by another part of the app.
+  const isEditing = editing || maptilerKey === null
 
   const save = () => {
-    if (draft.trim().length === 0) return
-    setMaptilerKey(draft.trim())
+    const trimmed = draft.trim()
+    if (trimmed.length === 0) return
+    setMaptilerKey(trimmed)
+    setDraft('')
+    setEditing(false)
+  }
+
+  const startEdit = () => {
+    setDraft('')
+    setEditing(true)
+  }
+
+  const cancelEdit = () => {
     setDraft('')
     setEditing(false)
   }
@@ -25,11 +47,21 @@ export function SettingsPanel() {
 
       <section className={styles.section}>
         <h3>Maptiler</h3>
-        {!editing && maptilerKey !== null ? (
-          <div className={styles.row}>
-            <span className={styles.subtle}>Key set ({maptilerKey.slice(0, 4)}…)</span>
-            <button type="button" onClick={() => setEditing(true)}>Replace</button>
-          </div>
+        {!isEditing && maptilerKey !== null ? (
+          <>
+            <div className={styles.row}>
+              <span className={styles.subtle}>Key set ({maptilerKey.slice(0, 4)}…)</span>
+              <button type="button" onClick={startEdit}>Replace</button>
+            </div>
+            <a
+              className={styles.subtle}
+              href={MAPTILER_KEYS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Manage keys at maptiler.com →
+            </a>
+          </>
         ) : (
           <div className={styles.column}>
             <label className={styles.field}>
@@ -39,26 +71,21 @@ export function SettingsPanel() {
                 autoComplete="off"
                 spellCheck={false}
                 value={draft}
-                onChange={(e) => setDraft(e.target.value)}
+                // Strip whitespace at input time so a paste from a
+                // line-wrapped terminal can't slip embedded newlines into
+                // the stored key.
+                onChange={(e) => setDraft(e.target.value.replace(/\s/g, ''))}
               />
             </label>
             <div className={styles.row}>
               <button type="button" onClick={save}>Save key</button>
               {maptilerKey !== null && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDraft('')
-                    setEditing(false)
-                  }}
-                >
-                  Cancel
-                </button>
+                <button type="button" onClick={cancelEdit}>Cancel</button>
               )}
             </div>
             <a
               className={styles.subtle}
-              href="https://cloud.maptiler.com/account/keys/"
+              href={MAPTILER_KEYS_URL}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -87,7 +114,7 @@ export function SettingsPanel() {
 
       <section className={styles.section}>
         <h3>About</h3>
-        <p className={styles.subtle}>Couloir 0.0.1</p>
+        <p className={styles.subtle}>Couloir {APP_VERSION}</p>
       </section>
     </div>
   )

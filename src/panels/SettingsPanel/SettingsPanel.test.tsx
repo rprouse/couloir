@@ -39,6 +39,30 @@ describe('SettingsPanel', () => {
     expect(useSettingsStore.getState().maptilerKey).toBe('NEW')
   })
 
+  it('discards the draft when the user clicks Cancel and reopens with an empty input', async () => {
+    const user = userEvent.setup()
+    useSettingsStore.setState({ maptilerKey: 'OLD' })
+    render(<SettingsPanel />)
+    await user.click(screen.getByRole('button', { name: /replace/i }))
+    await user.type(screen.getByLabelText(/maptiler api key/i), 'ABANDONED')
+    await user.click(screen.getByRole('button', { name: /cancel/i }))
+
+    expect(useSettingsStore.getState().maptilerKey).toBe('OLD')
+    expect(screen.getByText(/key set/i)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /replace/i }))
+    expect(screen.getByLabelText(/maptiler api key/i)).toHaveValue('')
+  })
+
+  it('strips whitespace from a pasted key', async () => {
+    const user = userEvent.setup()
+    render(<SettingsPanel />)
+    await user.click(screen.getByLabelText(/maptiler api key/i))
+    await user.paste('  KEY\nWITH\tSPACES  ')
+    await user.click(screen.getByRole('button', { name: /save key/i }))
+    expect(useSettingsStore.getState().maptilerKey).toBe('KEYWITHSPACES')
+  })
+
   it('updates terrain exaggeration default through the slider', () => {
     render(<SettingsPanel />)
     fireEvent.change(screen.getByRole('slider', { name: /terrain exaggeration/i }), {

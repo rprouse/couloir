@@ -37,7 +37,7 @@ export function Sidebar({ panels }: SidebarProps) {
           </button>
         ))}
       </nav>
-      {!sidebarCollapsed && (
+      {!sidebarCollapsed && panels[activeTab] !== undefined && (
         <div className={styles.content}>{panels[activeTab]}</div>
       )}
       <button
