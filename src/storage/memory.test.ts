@@ -1,5 +1,5 @@
 import { InMemoryStorageProvider } from './memory'
-import type { Route, Track } from '../types'
+import type { Photo, Route, Track, Waypoint } from '../types'
 
 const FIXED_GEOJSON = {
   type: 'LineString' as const,
@@ -193,5 +193,140 @@ describe('InMemoryStorageProvider — tracks', () => {
     const t = await storage.getTrack('shared')
     expect(r?.color).toBe('#E05C2A')
     expect(t?.color).toBe('#2A7BE0')
+  })
+})
+
+function buildWaypoint(overrides: Partial<Waypoint> = {}): Waypoint {
+  const now = '2026-05-06T12:00:00.000Z'
+  return {
+    id: 'wp-1',
+    user_id: 'local',
+    name: 'Test Waypoint',
+    description: '',
+    lat: 49.5,
+    lng: -116.0,
+    elevation_m: 1500,
+    category: 'summit',
+    color: null,
+    tags: [],
+    created_at: now,
+    updated_at: now,
+    ...overrides,
+  }
+}
+
+function buildPhoto(overrides: Partial<Photo> = {}): Photo {
+  const now = '2026-05-06T12:00:00.000Z'
+  return {
+    id: 'photo-1',
+    user_id: 'local',
+    name: 'Test Photo',
+    description: '',
+    lat: 49.5,
+    lng: -116.0,
+    elevation_m: 1500,
+    camera_lat: 49.499,
+    camera_lng: -116.001,
+    camera_elevation_m: 1495,
+    bearing: 90,
+    blob_ref: 'photos/photo-1.jpg',
+    width: 1024,
+    height: 768,
+    file_size_bytes: 123456,
+    taken_at: now,
+    tags: [],
+    created_at: now,
+    updated_at: now,
+    ...overrides,
+  }
+}
+
+describe('InMemoryStorageProvider — waypoints', () => {
+  let storage: InMemoryStorageProvider
+
+  beforeEach(async () => {
+    storage = new InMemoryStorageProvider()
+    await storage.init()
+  })
+
+  it('saves and reads a waypoint round-trip', async () => {
+    const wp = buildWaypoint()
+    await storage.saveWaypoint(wp)
+    expect(await storage.getWaypoint(wp.id)).toEqual(wp)
+  })
+
+  it('preserves nullable elevation and color', async () => {
+    await storage.saveWaypoint(buildWaypoint({ elevation_m: null, color: null }))
+    const fetched = await storage.getWaypoint('wp-1')
+    expect(fetched?.elevation_m).toBeNull()
+    expect(fetched?.color).toBeNull()
+  })
+
+  it('overwrites color when set', async () => {
+    await storage.saveWaypoint(buildWaypoint({ color: '#FF0000' }))
+    expect((await storage.getWaypoint('wp-1'))?.color).toBe('#FF0000')
+  })
+
+  it('deletes a waypoint and clears its tags', async () => {
+    await storage.saveWaypoint(buildWaypoint({ tags: ['t1'] }))
+    await storage.deleteWaypoint('wp-1')
+    await storage.saveWaypoint(buildWaypoint({ tags: [] }))
+    expect((await storage.getWaypoint('wp-1'))?.tags).toEqual([])
+  })
+})
+
+describe('InMemoryStorageProvider — photos', () => {
+  let storage: InMemoryStorageProvider
+
+  beforeEach(async () => {
+    storage = new InMemoryStorageProvider()
+    await storage.init()
+  })
+
+  it('saves a photo with both blobs', async () => {
+    const photo = buildPhoto()
+    const fullBlob = new Blob(['full'], { type: 'image/jpeg' })
+    const thumbBlob = new Blob(['thumb'], { type: 'image/jpeg' })
+    await storage.savePhoto(photo, fullBlob, thumbBlob)
+
+    const fetched = await storage.getPhoto(photo.id)
+    expect(fetched).toEqual(photo)
+
+    const full = await storage.getPhotoBlob(photo.id)
+    const thumb = await storage.getPhotoThumb(photo.id)
+    expect(full).toBe(fullBlob)
+    expect(thumb).toBe(thumbBlob)
+  })
+
+  it('returns null for a missing photo blob', async () => {
+    expect(await storage.getPhotoBlob('nope')).toBeNull()
+    expect(await storage.getPhotoThumb('nope')).toBeNull()
+  })
+
+  it('preserves all camera_* fields including null values', async () => {
+    await storage.savePhoto(
+      buildPhoto({
+        camera_lat: null,
+        camera_lng: null,
+        camera_elevation_m: null,
+        bearing: null,
+      }),
+      new Blob(),
+      new Blob(),
+    )
+    const fetched = await storage.getPhoto('photo-1')
+    expect(fetched?.camera_lat).toBeNull()
+    expect(fetched?.camera_lng).toBeNull()
+    expect(fetched?.camera_elevation_m).toBeNull()
+    expect(fetched?.bearing).toBeNull()
+  })
+
+  it('deletes both blobs along with the metadata', async () => {
+    const photo = buildPhoto()
+    await storage.savePhoto(photo, new Blob(['a']), new Blob(['b']))
+    await storage.deletePhoto(photo.id)
+    expect(await storage.getPhoto(photo.id)).toBeNull()
+    expect(await storage.getPhotoBlob(photo.id)).toBeNull()
+    expect(await storage.getPhotoThumb(photo.id)).toBeNull()
   })
 })

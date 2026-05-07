@@ -142,18 +142,127 @@ export class OPFSStorageProvider implements StorageProvider {
   }
 
   // --- Waypoints ------------------------------------------------------------
-  getWaypoints(): Promise<Waypoint[]> { throw new Error('not implemented') }
-  getWaypoint(_id: string): Promise<Waypoint | null> { throw new Error('not implemented') }
-  saveWaypoint(_w: Waypoint): Promise<void> { throw new Error('not implemented') }
-  deleteWaypoint(_id: string): Promise<void> { throw new Error('not implemented') }
+
+  async getWaypoints(): Promise<Waypoint[]> {
+    const rows = await this.client.all(`SELECT * FROM waypoints ORDER BY created_at`)
+    const ids = rows.map((r) => r.id as string)
+    const tagMap = await this.tagsByEntity('waypoint', ids)
+    return rows.map((r) => this.rowToWaypoint(r, tagMap.get(r.id as string) ?? []))
+  }
+
+  async getWaypoint(id: string): Promise<Waypoint | null> {
+    const row = await this.client.one(`SELECT * FROM waypoints WHERE id = ?`, [id])
+    if (!row) return null
+    const tagMap = await this.tagsByEntity('waypoint', [id])
+    return this.rowToWaypoint(row, tagMap.get(id) ?? [])
+  }
+
+  async saveWaypoint(waypoint: Waypoint): Promise<void> {
+    const ops: SqlOp[] = [
+      {
+        sql: `INSERT OR REPLACE INTO waypoints (
+                id, user_id, name, description,
+                lat, lng, elevation_m,
+                category, color,
+                created_at, updated_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        params: this.waypointToRow(waypoint),
+      },
+      ...this.replaceTagsOps('waypoint', waypoint.id, waypoint.tags),
+    ]
+    await this.client.tx(ops)
+  }
+
+  async deleteWaypoint(id: string): Promise<void> {
+    await this.client.tx([
+      {
+        sql: `DELETE FROM entity_tags WHERE entity_type = 'waypoint' AND entity_id = ?`,
+        params: [id],
+      },
+      { sql: `DELETE FROM waypoints WHERE id = ?`, params: [id] },
+    ])
+  }
 
   // --- Photos ---------------------------------------------------------------
-  getPhotos(): Promise<Photo[]> { throw new Error('not implemented') }
-  getPhoto(_id: string): Promise<Photo | null> { throw new Error('not implemented') }
-  savePhoto(_p: Photo, _b: Blob, _t: Blob): Promise<void> { throw new Error('not implemented') }
-  getPhotoBlob(_id: string): Promise<Blob | null> { throw new Error('not implemented') }
-  getPhotoThumb(_id: string): Promise<Blob | null> { throw new Error('not implemented') }
-  deletePhoto(_id: string): Promise<void> { throw new Error('not implemented') }
+
+  private photoFullPath(id: string): string  { return `photos/${id}.jpg` }
+  private photoThumbPath(id: string): string { return `photos/${id}_thumb.jpg` }
+
+  async getPhotos(): Promise<Photo[]> {
+    const rows = await this.client.all(`SELECT * FROM photos ORDER BY created_at`)
+    const ids = rows.map((r) => r.id as string)
+    const tagMap = await this.tagsByEntity('photo', ids)
+    return rows.map((r) => this.rowToPhoto(r, tagMap.get(r.id as string) ?? []))
+  }
+
+  async getPhoto(id: string): Promise<Photo | null> {
+    const row = await this.client.one(`SELECT * FROM photos WHERE id = ?`, [id])
+    if (!row) return null
+    const tagMap = await this.tagsByEntity('photo', [id])
+    return this.rowToPhoto(row, tagMap.get(id) ?? [])
+  }
+
+  async savePhoto(photo: Photo, blob: Blob, thumb: Blob): Promise<void> {
+    // Write blobs first; if either fails we abort before touching SQL so
+    // we never end up with a metadata row pointing at a missing file.
+    const fullBuf = await blob.arrayBuffer()
+    const thumbBuf = await thumb.arrayBuffer()
+    await this.client.writeBlob(this.photoFullPath(photo.id), fullBuf)
+    try {
+      await this.client.writeBlob(this.photoThumbPath(photo.id), thumbBuf)
+    } catch (err) {
+      // Roll back the full-size write so we don't leak storage on retry.
+      await this.client.deleteBlob(this.photoFullPath(photo.id))
+      throw err
+    }
+
+    try {
+      await this.client.tx([
+        {
+          sql: `INSERT OR REPLACE INTO photos (
+                  id, user_id, name, description,
+                  lat, lng, elevation_m,
+                  camera_lat, camera_lng, camera_elevation_m, bearing,
+                  blob_ref,
+                  width, height, file_size_bytes,
+                  taken_at,
+                  created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          params: this.photoToRow(photo),
+        },
+        ...this.replaceTagsOps('photo', photo.id, photo.tags),
+      ])
+    } catch (err) {
+      // Roll back the blob writes if we couldn't record the metadata.
+      await this.client.deleteBlob(this.photoFullPath(photo.id))
+      await this.client.deleteBlob(this.photoThumbPath(photo.id))
+      throw err
+    }
+  }
+
+  async getPhotoBlob(id: string): Promise<Blob | null> {
+    const buf = await this.client.readBlob(this.photoFullPath(id))
+    return buf ? new Blob([buf], { type: 'image/jpeg' }) : null
+  }
+
+  async getPhotoThumb(id: string): Promise<Blob | null> {
+    const buf = await this.client.readBlob(this.photoThumbPath(id))
+    return buf ? new Blob([buf], { type: 'image/jpeg' }) : null
+  }
+
+  async deletePhoto(id: string): Promise<void> {
+    await this.client.tx([
+      {
+        sql: `DELETE FROM entity_tags WHERE entity_type = 'photo' AND entity_id = ?`,
+        params: [id],
+      },
+      { sql: `DELETE FROM photos WHERE id = ?`, params: [id] },
+    ])
+    // Best-effort blob cleanup. If these fail (file already missing) we
+    // swallow — the worker's deleteBlob is already tolerant of that.
+    await this.client.deleteBlob(this.photoFullPath(id))
+    await this.client.deleteBlob(this.photoThumbPath(id))
+  }
 
   // --- Tags -----------------------------------------------------------------
   getTags(): Promise<Tag[]> { throw new Error('not implemented') }
@@ -246,6 +355,68 @@ export class OPFSStorageProvider implements StorageProvider {
       tags,
       created_at:       row.created_at as string,
       updated_at:       row.updated_at as string,
+    }
+  }
+
+  private waypointToRow(w: Waypoint): SqlValue[] {
+    return [
+      w.id, w.user_id, w.name, w.description,
+      w.lat, w.lng, w.elevation_m,
+      w.category, w.color,
+      w.created_at, w.updated_at,
+    ]
+  }
+
+  private rowToWaypoint(row: SqlRow, tags: string[]): Waypoint {
+    return {
+      id:          row.id as string,
+      user_id:     row.user_id as string,
+      name:        row.name as string,
+      description: row.description as string,
+      lat:         Number(row.lat),
+      lng:         Number(row.lng),
+      elevation_m: row.elevation_m === null ? null : Number(row.elevation_m),
+      category:    row.category as Waypoint['category'],
+      color:       (row.color as string | null) ?? null,
+      tags,
+      created_at:  row.created_at as string,
+      updated_at:  row.updated_at as string,
+    }
+  }
+
+  private photoToRow(p: Photo): SqlValue[] {
+    return [
+      p.id, p.user_id, p.name, p.description,
+      p.lat, p.lng, p.elevation_m,
+      p.camera_lat, p.camera_lng, p.camera_elevation_m, p.bearing,
+      p.blob_ref,
+      p.width, p.height, p.file_size_bytes,
+      p.taken_at,
+      p.created_at, p.updated_at,
+    ]
+  }
+
+  private rowToPhoto(row: SqlRow, tags: string[]): Photo {
+    return {
+      id:                 row.id as string,
+      user_id:            row.user_id as string,
+      name:               row.name as string,
+      description:        row.description as string,
+      lat:                Number(row.lat),
+      lng:                Number(row.lng),
+      elevation_m:        row.elevation_m === null ? null : Number(row.elevation_m),
+      camera_lat:         row.camera_lat === null ? null : Number(row.camera_lat),
+      camera_lng:         row.camera_lng === null ? null : Number(row.camera_lng),
+      camera_elevation_m: row.camera_elevation_m === null ? null : Number(row.camera_elevation_m),
+      bearing:            row.bearing === null ? null : Number(row.bearing),
+      blob_ref:           row.blob_ref as string,
+      width:              Number(row.width),
+      height:             Number(row.height),
+      file_size_bytes:    Number(row.file_size_bytes),
+      taken_at:           (row.taken_at as string | null) ?? null,
+      tags,
+      created_at:         row.created_at as string,
+      updated_at:         row.updated_at as string,
     }
   }
 

@@ -14,13 +14,17 @@ import type { StorageProvider } from './interface'
 // that doesn't have a browser. Never used in production.
 //
 // Storage maps are added incrementally as each task wires up its CRUD methods
-// (Task 2.2: routes, tracks, entityTags). Tasks 2.3 and 2.4 add waypoints,
-// photos, tags, and blob/thumb maps. Declaring fields only once they're
+// (Task 2.2: routes, tracks, entityTags; Task 2.3: waypoints, photos, blobs,
+// thumbs). Task 2.4 adds the tags map. Declaring fields only once they're
 // actually read keeps `noUnusedLocals` happy without resorting to a placeholder
 // `close()` body that touches everything.
 export class InMemoryStorageProvider implements StorageProvider {
   private routes = new Map<string, Route>()
   private tracks = new Map<string, Track>()
+  private waypoints = new Map<string, Waypoint>()
+  private photos = new Map<string, Photo>()
+  private blobs = new Map<string, Blob>()
+  private thumbs = new Map<string, Blob>()
   private entityTags = new Set<string>() // 'route|abc|tag1' style composite keys
 
   async init(): Promise<void> {
@@ -84,19 +88,55 @@ export class InMemoryStorageProvider implements StorageProvider {
     return null
   }
 
-  // --- Waypoints (Task 2.3) -------------------------------------------------
-  async getWaypoints(): Promise<Waypoint[]> { throw new Error('not implemented') }
-  async getWaypoint(_id: string): Promise<Waypoint | null> { throw new Error('not implemented') }
-  async saveWaypoint(_w: Waypoint): Promise<void> { throw new Error('not implemented') }
-  async deleteWaypoint(_id: string): Promise<void> { throw new Error('not implemented') }
+  // --- Waypoints ------------------------------------------------------------
 
-  // --- Photos (Task 2.3) ----------------------------------------------------
-  async getPhotos(): Promise<Photo[]> { throw new Error('not implemented') }
-  async getPhoto(_id: string): Promise<Photo | null> { throw new Error('not implemented') }
-  async savePhoto(_p: Photo, _b: Blob, _t: Blob): Promise<void> { throw new Error('not implemented') }
-  async getPhotoBlob(_id: string): Promise<Blob | null> { throw new Error('not implemented') }
-  async getPhotoThumb(_id: string): Promise<Blob | null> { throw new Error('not implemented') }
-  async deletePhoto(_id: string): Promise<void> { throw new Error('not implemented') }
+  async getWaypoints(): Promise<Waypoint[]> {
+    return Array.from(this.waypoints.values())
+      .map((w) => this.hydrateTags(w, 'waypoint'))
+      .sort((a, b) => a.created_at.localeCompare(b.created_at))
+  }
+  async getWaypoint(id: string): Promise<Waypoint | null> {
+    const w = this.waypoints.get(id)
+    return w ? this.hydrateTags(w, 'waypoint') : null
+  }
+  async saveWaypoint(waypoint: Waypoint): Promise<void> {
+    this.waypoints.set(waypoint.id, JSON.parse(JSON.stringify(waypoint)) as Waypoint)
+    this.replaceEntityTags('waypoint', waypoint.id, waypoint.tags)
+  }
+  async deleteWaypoint(id: string): Promise<void> {
+    this.waypoints.delete(id)
+    this.removeAllTagsFor('waypoint', id)
+  }
+
+  // --- Photos ---------------------------------------------------------------
+
+  async getPhotos(): Promise<Photo[]> {
+    return Array.from(this.photos.values())
+      .map((p) => this.hydrateTags(p, 'photo'))
+      .sort((a, b) => a.created_at.localeCompare(b.created_at))
+  }
+  async getPhoto(id: string): Promise<Photo | null> {
+    const p = this.photos.get(id)
+    return p ? this.hydrateTags(p, 'photo') : null
+  }
+  async savePhoto(photo: Photo, blob: Blob, thumb: Blob): Promise<void> {
+    this.photos.set(photo.id, JSON.parse(JSON.stringify(photo)) as Photo)
+    this.replaceEntityTags('photo', photo.id, photo.tags)
+    this.blobs.set(photo.id, blob)
+    this.thumbs.set(photo.id, thumb)
+  }
+  async getPhotoBlob(id: string): Promise<Blob | null> {
+    return this.blobs.get(id) ?? null
+  }
+  async getPhotoThumb(id: string): Promise<Blob | null> {
+    return this.thumbs.get(id) ?? null
+  }
+  async deletePhoto(id: string): Promise<void> {
+    this.photos.delete(id)
+    this.blobs.delete(id)
+    this.thumbs.delete(id)
+    this.removeAllTagsFor('photo', id)
+  }
 
   // --- Tags (Task 2.4) ------------------------------------------------------
   async getTags(): Promise<Tag[]> { throw new Error('not implemented') }

@@ -1,6 +1,6 @@
 import type { StorageProvider } from '../storage/interface'
 import { newId } from '../utils/id'
-import type { Route, Track } from '../types'
+import type { Photo, Route, Track, Waypoint } from '../types'
 
 // Installs a `window.__couloir` helper for browser-console verification of
 // the storage layer. Tree-shaken out of production builds via the
@@ -64,6 +64,77 @@ export function installDevConsole(storage: StorageProvider): void {
       }
       await storage.saveTrack(track)
       return track
+    },
+
+    async createDummyWaypoint(name = 'Dummy Waypoint'): Promise<Waypoint> {
+      const now = new Date().toISOString()
+      const wp: Waypoint = {
+        id: newId(),
+        user_id: 'local',
+        name,
+        description: 'Created from window.__couloir.createDummyWaypoint',
+        lat: 49.5,
+        lng: -116.0,
+        elevation_m: 1500,
+        category: 'summit',
+        color: null,
+        tags: [],
+        created_at: now,
+        updated_at: now,
+      }
+      await storage.saveWaypoint(wp)
+      return wp
+    },
+
+    async createDummyPhoto(name = 'Dummy Photo'): Promise<Photo> {
+      const now = new Date().toISOString()
+      // 1×1 red pixel JPEG, base64 — minimal valid image for blob round-trip
+      // testing without bundling fixture files.
+      const RED_JPEG_B64 =
+        '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/wgARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAj/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAH/AP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAQUC/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPwH/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAECAQE/Af/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEABj8C/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPyH/2gAMAwEAAgADAAAAEP8A/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPxB/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAECAQE/EH//xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAE/EH//2Q=='
+      const bytes = Uint8Array.from(atob(RED_JPEG_B64), (c) => c.charCodeAt(0))
+      const blob = new Blob([bytes], { type: 'image/jpeg' })
+      const thumb = new Blob([bytes], { type: 'image/jpeg' })
+
+      const id = newId()
+      const photo: Photo = {
+        id,
+        user_id: 'local',
+        name,
+        description: 'Created from window.__couloir.createDummyPhoto',
+        lat: 49.5,
+        lng: -116.0,
+        elevation_m: 1500,
+        camera_lat: 49.499,
+        camera_lng: -116.001,
+        camera_elevation_m: 1495,
+        bearing: 90,
+        blob_ref: `photos/${id}.jpg`,
+        width: 1,
+        height: 1,
+        file_size_bytes: bytes.byteLength,
+        taken_at: now,
+        tags: [],
+        created_at: now,
+        updated_at: now,
+      }
+      await storage.savePhoto(photo, blob, thumb)
+      return photo
+    },
+
+    async listAll(): Promise<{
+      routes: Route[]
+      tracks: Track[]
+      waypoints: Waypoint[]
+      photos: Photo[]
+    }> {
+      const [routes, tracks, waypoints, photos] = await Promise.all([
+        storage.getRoutes(),
+        storage.getTracks(),
+        storage.getWaypoints(),
+        storage.getPhotos(),
+      ])
+      return { routes, tracks, waypoints, photos }
     },
 
     async renameRoute(id: string, name: string): Promise<Route> {

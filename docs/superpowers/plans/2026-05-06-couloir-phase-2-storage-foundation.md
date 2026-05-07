@@ -2050,7 +2050,7 @@ EOF
 
 `savePhoto(photo, blob, thumb)` writes both blobs (full-size at `photos/{id}.jpg`, thumb at `photos/{id}_thumb.jpg`) plus the metadata row. The OPFS implementation does the row write inside a transaction; the blob writes happen separately because they're file-system operations, not SQL. If the row write fails, the in-flight blobs are removed; if a blob write fails, the row write is not attempted (we go blobs-first → metadata-second so a failed blob doesn't leave dangling rows).
 
-- [ ] **Step 2.3.1: Replace the waypoint stubs in `src/storage/memory.ts`**
+- [x] **Step 2.3.1: Replace the waypoint stubs in `src/storage/memory.ts`**
 
 ```typescript
   // --- Waypoints ------------------------------------------------------------
@@ -2074,7 +2074,7 @@ EOF
   }
 ```
 
-- [ ] **Step 2.3.2: Replace the photo stubs in `src/storage/memory.ts`**
+- [x] **Step 2.3.2: Replace the photo stubs in `src/storage/memory.ts`**
 
 ```typescript
   // --- Photos ---------------------------------------------------------------
@@ -2108,7 +2108,7 @@ EOF
   }
 ```
 
-- [ ] **Step 2.3.3: Add waypoint and photo tests to `src/storage/memory.test.ts`**
+- [x] **Step 2.3.3: Add waypoint and photo tests to `src/storage/memory.test.ts`**
 
 Append after the existing `describe` blocks:
 
@@ -2251,12 +2251,12 @@ describe('InMemoryStorageProvider — photos', () => {
 })
 ```
 
-- [ ] **Step 2.3.4: Run the test, verify it passes**
+- [x] **Step 2.3.4: Run the test, verify it passes**
 
 Run: `npm test src/storage/memory.test.ts`
 Expected: 21 tests passing (the original 14 plus 7 new).
 
-- [ ] **Step 2.3.5: Add waypoint serializers to `src/storage/opfs.ts`**
+- [x] **Step 2.3.5: Add waypoint serializers to `src/storage/opfs.ts`**
 
 Inside the class, alongside the existing serializers:
 
@@ -2288,7 +2288,7 @@ Inside the class, alongside the existing serializers:
   }
 ```
 
-- [ ] **Step 2.3.6: Replace the waypoint stubs in `src/storage/opfs.ts`**
+- [x] **Step 2.3.6: Replace the waypoint stubs in `src/storage/opfs.ts`**
 
 ```typescript
   // --- Waypoints ------------------------------------------------------------
@@ -2334,7 +2334,7 @@ Inside the class, alongside the existing serializers:
   }
 ```
 
-- [ ] **Step 2.3.7: Add photo serializers to `src/storage/opfs.ts`**
+- [x] **Step 2.3.7: Add photo serializers to `src/storage/opfs.ts`**
 
 ```typescript
   private photoToRow(p: Photo): SqlValue[] {
@@ -2374,7 +2374,7 @@ Inside the class, alongside the existing serializers:
   }
 ```
 
-- [ ] **Step 2.3.8: Replace the photo stubs in `src/storage/opfs.ts`**
+- [x] **Step 2.3.8: Replace the photo stubs in `src/storage/opfs.ts`**
 
 ```typescript
   // --- Photos ---------------------------------------------------------------
@@ -2459,7 +2459,7 @@ Inside the class, alongside the existing serializers:
   }
 ```
 
-- [ ] **Step 2.3.9: Add waypoint and photo helpers to `src/dev/devConsole.ts`**
+- [x] **Step 2.3.9: Add waypoint and photo helpers to `src/dev/devConsole.ts`**
 
 Add these inside the `helper` object (alongside `createDummyRoute` etc.):
 
@@ -2542,7 +2542,7 @@ Update the import line at the top to add `Photo` and `Waypoint`:
 import type { Photo, Route, Track, Waypoint } from '../types'
 ```
 
-- [ ] **Step 2.3.10: Run typecheck and tests**
+- [x] **Step 2.3.10: Run typecheck and tests**
 
 Run: `npm run typecheck && npm test`
 Expected: clean.
@@ -2605,7 +2605,7 @@ await __couloir.storage.getPhotoThumb(all[0].id)   // -> null
 
 In DevTools → Application → OPFS → photos/, both files for this id are gone.
 
-- [ ] **Step 2.3.13: Commit**
+- [x] **Step 2.3.13: Commit**
 
 ```bash
 git add src/storage/memory.ts src/storage/memory.test.ts src/storage/opfs.ts src/dev/devConsole.ts
