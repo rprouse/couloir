@@ -1,0 +1,82 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-1);
+  border-right: 1px solid var(--color-border);
+  width: 280px;
+  min-width: 280px;
+  transition: width 120ms ease, min-width 120ms ease;
+}
+
+.sidebar[data-collapsed='true'] {
+  width: 56px;
+  min-width: 56px;
+}
+
+.sidebar[data-collapsed='true'] .tabLabel {
+  display: none;
+}
+
+.tabs {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-sm);
+  gap: var(--space-xs);
+}
+
+.tabButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--color-text-dim);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.tabButton:hover {
+  background: var(--color-bg-2);
+  color: var(--color-text);
+}
+
+.tabButton[aria-pressed='true'] {
+  background: var(--color-bg-2);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.tabIcon {
+  font-size: 18px;
+  width: 20px;
+  text-align: center;
+}
+
+.tabLabel {
+  font-weight: 500;
+}
+
+.collapseButton {
+  margin-top: auto;
+  padding: var(--space-sm);
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-dim);
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.collapseButton:hover {
+  color: var(--color-text);
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
