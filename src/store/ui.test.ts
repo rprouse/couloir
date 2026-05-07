@@ -60,3 +60,33 @@ describe('ui store — terrain', () => {
     expect(useUiStore.getState().terrainExaggeration).toBe(3)
   })
 })
+
+describe('ui store — basemap', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    useUiStore.setState(useUiStore.getInitialState())
+  })
+
+  it('defaults to outdoor', () => {
+    const initial = useUiStore.getInitialState()
+    expect(initial.activeBasemap).toBe('outdoor')
+  })
+
+  it('persists basemap on change', () => {
+    useUiStore.getState().setBasemap('satellite')
+    expect(localStorage.getItem('couloir_basemap')).toBe('satellite')
+    expect(useUiStore.getState().activeBasemap).toBe('satellite')
+  })
+
+  it('hydrates basemap from localStorage', () => {
+    localStorage.setItem('couloir_basemap', 'winter')
+    useUiStore.getState().hydrateFromStorage()
+    expect(useUiStore.getState().activeBasemap).toBe('winter')
+  })
+
+  it('ignores unknown values during hydration', () => {
+    localStorage.setItem('couloir_basemap', 'mars')
+    useUiStore.getState().hydrateFromStorage()
+    expect(useUiStore.getState().activeBasemap).toBe('outdoor')
+  })
+})

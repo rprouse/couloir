@@ -6,6 +6,7 @@ import { useSettingsStore } from '../store/settings'
 import { useUiStore } from '../store/ui'
 import { styleUrl, terrainSourceUrl } from './mapConfig'
 import { createTileErrorMonitor, type TileErrorMonitor } from './errors/tileErrorMonitor'
+import { BasemapControl } from './controls/BasemapControl'
 import { TerrainControl } from './controls/TerrainControl'
 import { MAP_DEFAULTS } from '../types'
 import { debug } from '../utils/debug'
@@ -16,16 +17,18 @@ export function MapView() {
   const monitorRef = useRef<TileErrorMonitor | null>(null)
   const maptilerKey = useSettingsStore((s) => s.maptilerKey)
   const setActiveTab = useUiStore((s) => s.setActiveTab)
+  const activeBasemap = useUiStore((s) => s.activeBasemap)
   const terrainEnabled = useUiStore((s) => s.terrainEnabled)
   const terrainExaggeration = useUiStore((s) => s.terrainExaggeration)
   const [styleError, setStyleError] = useState<string | null>(null)
   const [tileBannerVisible, setTileBannerVisible] = useState(false)
 
-  // Map lifecycle driven by maptilerKey:
-  //   - null key: tear down any existing map (the empty-state JSX has unmounted the container).
-  //   - key set, no map: create the map.
-  //   - key changed, map exists: rebind the style on the existing map.
-  // The map is also destroyed on component unmount via the third effect below.
+  // Map lifecycle driven by maptilerKey + activeBasemap:
+  //   - null key: tear down any existing map.
+  //   - key set, no map: create the map with the current basemap.
+  //   - key OR basemap changed, map exists: rebind the style on the existing map.
+  // The DEM source and terrain re-attach via installDem on style.load.
+  // The map is destroyed on full unmount via the bottom effect.
   useEffect(() => {
     if (!maptilerKey) {
       if (mapRef.current) {
@@ -38,32 +41,31 @@ export function MapView() {
     if (!containerRef.current) return
 
     if (mapRef.current) {
-      // Key changed on an existing map: clear any error UI and reset the
-      // rolling-window monitor so stale tile-error timestamps from the
-      // previous key cannot trip the banner against the new key.
+      // Key or basemap changed; clear error UI and reset the rolling-window
+      // monitor before rebinding the style.
       setStyleError(null)
       setTileBannerVisible(false)
       monitorRef.current?.reset()
-      mapRef.current.setStyle(styleUrl(MAP_DEFAULTS.basemap, maptilerKey))
+      mapRef.current.setStyle(styleUrl(activeBasemap, maptilerKey))
       return
     }
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: styleUrl(MAP_DEFAULTS.basemap, maptilerKey),
+      style: styleUrl(activeBasemap, maptilerKey),
       center: MAP_DEFAULTS.center,
       zoom: MAP_DEFAULTS.zoom,
       pitch: MAP_DEFAULTS.pitch,
       bearing: MAP_DEFAULTS.bearing,
     })
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right')
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-left')
     mapRef.current = map
 
-    // Re-install the DEM source on every style.load. setStyle() (key change in
-    // this task; basemap switch in Task 1.5) clears all sources, so reattaching
-    // here covers both the initial load and every subsequent style swap.
-    // Reads the key live from the settings store at call time rather than via
-    // closure, so a key change before this fires uses the up-to-date value.
+    // Re-install the DEM source on every style.load. setStyle() (key change
+    // and basemap switch) clears all sources, so reattaching here covers both
+    // the initial load and every subsequent style swap.
+    // Reads the key live from the settings store so a key change before this
+    // fires uses the up-to-date value.
     const installDem = () => {
       const currentKey = useSettingsStore.getState().maptilerKey
       if (!currentKey) return
@@ -100,14 +102,11 @@ export function MapView() {
       monitor.recordError()
     }
     map.on('error', handleError)
-  }, [maptilerKey, setActiveTab])
+  }, [maptilerKey, setActiveTab, activeBasemap])
 
   // React to terrain state changes (toggle + exaggeration slider).
-  // Skips when the DEM source isn't installed yet — that case is handled by
-  // installDem on the first style.load. Without this guard, the effect runs
-  // synchronously after the lifecycle effect on initial mount and calls
-  // setTerrain against a source that hasn't been added yet, which MapLibre
-  // logs as an error.
+  // Skips when the DEM source isn't installed yet — handled by installDem on
+  // first style.load.
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
@@ -153,6 +152,7 @@ export function MapView() {
   return (
     <div className={styles.container}>
       <div ref={containerRef} className={styles.canvas} data-testid="map-canvas" />
+      <BasemapControl />
       <TerrainControl />
       {styleError && (
         <div role="alert" className={styles.banner}>

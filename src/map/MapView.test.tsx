@@ -60,6 +60,22 @@ describe('MapView', () => {
     )
   })
 
+  it('rebinds the map style when the basemap changes', () => {
+    useSettingsStore.setState({ maptilerKey: 'KEY' })
+    render(<MapView />)
+    expect(MapMock).toHaveBeenCalledTimes(1)
+
+    const map = MapMock.mock.results[0].value as { setStyle: ReturnType<typeof vi.fn> }
+
+    act(() => {
+      useUiStore.getState().setBasemap('satellite')
+    })
+
+    expect(map.setStyle).toHaveBeenCalledWith(
+      'https://api.maptiler.com/maps/satellite/style.json?key=KEY',
+    )
+  })
+
   it('initializes the map when the key transitions from null to set', () => {
     render(<MapView />)
     expect(MapMock).not.toHaveBeenCalled()
