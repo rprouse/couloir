@@ -17,6 +17,9 @@ export function TracksLayer(): null {
   const tracks = useTracksStore((s) => s.tracks)
   const visible = useUiStore((s) => s.layerVisibility.tracks)
 
+  // (1) Add source and layer when the map first becomes available.
+  // setStyle() (basemap or key change) wipes sources, so re-attach on every
+  // style.load — same pattern as the DEM source in MapView.tsx.
   useEffect(() => {
     if (!map) return
 
@@ -49,6 +52,7 @@ export function TracksLayer(): null {
       }
     }
     map.on('click', TRACKS_LINE_LAYER_ID, onClick)
+    // Cursor affordance — show pointer when hovering a clickable line.
     const onEnter = () => { map.getCanvas().style.cursor = 'pointer' }
     const onLeave = () => { map.getCanvas().style.cursor = '' }
     map.on('mouseenter', TRACKS_LINE_LAYER_ID, onEnter)
@@ -62,6 +66,7 @@ export function TracksLayer(): null {
     }
   }, [map])
 
+  // (2) Sync GeoJSON when tracks change.
   // React commits effects in declaration order. On first mount with `map`
   // non-null, effect (1) above runs first and synchronously calls
   // `map.addSource(TRACKS_SOURCE_ID, ...)`. By the time this effect's
@@ -80,6 +85,7 @@ export function TracksLayer(): null {
     ;(src as GeoJSONSource).setData(buildTracksGeoJson(tracks) as never)
   }, [map, tracks])
 
+  // (3) Sync visibility on toggle change.
   useEffect(() => {
     if (!map) return
     if (!map.getLayer(TRACKS_LINE_LAYER_ID)) return
