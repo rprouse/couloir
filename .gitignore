@@ -29,3 +29,4 @@ dist-ssr
 
 # Test
 coverage
+.claude/scheduled_tasks.lock
