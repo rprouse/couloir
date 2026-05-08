@@ -1,5 +1,45 @@
 import { importGpxFiles, type ImportDeps, type DuplicateChoice } from './gpxImport'
 import type { ParsedGpx } from '../../utils/gpx'
+import type { Route, Track } from '../../types'
+
+const minimalRoute: Route = {
+  id: 'existing-id',
+  user_id: 'local',
+  name: 'existing',
+  description: '',
+  geojson: { type: 'LineString', coordinates: [[-116, 49.5, 1500]] },
+  source_hash: 'h',
+  source_filename: null,
+  color: '#E05C2A',
+  ates: null,
+  technical_difficulty: null,
+  distance_m: 0,
+  elevation_gain_m: 0,
+  elevation_loss_m: 0,
+  tags: [],
+  created_at: '2026-01-01T00:00:00.000Z',
+  updated_at: '2026-01-01T00:00:00.000Z',
+}
+
+const minimalTrack: Track = {
+  id: 'existing-id',
+  user_id: 'local',
+  name: 'existing',
+  description: '',
+  geojson: { type: 'LineString', coordinates: [[-116, 49.5, 1500]] },
+  source_hash: 'h',
+  source_filename: null,
+  color: '#2A7BE0',
+  distance_m: 0,
+  elevation_gain_m: 0,
+  elevation_loss_m: 0,
+  duration_s: null,
+  moving_time_s: null,
+  recorded_at: null,
+  tags: [],
+  created_at: '2026-01-01T00:00:00.000Z',
+  updated_at: '2026-01-01T00:00:00.000Z',
+}
 
 // Build a fake GPX file. The real parser isn't exercised here; we stub out
 // `parseGpx` via deps so the test focuses on orchestration.
@@ -54,7 +94,7 @@ describe('importGpxFiles', () => {
 
   it('skips a duplicate when the user chooses skip', async () => {
     const deps = baseDeps()
-    deps.lookupRouteByHash = async () => ({ id: 'existing' } as never)
+    deps.lookupRouteByHash = async () => minimalRoute
     deps.promptDuplicate = async () => ({ choice: 'skip', applyToAll: false })
     const summary = await importGpxFiles([fakeFile('dup.gpx')], deps)
     expect(summary.duplicatesSkipped).toBe(1)
@@ -64,7 +104,7 @@ describe('importGpxFiles', () => {
 
   it('replaces a duplicate when the user chooses replace', async () => {
     const deps = baseDeps()
-    deps.lookupRouteByHash = async () => ({ id: 'existing-id' } as never)
+    deps.lookupRouteByHash = async () => minimalRoute
     deps.promptDuplicate = async () => ({ choice: 'replace', applyToAll: false })
     const summary = await importGpxFiles([fakeFile('dup.gpx')], deps)
     expect(summary.routesReplaced).toBe(1)
@@ -73,7 +113,7 @@ describe('importGpxFiles', () => {
 
   it('imports a duplicate as a new copy when chosen', async () => {
     const deps = baseDeps()
-    deps.lookupRouteByHash = async () => ({ id: 'existing-id' } as never)
+    deps.lookupRouteByHash = async () => minimalRoute
     deps.promptDuplicate = async () => ({ choice: 'new-copy', applyToAll: false })
     const summary = await importGpxFiles([fakeFile('dup.gpx')], deps)
     expect(summary.routesImported).toBe(1)
@@ -83,7 +123,7 @@ describe('importGpxFiles', () => {
 
   it('honors applyToAll across remaining files in the drop', async () => {
     const deps = baseDeps()
-    deps.lookupRouteByHash = async () => ({ id: 'existing' } as never)
+    deps.lookupRouteByHash = async () => minimalRoute
     let prompts = 0
     deps.promptDuplicate = async () => {
       prompts++
@@ -111,6 +151,9 @@ describe('importGpxFiles', () => {
     expect(summary.errors[0].filename).toBe('broken.gpx')
   })
 })
+
+// `minimalTrack` is defined for symmetry and future track-side duplicate tests.
+void minimalTrack
 
 // `DuplicateChoice` is a literal union, so the array annotation below would
 // fail typecheck if a string was misspelled — no runtime expect needed.

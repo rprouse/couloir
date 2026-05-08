@@ -25,7 +25,9 @@ export function showImportSummaryToast(
   if (summary.routesReplaced + summary.tracksReplaced > 0)
     parts.push(`${summary.routesReplaced + summary.tracksReplaced} replaced`)
   if (summary.duplicatesSkipped > 0)
-    parts.push(`${summary.duplicatesSkipped} duplicate skipped`)
+    parts.push(
+      `${summary.duplicatesSkipped} duplicate${summary.duplicatesSkipped === 1 ? '' : 's'} skipped`,
+    )
   if (summary.errors.length > 0)
     parts.push(`${summary.errors.length} error${summary.errors.length === 1 ? '' : 's'}`)
 

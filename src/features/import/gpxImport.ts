@@ -197,7 +197,9 @@ function toTrackInput(parsed: ParsedGpx, hash: string): NewTrackInput {
 }
 
 function parsedToRoutePatch(parsed: ParsedGpx, hash: string): RoutePatch {
-  if (parsed.kind !== 'route') return {}
+  if (parsed.kind !== 'route') {
+    throw new Error('parsedToRoutePatch called with non-route')
+  }
   // Replace overwrites geometry/derived fields and source metadata.
   // Name, description, color, ATES, technical difficulty, and tags are
   // preserved on the existing row — the user's edits should survive a
@@ -213,7 +215,9 @@ function parsedToRoutePatch(parsed: ParsedGpx, hash: string): RoutePatch {
 }
 
 function parsedToTrackPatch(parsed: ParsedGpx, hash: string): TrackPatch {
-  if (parsed.kind !== 'track') return {}
+  if (parsed.kind !== 'track') {
+    throw new Error('parsedToTrackPatch called with non-track')
+  }
   return {
     geojson: parsed.geojson,
     source_hash: hash,

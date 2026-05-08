@@ -69,9 +69,16 @@ function DialogShell({
 }) {
   const [applyToAll, setApplyToAll] = useState(false)
   return (
-    <div className={styles.backdrop} role="dialog" aria-modal="true">
+    <div
+      className={styles.backdrop}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="duplicate-prompt-title"
+    >
       <div className={styles.dialog}>
-        <h2 className={styles.title}>Already imported: {filename}</h2>
+        <h2 id="duplicate-prompt-title" className={styles.title}>
+          Already imported: {filename}
+        </h2>
         <p className={styles.subtle}>
           A previous import has the same file contents. Existing entry: <strong>{existingName}</strong>.
           Incoming: <strong>{parsedName}</strong>.

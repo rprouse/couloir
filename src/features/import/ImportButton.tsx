@@ -14,22 +14,6 @@ interface Props {
 export function ImportButton({ promptDuplicate }: Props): JSX.Element {
   const inputRef = useRef<HTMLInputElement | null>(null)
 
-  const handleFiles = async (files: File[]) => {
-    if (files.length === 0) return
-    const summary = await importGpxFiles(files, {
-      parseGpx,
-      hashBytes: sha256Hex,
-      lookupRouteByHash: (h) => getStorage().getRouteBySourceHash(h),
-      lookupTrackByHash: (h) => getStorage().getTrackBySourceHash(h),
-      saveRoute: useRoutesStore.getState().add,
-      saveTrack: useTracksStore.getState().add,
-      replaceRoute: useRoutesStore.getState().update,
-      replaceTrack: useTracksStore.getState().update,
-      promptDuplicate,
-    })
-    showImportSummaryToast(summary)
-  }
-
   return (
     <>
       <button
@@ -48,7 +32,7 @@ export function ImportButton({ promptDuplicate }: Props): JSX.Element {
           const files = Array.from(e.target.files ?? [])
           // Reset so picking the same file twice fires onChange again.
           e.target.value = ''
-          void handleFiles(files)
+          void runImport(files, promptDuplicate)
         }}
       />
     </>

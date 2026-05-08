@@ -51,4 +51,15 @@ describe('importToast', () => {
     expect(messages[0]).toBe('Nothing to import.')
     unsub()
   })
+
+  it('pluralises "duplicate" when more than one is skipped', () => {
+    const messages: (string | null)[] = []
+    const unsub = subscribeToast((m) => messages.push(m))
+    showImportSummaryToast({
+      ...empty(),
+      duplicatesSkipped: 3,
+    })
+    expect(messages[0]).toBe('3 duplicates skipped.')
+    unsub()
+  })
 })
