@@ -44,29 +44,6 @@ export interface ImportSummary {
   errors: Array<{ filename: string; error: string }>
 }
 
-// jsdom (used in tests) does not implement Blob.prototype.text /
-// Blob.prototype.arrayBuffer. Use FileReader as a fallback so the orchestrator
-// works in both browser and jsdom environments without modifying test setup.
-function blobToText(blob: Blob): Promise<string> {
-  if (typeof blob.text === 'function') return blob.text()
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(reader.error)
-    reader.readAsText(blob)
-  })
-}
-
-function blobToArrayBuffer(blob: Blob): Promise<ArrayBuffer> {
-  if (typeof blob.arrayBuffer === 'function') return blob.arrayBuffer()
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as ArrayBuffer)
-    reader.onerror = () => reject(reader.error)
-    reader.readAsArrayBuffer(blob)
-  })
-}
-
 export async function importGpxFiles(
   files: File[],
   deps: ImportDeps,
@@ -87,8 +64,8 @@ export async function importGpxFiles(
   for (let i = 0; i < files.length; i++) {
     const file = files[i]
     try {
-      const xml = await blobToText(file)
-      const bytes = new Uint8Array(await blobToArrayBuffer(file))
+      const xml = await file.text()
+      const bytes = new Uint8Array(await file.arrayBuffer())
       const parsed = deps.parseGpx(xml, file.name)
       const hash = await deps.hashBytes(bytes)
 
