@@ -15,6 +15,16 @@ interface TagsState {
   add: (input: NewTagInput) => Promise<Tag>
   update: (id: string, patch: Partial<Omit<Tag, 'id' | 'created_at'>>) => Promise<Tag>
   remove: (id: string) => Promise<void>
+
+  /**
+   * Storage-only path: writes the entity_tags junction rows for the given
+   * entity. Does NOT update the corresponding entity slice's in-memory
+   * `tags` array — callers that need the entity's local state to reflect
+   * the change should `await useXStore.getState().load()` after this. Most
+   * callers should use `useRoutesStore.update(id, { tags })` etc. instead;
+   * this action exists for the Phase 6.1 tag-management UI which changes
+   * tags without touching the entity row.
+   */
   setEntityTags: (entityType: EntityType, entityId: string, tagIds: string[]) => Promise<void>
 }
 

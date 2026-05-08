@@ -10,7 +10,10 @@ describe('tags store', () => {
     useTagsStore.setState({ tags: [], loading: false, error: null })
   })
 
-  afterEach(() => clearStorage())
+  afterEach(() => {
+    clearStorage()
+    vi.useRealTimers()
+  })
 
   it('add() generates id + created_at', async () => {
     vi.useFakeTimers()

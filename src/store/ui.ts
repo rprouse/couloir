@@ -142,6 +142,12 @@ export const useUiStore = create<UiState>((set, get) => ({
       cur.mode === 'waypoint'
         ? { lat, lng }
         : { lat, lng, blob_ref: '' /* set on save */ }
+    // FIXME(phase 5): the photo branch drops `cur.ctx.blob` when placement
+    // transitions to idle. The Phase 5 photo-create form needs the blob
+    // to persist somewhere — either stash it on the draft (requires a type
+    // extension), keep `placement.mode === 'photo'` while the create panel
+    // is open, or add a separate `pendingPhoto` slot. Decide when wiring
+    // up the actual create flow.
     set({
       placement: { mode: 'idle' },
       panel: { mode: 'create', entityType: cur.mode, draft },

@@ -29,7 +29,10 @@ describe('photos store', () => {
     usePhotosStore.setState({ photos: [], loading: false, error: null })
   })
 
-  afterEach(() => clearStorage())
+  afterEach(() => {
+    clearStorage()
+    vi.useRealTimers()
+  })
 
   it('add() seeds blob_ref from the generated id', async () => {
     const blob = new Blob(['full'])

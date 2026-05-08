@@ -23,7 +23,10 @@ describe('waypoints store', () => {
     useWaypointsStore.setState({ waypoints: [], loading: false, error: null })
   })
 
-  afterEach(() => clearStorage())
+  afterEach(() => {
+    clearStorage()
+    vi.useRealTimers()
+  })
 
   it('add() persists and round-trips through reload', async () => {
     const w = await useWaypointsStore.getState().add({ ...baseInput, name: 'Persisted' })

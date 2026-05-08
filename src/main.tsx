@@ -44,8 +44,9 @@ async function bootstrap(): Promise<void> {
 bootstrap().catch((err) => {
   // eslint-disable-next-line no-console
   console.error('[couloir] bootstrap failed:', err)
-  document.body.innerHTML =
-    '<pre style="color:#e6e8ec;background:#0e1014;padding:24px;font-family:ui-monospace">' +
-    'Couloir failed to start.\n\n' + String(err) +
-    '</pre>'
+  const pre = document.createElement('pre')
+  pre.style.cssText =
+    'color:#e6e8ec;background:#0e1014;padding:24px;font-family:ui-monospace'
+  pre.textContent = `Couloir failed to start.\n\n${String(err)}`
+  document.body.replaceChildren(pre)
 })

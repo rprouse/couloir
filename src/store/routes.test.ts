@@ -30,7 +30,10 @@ describe('routes store', () => {
     useRoutesStore.setState({ routes: [], loading: false, error: null })
   })
 
-  afterEach(() => clearStorage())
+  afterEach(() => {
+    clearStorage()
+    vi.useRealTimers()
+  })
 
   it('loads an empty list initially', async () => {
     await useRoutesStore.getState().load()

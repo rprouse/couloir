@@ -31,7 +31,10 @@ describe('tracks store', () => {
     useTracksStore.setState({ tracks: [], loading: false, error: null })
   })
 
-  afterEach(() => clearStorage())
+  afterEach(() => {
+    clearStorage()
+    vi.useRealTimers()
+  })
 
   it('add() persists and round-trips through reload', async () => {
     const t = await useTracksStore.getState().add({ ...baseInput, name: 'Persisted' })
