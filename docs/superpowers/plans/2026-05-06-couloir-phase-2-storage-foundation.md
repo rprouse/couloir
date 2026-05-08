@@ -91,7 +91,7 @@ couloir/
 
 This task ends with: the schema migration runs cleanly in the browser against a fresh OPFS database, the in-memory provider exists with empty stubs, and `npm test` + `npm run typecheck` pass.
 
-- [ ] **Step 2.1.1: Add `wa-sqlite` to dependencies**
+- [x] **Step 2.1.1: Add `wa-sqlite` to dependencies**
 
 Edit `package.json` `dependencies`:
 
@@ -108,7 +108,7 @@ Edit `package.json` `dependencies`:
 Run: `npm install`
 Expected: completes; `node_modules/wa-sqlite/dist/wa-sqlite.mjs` and `wa-sqlite.wasm` exist.
 
-- [ ] **Step 2.1.2: Update `vite.config.ts`**
+- [x] **Step 2.1.2: Update `vite.config.ts`**
 
 `wa-sqlite` ships its wasm next to the ES module factory. Pre-bundling it via Vite breaks the relative wasm load, and we want the wasm asset emitted into the build output unmodified. We also use `?worker` imports for the storage worker and need the worker to use the `es` format.
 
@@ -130,7 +130,7 @@ export default defineConfig({
 })
 ```
 
-- [ ] **Step 2.1.3: Write `src/storage/wa-sqlite.d.ts`** (ambient declarations — `wa-sqlite` ships no `.d.ts` in the npm bundle)
+- [x] **Step 2.1.3: Write `src/storage/wa-sqlite.d.ts`** (ambient declarations — `wa-sqlite` ships no `.d.ts` in the npm bundle)
 
 ```typescript
 // Minimal ambient module declarations for the wa-sqlite surface we use.
@@ -187,7 +187,7 @@ declare module 'wa-sqlite/dist/wa-sqlite.wasm?url' {
 }
 ```
 
-- [ ] **Step 2.1.4: Extend `src/types/index.ts`** with the full data model
+- [x] **Step 2.1.4: Extend `src/types/index.ts`** with the full data model
 
 Replace the existing file. The Phase 1 `Basemap` and `MAP_DEFAULTS` exports are preserved.
 
@@ -420,7 +420,7 @@ export const MAP_DEFAULTS = {
 export const APP_VERSION = '0.0.1'
 ```
 
-- [ ] **Step 2.1.5: Write `src/storage/errors.ts`**
+- [x] **Step 2.1.5: Write `src/storage/errors.ts`**
 
 ```typescript
 export class SchemaVersionError extends Error {
@@ -438,7 +438,7 @@ export class StorageNotInitializedError extends Error {
 }
 ```
 
-- [ ] **Step 2.1.6: Write `src/storage/interface.ts`**
+- [x] **Step 2.1.6: Write `src/storage/interface.ts`**
 
 ```typescript
 import type {
@@ -510,7 +510,7 @@ export interface StorageProvider {
 }
 ```
 
-- [ ] **Step 2.1.7: Write `src/storage/migrations/1.sql`** (verbatim copy of the schema in `DATA-MODEL.md`)
+- [x] **Step 2.1.7: Write `src/storage/migrations/1.sql`** (verbatim copy of the schema in `DATA-MODEL.md`)
 
 ```sql
 -- src/storage/migrations/1.sql
@@ -613,7 +613,7 @@ CREATE TABLE entity_tags (
 CREATE INDEX idx_entity_tags_tag ON entity_tags(tag_id);
 ```
 
-- [ ] **Step 2.1.8: Write `src/storage/migrations/index.ts`**
+- [x] **Step 2.1.8: Write `src/storage/migrations/index.ts`**
 
 Vite's `?raw` import suffix loads `.sql` files as plain text strings.
 
@@ -632,7 +632,7 @@ export const MIGRATIONS: readonly Migration[] = [
 ]
 ```
 
-- [ ] **Step 2.1.9: Write `src/utils/id.ts`**
+- [x] **Step 2.1.9: Write `src/utils/id.ts`**
 
 ```typescript
 // Thin wrapper around crypto.randomUUID(). Centralized so tests can mock it
@@ -643,7 +643,7 @@ export function newId(): string {
 }
 ```
 
-- [ ] **Step 2.1.10: Write the failing test `src/utils/id.test.ts`**
+- [x] **Step 2.1.10: Write the failing test `src/utils/id.test.ts`**
 
 ```typescript
 import { newId } from './id'
@@ -664,12 +664,12 @@ describe('newId', () => {
 })
 ```
 
-- [ ] **Step 2.1.11: Run the test, verify it passes**
+- [x] **Step 2.1.11: Run the test, verify it passes**
 
 Run: `npm test src/utils/id.test.ts`
 Expected: 2 tests passing.
 
-- [ ] **Step 2.1.12: Write `src/storage/workerProtocol.ts`**
+- [x] **Step 2.1.12: Write `src/storage/workerProtocol.ts`**
 
 The protocol intentionally exposes a small set of operations: pre-canned SQL is sent down with parameter arrays, and blob ops are explicit. There is no "open arbitrary SQL connection" surface — the worker is the gatekeeper.
 
@@ -705,7 +705,7 @@ export type Response =
   | { id: number; ok: false; error: string }
 ```
 
-- [ ] **Step 2.1.13: Write `src/storage/workerClient.ts`**
+- [x] **Step 2.1.13: Write `src/storage/workerClient.ts`**
 
 ```typescript
 import type {
@@ -793,7 +793,7 @@ export class WorkerClient {
 }
 ```
 
-- [ ] **Step 2.1.14: Write `src/storage/workerHost.ts`** — the worker entry
+- [x] **Step 2.1.14: Write `src/storage/workerHost.ts`** — the worker entry
 
 ```typescript
 /// <reference lib="webworker" />
@@ -1003,7 +1003,7 @@ scope.addEventListener('message', async (event: MessageEvent<Request>) => {
 })
 ```
 
-- [ ] **Step 2.1.15: Write `src/storage/opfs.ts`** (main-thread shell — only `init`/`close` for this task; CRUD methods are stubbed and land in 2.2–2.4)
+- [x] **Step 2.1.15: Write `src/storage/opfs.ts`** (main-thread shell — only `init`/`close` for this task; CRUD methods are stubbed and land in 2.2–2.4)
 
 ```typescript
 import type {
@@ -1090,7 +1090,7 @@ export class OPFSStorageProvider implements StorageProvider {
 }
 ```
 
-- [ ] **Step 2.1.16: Write `src/storage/memory.ts`** (skeleton — only init/close + stubbed CRUD; full impls land in 2.2–2.4)
+- [x] **Step 2.1.16: Write `src/storage/memory.ts`** (skeleton — only init/close + stubbed CRUD; full impls land in 2.2–2.4)
 
 ```typescript
 import type {
@@ -1179,12 +1179,12 @@ export class InMemoryStorageProvider implements StorageProvider {
 }
 ```
 
-- [ ] **Step 2.1.17: Run typecheck**
+- [x] **Step 2.1.17: Run typecheck**
 
 Run: `npm run typecheck`
 Expected: completes with no errors. (TypeScript is happy with the stubbed methods because each `throw` produces `never`, which is assignable to every return type.)
 
-- [ ] **Step 2.1.18: Run the full test suite**
+- [x] **Step 2.1.18: Run the full test suite**
 
 Run: `npm test`
 Expected: all existing Phase 1 tests still pass; the new `id.test.ts` passes too.
@@ -1254,11 +1254,11 @@ await root.removeEntry('couloir.db')
 
 Reload — schema is recreated cleanly at version 1.
 
-- [ ] **Step 2.1.22: Remove the smoke-test block from `src/main.tsx`**
+- [x] **Step 2.1.22: Remove the smoke-test block from `src/main.tsx`**
 
 Restore `src/main.tsx` to the Phase 1 state (no storage init — that lands properly in Task 2.5).
 
-- [ ] **Step 2.1.23: Commit**
+- [x] **Step 2.1.23: Commit**
 
 ```bash
 git add package.json package-lock.json vite.config.ts src/types/index.ts src/utils/id.ts src/utils/id.test.ts src/storage/
@@ -1289,7 +1289,7 @@ EOF
 
 `saveRoute(route)` and `saveTrack(track)` write the entity row **and** overwrite the `entity_tags` rows for that entity (same transaction in OPFS). The Zustand layer (Task 2.5) calls `saveRoute(route)` with `route.tags` populated and trusts the storage to persist both. `setEntityTags` remains on the interface for callers who want to change tags only — Phase 6.1 uses it.
 
-- [ ] **Step 2.2.1: Add internal helpers and route methods to `src/storage/memory.ts`**
+- [x] **Step 2.2.1: Add internal helpers and route methods to `src/storage/memory.ts`**
 
 Keep the existing class shell and replace the route stubs. Add the helpers as private methods.
 
@@ -1365,7 +1365,7 @@ Add the private helpers (place them at the bottom of the class):
   }
 ```
 
-- [ ] **Step 2.2.2: Replace track stubs in `src/storage/memory.ts`** with the same pattern as routes
+- [x] **Step 2.2.2: Replace track stubs in `src/storage/memory.ts`** with the same pattern as routes
 
 ```typescript
   // --- Tracks ---------------------------------------------------------------
@@ -1394,7 +1394,7 @@ Add the private helpers (place them at the bottom of the class):
   }
 ```
 
-- [ ] **Step 2.2.3: Write the failing test `src/storage/memory.test.ts`**
+- [x] **Step 2.2.3: Write the failing test `src/storage/memory.test.ts`**
 
 ```typescript
 import { InMemoryStorageProvider } from './memory'
@@ -1578,12 +1578,12 @@ describe('InMemoryStorageProvider — tracks', () => {
 })
 ```
 
-- [ ] **Step 2.2.4: Run the test, verify it passes**
+- [x] **Step 2.2.4: Run the test, verify it passes**
 
 Run: `npm test src/storage/memory.test.ts`
 Expected: 14 tests passing.
 
-- [ ] **Step 2.2.5: Add SQL helpers and route methods to `src/storage/opfs.ts`**
+- [x] **Step 2.2.5: Add SQL helpers and route methods to `src/storage/opfs.ts`**
 
 Replace the route stubs in `OPFSStorageProvider`. We'll also add private serialize/deserialize helpers and a tag-syncing helper.
 
@@ -1717,7 +1717,7 @@ You'll need to add the imports for `SqlOp`, `SqlRow`, `SqlValue`:
 import type { SqlOp, SqlRow, SqlValue } from './workerProtocol'
 ```
 
-- [ ] **Step 2.2.6: Replace the route stubs in `src/storage/opfs.ts`**
+- [x] **Step 2.2.6: Replace the route stubs in `src/storage/opfs.ts`**
 
 ```typescript
   // --- Routes ---------------------------------------------------------------
@@ -1775,7 +1775,7 @@ import type { SqlOp, SqlRow, SqlValue } from './workerProtocol'
   }
 ```
 
-- [ ] **Step 2.2.7: Replace the track stubs in `src/storage/opfs.ts`**
+- [x] **Step 2.2.7: Replace the track stubs in `src/storage/opfs.ts`**
 
 ```typescript
   // --- Tracks ---------------------------------------------------------------
@@ -1833,12 +1833,12 @@ import type { SqlOp, SqlRow, SqlValue } from './workerProtocol'
   }
 ```
 
-- [ ] **Step 2.2.8: Run typecheck and tests**
+- [x] **Step 2.2.8: Run typecheck and tests**
 
 Run: `npm run typecheck && npm test`
 Expected: typecheck clean; all tests still pass (the OPFS impl isn't tested in vitest, but the in-memory tests cover the contract).
 
-- [ ] **Step 2.2.9: Write `src/dev/devConsole.ts`**
+- [x] **Step 2.2.9: Write `src/dev/devConsole.ts`**
 
 ```typescript
 import type { StorageProvider } from '../storage/interface'
@@ -1932,7 +1932,7 @@ export function installDevConsole(storage: StorageProvider): void {
 }
 ```
 
-- [ ] **Step 2.2.10: Wire the dev console into `src/main.tsx`**
+- [x] **Step 2.2.10: Wire the dev console into `src/main.tsx`**
 
 Replace the file contents (the Phase 1 baseline plus the dev-only storage init):
 
@@ -2017,12 +2017,12 @@ dup.id === a.id                // -> true
 await __couloir.storage.deleteRoute(a.id)
 ```
 
-- [ ] **Step 2.2.14: Run typecheck and the full test suite once more**
+- [x] **Step 2.2.14: Run typecheck and the full test suite once more**
 
 Run: `npm run typecheck && npm test`
 Expected: clean.
 
-- [ ] **Step 2.2.15: Commit**
+- [x] **Step 2.2.15: Commit**
 
 ```bash
 git add src/storage/memory.ts src/storage/memory.test.ts src/storage/opfs.ts src/dev/devConsole.ts src/main.tsx
@@ -2050,7 +2050,7 @@ EOF
 
 `savePhoto(photo, blob, thumb)` writes both blobs (full-size at `photos/{id}.jpg`, thumb at `photos/{id}_thumb.jpg`) plus the metadata row. The OPFS implementation does the row write inside a transaction; the blob writes happen separately because they're file-system operations, not SQL. If the row write fails, the in-flight blobs are removed; if a blob write fails, the row write is not attempted (we go blobs-first → metadata-second so a failed blob doesn't leave dangling rows).
 
-- [ ] **Step 2.3.1: Replace the waypoint stubs in `src/storage/memory.ts`**
+- [x] **Step 2.3.1: Replace the waypoint stubs in `src/storage/memory.ts`**
 
 ```typescript
   // --- Waypoints ------------------------------------------------------------
@@ -2074,7 +2074,7 @@ EOF
   }
 ```
 
-- [ ] **Step 2.3.2: Replace the photo stubs in `src/storage/memory.ts`**
+- [x] **Step 2.3.2: Replace the photo stubs in `src/storage/memory.ts`**
 
 ```typescript
   // --- Photos ---------------------------------------------------------------
@@ -2108,7 +2108,7 @@ EOF
   }
 ```
 
-- [ ] **Step 2.3.3: Add waypoint and photo tests to `src/storage/memory.test.ts`**
+- [x] **Step 2.3.3: Add waypoint and photo tests to `src/storage/memory.test.ts`**
 
 Append after the existing `describe` blocks:
 
@@ -2251,12 +2251,12 @@ describe('InMemoryStorageProvider — photos', () => {
 })
 ```
 
-- [ ] **Step 2.3.4: Run the test, verify it passes**
+- [x] **Step 2.3.4: Run the test, verify it passes**
 
 Run: `npm test src/storage/memory.test.ts`
 Expected: 21 tests passing (the original 14 plus 7 new).
 
-- [ ] **Step 2.3.5: Add waypoint serializers to `src/storage/opfs.ts`**
+- [x] **Step 2.3.5: Add waypoint serializers to `src/storage/opfs.ts`**
 
 Inside the class, alongside the existing serializers:
 
@@ -2288,7 +2288,7 @@ Inside the class, alongside the existing serializers:
   }
 ```
 
-- [ ] **Step 2.3.6: Replace the waypoint stubs in `src/storage/opfs.ts`**
+- [x] **Step 2.3.6: Replace the waypoint stubs in `src/storage/opfs.ts`**
 
 ```typescript
   // --- Waypoints ------------------------------------------------------------
@@ -2334,7 +2334,7 @@ Inside the class, alongside the existing serializers:
   }
 ```
 
-- [ ] **Step 2.3.7: Add photo serializers to `src/storage/opfs.ts`**
+- [x] **Step 2.3.7: Add photo serializers to `src/storage/opfs.ts`**
 
 ```typescript
   private photoToRow(p: Photo): SqlValue[] {
@@ -2374,7 +2374,7 @@ Inside the class, alongside the existing serializers:
   }
 ```
 
-- [ ] **Step 2.3.8: Replace the photo stubs in `src/storage/opfs.ts`**
+- [x] **Step 2.3.8: Replace the photo stubs in `src/storage/opfs.ts`**
 
 ```typescript
   // --- Photos ---------------------------------------------------------------
@@ -2459,7 +2459,7 @@ Inside the class, alongside the existing serializers:
   }
 ```
 
-- [ ] **Step 2.3.9: Add waypoint and photo helpers to `src/dev/devConsole.ts`**
+- [x] **Step 2.3.9: Add waypoint and photo helpers to `src/dev/devConsole.ts`**
 
 Add these inside the `helper` object (alongside `createDummyRoute` etc.):
 
@@ -2542,7 +2542,7 @@ Update the import line at the top to add `Photo` and `Waypoint`:
 import type { Photo, Route, Track, Waypoint } from '../types'
 ```
 
-- [ ] **Step 2.3.10: Run typecheck and tests**
+- [x] **Step 2.3.10: Run typecheck and tests**
 
 Run: `npm run typecheck && npm test`
 Expected: clean.
@@ -2605,7 +2605,7 @@ await __couloir.storage.getPhotoThumb(all[0].id)   // -> null
 
 In DevTools → Application → OPFS → photos/, both files for this id are gone.
 
-- [ ] **Step 2.3.13: Commit**
+- [x] **Step 2.3.13: Commit**
 
 ```bash
 git add src/storage/memory.ts src/storage/memory.test.ts src/storage/opfs.ts src/dev/devConsole.ts
@@ -2633,7 +2633,7 @@ EOF
 
 `exportAll()` returns the in-memory bundle shape `{ bundle, photos, thumbs }` — Phase 6.4 wraps this in ZIP packaging. `importAll()` is additive: insert if missing, update if the bundle's `updated_at` is newer, skip otherwise. Re-importing the same bundle is a no-op.
 
-- [ ] **Step 2.4.1: Replace the tag stubs in `src/storage/memory.ts`**
+- [x] **Step 2.4.1: Replace the tag stubs in `src/storage/memory.ts`**
 
 ```typescript
   // --- Tags -----------------------------------------------------------------
@@ -2667,7 +2667,7 @@ EOF
   }
 ```
 
-- [ ] **Step 2.4.2: Implement `exportAll` / `importAll` in `src/storage/memory.ts`**
+- [x] **Step 2.4.2: Implement `exportAll` / `importAll` in `src/storage/memory.ts`**
 
 ```typescript
   // --- Backup ---------------------------------------------------------------
@@ -2789,7 +2789,7 @@ import { APP_VERSION } from '../types'
 import type { StorageProvider } from './interface'
 ```
 
-- [ ] **Step 2.4.3: Add tag tests to `src/storage/memory.test.ts`**
+- [x] **Step 2.4.3: Add tag tests to `src/storage/memory.test.ts`**
 
 Append:
 
@@ -2948,12 +2948,12 @@ describe('InMemoryStorageProvider — backup', () => {
 })
 ```
 
-- [ ] **Step 2.4.4: Run the test, verify it passes**
+- [x] **Step 2.4.4: Run the test, verify it passes**
 
 Run: `npm test src/storage/memory.test.ts`
 Expected: 32 tests passing.
 
-- [ ] **Step 2.4.5: Replace the tag stubs in `src/storage/opfs.ts`**
+- [x] **Step 2.4.5: Replace the tag stubs in `src/storage/opfs.ts`**
 
 ```typescript
   // --- Tags -----------------------------------------------------------------
@@ -2990,7 +2990,7 @@ Expected: 32 tests passing.
   }
 ```
 
-- [ ] **Step 2.4.6: Implement `exportAll` in `src/storage/opfs.ts`**
+- [x] **Step 2.4.6: Implement `exportAll` in `src/storage/opfs.ts`**
 
 ```typescript
   // --- Backup ---------------------------------------------------------------
@@ -3043,7 +3043,7 @@ Expected: 32 tests passing.
   }
 ```
 
-- [ ] **Step 2.4.7: Implement `importAll` in `src/storage/opfs.ts`**
+- [x] **Step 2.4.7: Implement `importAll` in `src/storage/opfs.ts`**
 
 `importAll` builds one big transaction with conditional `INSERT/UPDATE` per row driven by per-row `updated_at` checks. Photo blobs are written separately because they're file-system writes.
 
@@ -3200,7 +3200,7 @@ import type {
 import { APP_VERSION } from '../types'
 ```
 
-- [ ] **Step 2.4.8: Add backup helpers to `src/dev/devConsole.ts`**
+- [x] **Step 2.4.8: Add backup helpers to `src/dev/devConsole.ts`**
 
 Append to the `helper` object:
 
@@ -3228,7 +3228,7 @@ Append to the `helper` object:
     },
 ```
 
-- [ ] **Step 2.4.9: Run typecheck and tests**
+- [x] **Step 2.4.9: Run typecheck and tests**
 
 Run: `npm run typecheck && npm test`
 Expected: clean.
@@ -3285,7 +3285,7 @@ await __couloir.storage.deletePhoto(p.id)
 
 Expected: all assertions hold. A double-import does not produce duplicates.
 
-- [ ] **Step 2.4.12: Commit**
+- [x] **Step 2.4.12: Commit**
 
 ```bash
 git add src/storage/memory.ts src/storage/memory.test.ts src/storage/opfs.ts src/dev/devConsole.ts
@@ -3325,7 +3325,7 @@ The five entity slices follow an identical pattern: `load()` populates from stor
 
 The UI slice grows two new state machines (`PanelState`, `PlacementState`) implementing the actions catalogued in `ARCHITECTURE.md` "Panel and placement state". The `useEscapeKey()` hook owns ESC with the precedence in the same section.
 
-- [ ] **Step 2.5.1: Write `src/storage/provider.ts`**
+- [x] **Step 2.5.1: Write `src/storage/provider.ts`**
 
 ```typescript
 import type { StorageProvider } from './interface'
@@ -3348,7 +3348,7 @@ export function clearStorage(): void {
 }
 ```
 
-- [ ] **Step 2.5.2: Write `src/utils/time.ts`**
+- [x] **Step 2.5.2: Write `src/utils/time.ts`**
 
 ```typescript
 // Centralized "now" so tests can mock the clock with vi.useFakeTimers().
@@ -3358,7 +3358,7 @@ export function now(): string {
 }
 ```
 
-- [ ] **Step 2.5.3: Write the failing test `src/utils/time.test.ts`**
+- [x] **Step 2.5.3: Write the failing test `src/utils/time.test.ts`**
 
 ```typescript
 import { now } from './time'
@@ -3377,12 +3377,12 @@ describe('now', () => {
 })
 ```
 
-- [ ] **Step 2.5.4: Run the test, verify it passes**
+- [x] **Step 2.5.4: Run the test, verify it passes**
 
 Run: `npm test src/utils/time.test.ts`
 Expected: 2 tests passing.
 
-- [ ] **Step 2.5.5: Write `src/store/routes.ts`**
+- [x] **Step 2.5.5: Write `src/store/routes.ts`**
 
 ```typescript
 import { create } from 'zustand'
@@ -3443,7 +3443,7 @@ export const useRoutesStore = create<RoutesState>((set, get) => ({
 }))
 ```
 
-- [ ] **Step 2.5.6: Write the failing test `src/store/routes.test.ts`**
+- [x] **Step 2.5.6: Write the failing test `src/store/routes.test.ts`**
 
 ```typescript
 import { useRoutesStore } from './routes'
@@ -3541,12 +3541,12 @@ describe('routes store', () => {
 })
 ```
 
-- [ ] **Step 2.5.7: Run the test, verify it passes**
+- [x] **Step 2.5.7: Run the test, verify it passes**
 
 Run: `npm test src/store/routes.test.ts`
 Expected: 6 tests passing.
 
-- [ ] **Step 2.5.8: Write `src/store/tracks.ts`** (same shape as routes.ts)
+- [x] **Step 2.5.8: Write `src/store/tracks.ts`** (same shape as routes.ts)
 
 ```typescript
 import { create } from 'zustand'
@@ -3607,7 +3607,7 @@ export const useTracksStore = create<TracksState>((set, get) => ({
 }))
 ```
 
-- [ ] **Step 2.5.9: Write `src/store/tracks.test.ts`** (mirror of routes.test.ts — covers add+load round-trip and update advancing updated_at)
+- [x] **Step 2.5.9: Write `src/store/tracks.test.ts`** (mirror of routes.test.ts — covers add+load round-trip and update advancing updated_at)
 
 ```typescript
 import { useTracksStore } from './tracks'
@@ -3670,12 +3670,12 @@ describe('tracks store', () => {
 })
 ```
 
-- [ ] **Step 2.5.10: Run the tracks test, verify it passes**
+- [x] **Step 2.5.10: Run the tracks test, verify it passes**
 
 Run: `npm test src/store/tracks.test.ts`
 Expected: 3 tests passing.
 
-- [ ] **Step 2.5.11: Write `src/store/waypoints.ts`**
+- [x] **Step 2.5.11: Write `src/store/waypoints.ts`**
 
 ```typescript
 import { create } from 'zustand'
@@ -3736,7 +3736,7 @@ export const useWaypointsStore = create<WaypointsState>((set, get) => ({
 }))
 ```
 
-- [ ] **Step 2.5.12: Write `src/store/waypoints.test.ts`**
+- [x] **Step 2.5.12: Write `src/store/waypoints.test.ts`**
 
 ```typescript
 import { useWaypointsStore } from './waypoints'
@@ -3793,12 +3793,12 @@ describe('waypoints store', () => {
 })
 ```
 
-- [ ] **Step 2.5.13: Run the waypoints test, verify it passes**
+- [x] **Step 2.5.13: Run the waypoints test, verify it passes**
 
 Run: `npm test src/store/waypoints.test.ts`
 Expected: 3 tests passing.
 
-- [ ] **Step 2.5.14: Write `src/store/photos.ts`**
+- [x] **Step 2.5.14: Write `src/store/photos.ts`**
 
 The photos store differs from the others: `add()` takes the full blob and thumb in addition to the metadata input. The store sets `blob_ref` based on the generated id.
 
@@ -3878,7 +3878,7 @@ export const usePhotosStore = create<PhotosState>((set, get) => ({
 }))
 ```
 
-- [ ] **Step 2.5.15: Write `src/store/photos.test.ts`**
+- [x] **Step 2.5.15: Write `src/store/photos.test.ts`**
 
 ```typescript
 import { usePhotosStore } from './photos'
@@ -3947,12 +3947,12 @@ describe('photos store', () => {
 })
 ```
 
-- [ ] **Step 2.5.16: Run the photos test, verify it passes**
+- [x] **Step 2.5.16: Run the photos test, verify it passes**
 
 Run: `npm test src/store/photos.test.ts`
 Expected: 3 tests passing.
 
-- [ ] **Step 2.5.17: Write `src/store/tags.ts`**
+- [x] **Step 2.5.17: Write `src/store/tags.ts`**
 
 ```typescript
 import { create } from 'zustand'
@@ -4017,7 +4017,7 @@ export const useTagsStore = create<TagsState>((set, get) => ({
 }))
 ```
 
-- [ ] **Step 2.5.18: Write `src/store/tags.test.ts`**
+- [x] **Step 2.5.18: Write `src/store/tags.test.ts`**
 
 ```typescript
 import { useTagsStore } from './tags'
@@ -4058,12 +4058,12 @@ describe('tags store', () => {
 })
 ```
 
-- [ ] **Step 2.5.19: Run the tags test, verify it passes**
+- [x] **Step 2.5.19: Run the tags test, verify it passes**
 
 Run: `npm test src/store/tags.test.ts`
 Expected: 3 tests passing.
 
-- [ ] **Step 2.5.20: Extend `src/store/ui.ts`** with the panel + placement state machines
+- [x] **Step 2.5.20: Extend `src/store/ui.ts`** with the panel + placement state machines
 
 Replace the file with:
 
@@ -4226,7 +4226,7 @@ export const useUiStore = create<UiState>((set, get) => ({
 }))
 ```
 
-- [ ] **Step 2.5.21: Extend `src/store/ui.test.ts`** with panel + placement coverage
+- [x] **Step 2.5.21: Extend `src/store/ui.test.ts`** with panel + placement coverage
 
 Append after the existing tests:
 
@@ -4346,12 +4346,12 @@ describe('ui store — placement state machine', () => {
 })
 ```
 
-- [ ] **Step 2.5.22: Run the full ui store test, verify it passes**
+- [x] **Step 2.5.22: Run the full ui store test, verify it passes**
 
 Run: `npm test src/store/ui.test.ts`
 Expected: previous Phase 1 tests still pass; the 11 new panel/placement tests pass.
 
-- [ ] **Step 2.5.23: Write `src/hooks/useEscapeKey.ts`**
+- [x] **Step 2.5.23: Write `src/hooks/useEscapeKey.ts`**
 
 ```typescript
 import { useEffect } from 'react'
@@ -4395,7 +4395,7 @@ export function useEscapeKey(): void {
 }
 ```
 
-- [ ] **Step 2.5.24: Write the failing test `src/hooks/useEscapeKey.test.tsx`**
+- [x] **Step 2.5.24: Write the failing test `src/hooks/useEscapeKey.test.tsx`**
 
 ```typescript
 import { render } from '@testing-library/react'
@@ -4467,12 +4467,12 @@ describe('useEscapeKey precedence', () => {
 })
 ```
 
-- [ ] **Step 2.5.25: Run the ESC hook test, verify it passes**
+- [x] **Step 2.5.25: Run the ESC hook test, verify it passes**
 
 Run: `npm test src/hooks/useEscapeKey.test.tsx`
 Expected: 5 tests passing.
 
-- [ ] **Step 2.5.26: Mount the ESC hook in `src/App.tsx`**
+- [x] **Step 2.5.26: Mount the ESC hook in `src/App.tsx`**
 
 ```typescript
 import styles from './App.module.css'
@@ -4500,7 +4500,7 @@ export default function App() {
 }
 ```
 
-- [ ] **Step 2.5.27: Replace `src/main.tsx`** with the production bootstrap
+- [x] **Step 2.5.27: Replace `src/main.tsx`** with the production bootstrap
 
 ```typescript
 import React from 'react'
@@ -4556,7 +4556,7 @@ bootstrap().catch((err) => {
 })
 ```
 
-- [ ] **Step 2.5.28: Run typecheck and the full test suite**
+- [x] **Step 2.5.28: Run typecheck and the full test suite**
 
 Run: `npm run typecheck && npm test`
 Expected: clean. The full suite now contains route/track/waypoint/photo/tag store tests (~18 new), ui state-machine tests (11 new), the ESC hook (5 new), `time` (2 new) — plus everything from Phase 1 and Tasks 2.1–2.4.
@@ -4640,7 +4640,7 @@ ui.getState().panel.mode                  // -> 'idle' (now closed)
 
 Expected: every transition matches.
 
-- [ ] **Step 2.5.31: Commit**
+- [x] **Step 2.5.31: Commit**
 
 ```bash
 git add src/storage/provider.ts src/utils/time.ts src/utils/time.test.ts src/store/ src/hooks/ src/main.tsx src/App.tsx
