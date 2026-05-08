@@ -91,7 +91,7 @@ couloir/
 
 This task ends with: the schema migration runs cleanly in the browser against a fresh OPFS database, the in-memory provider exists with empty stubs, and `npm test` + `npm run typecheck` pass.
 
-- [ ] **Step 2.1.1: Add `wa-sqlite` to dependencies**
+- [x] **Step 2.1.1: Add `wa-sqlite` to dependencies**
 
 Edit `package.json` `dependencies`:
 
@@ -108,7 +108,7 @@ Edit `package.json` `dependencies`:
 Run: `npm install`
 Expected: completes; `node_modules/wa-sqlite/dist/wa-sqlite.mjs` and `wa-sqlite.wasm` exist.
 
-- [ ] **Step 2.1.2: Update `vite.config.ts`**
+- [x] **Step 2.1.2: Update `vite.config.ts`**
 
 `wa-sqlite` ships its wasm next to the ES module factory. Pre-bundling it via Vite breaks the relative wasm load, and we want the wasm asset emitted into the build output unmodified. We also use `?worker` imports for the storage worker and need the worker to use the `es` format.
 
@@ -130,7 +130,7 @@ export default defineConfig({
 })
 ```
 
-- [ ] **Step 2.1.3: Write `src/storage/wa-sqlite.d.ts`** (ambient declarations — `wa-sqlite` ships no `.d.ts` in the npm bundle)
+- [x] **Step 2.1.3: Write `src/storage/wa-sqlite.d.ts`** (ambient declarations — `wa-sqlite` ships no `.d.ts` in the npm bundle)
 
 ```typescript
 // Minimal ambient module declarations for the wa-sqlite surface we use.
@@ -187,7 +187,7 @@ declare module 'wa-sqlite/dist/wa-sqlite.wasm?url' {
 }
 ```
 
-- [ ] **Step 2.1.4: Extend `src/types/index.ts`** with the full data model
+- [x] **Step 2.1.4: Extend `src/types/index.ts`** with the full data model
 
 Replace the existing file. The Phase 1 `Basemap` and `MAP_DEFAULTS` exports are preserved.
 
@@ -420,7 +420,7 @@ export const MAP_DEFAULTS = {
 export const APP_VERSION = '0.0.1'
 ```
 
-- [ ] **Step 2.1.5: Write `src/storage/errors.ts`**
+- [x] **Step 2.1.5: Write `src/storage/errors.ts`**
 
 ```typescript
 export class SchemaVersionError extends Error {
@@ -438,7 +438,7 @@ export class StorageNotInitializedError extends Error {
 }
 ```
 
-- [ ] **Step 2.1.6: Write `src/storage/interface.ts`**
+- [x] **Step 2.1.6: Write `src/storage/interface.ts`**
 
 ```typescript
 import type {
@@ -510,7 +510,7 @@ export interface StorageProvider {
 }
 ```
 
-- [ ] **Step 2.1.7: Write `src/storage/migrations/1.sql`** (verbatim copy of the schema in `DATA-MODEL.md`)
+- [x] **Step 2.1.7: Write `src/storage/migrations/1.sql`** (verbatim copy of the schema in `DATA-MODEL.md`)
 
 ```sql
 -- src/storage/migrations/1.sql
@@ -613,7 +613,7 @@ CREATE TABLE entity_tags (
 CREATE INDEX idx_entity_tags_tag ON entity_tags(tag_id);
 ```
 
-- [ ] **Step 2.1.8: Write `src/storage/migrations/index.ts`**
+- [x] **Step 2.1.8: Write `src/storage/migrations/index.ts`**
 
 Vite's `?raw` import suffix loads `.sql` files as plain text strings.
 
@@ -632,7 +632,7 @@ export const MIGRATIONS: readonly Migration[] = [
 ]
 ```
 
-- [ ] **Step 2.1.9: Write `src/utils/id.ts`**
+- [x] **Step 2.1.9: Write `src/utils/id.ts`**
 
 ```typescript
 // Thin wrapper around crypto.randomUUID(). Centralized so tests can mock it
@@ -643,7 +643,7 @@ export function newId(): string {
 }
 ```
 
-- [ ] **Step 2.1.10: Write the failing test `src/utils/id.test.ts`**
+- [x] **Step 2.1.10: Write the failing test `src/utils/id.test.ts`**
 
 ```typescript
 import { newId } from './id'
@@ -664,12 +664,12 @@ describe('newId', () => {
 })
 ```
 
-- [ ] **Step 2.1.11: Run the test, verify it passes**
+- [x] **Step 2.1.11: Run the test, verify it passes**
 
 Run: `npm test src/utils/id.test.ts`
 Expected: 2 tests passing.
 
-- [ ] **Step 2.1.12: Write `src/storage/workerProtocol.ts`**
+- [x] **Step 2.1.12: Write `src/storage/workerProtocol.ts`**
 
 The protocol intentionally exposes a small set of operations: pre-canned SQL is sent down with parameter arrays, and blob ops are explicit. There is no "open arbitrary SQL connection" surface — the worker is the gatekeeper.
 
@@ -705,7 +705,7 @@ export type Response =
   | { id: number; ok: false; error: string }
 ```
 
-- [ ] **Step 2.1.13: Write `src/storage/workerClient.ts`**
+- [x] **Step 2.1.13: Write `src/storage/workerClient.ts`**
 
 ```typescript
 import type {
@@ -793,7 +793,7 @@ export class WorkerClient {
 }
 ```
 
-- [ ] **Step 2.1.14: Write `src/storage/workerHost.ts`** — the worker entry
+- [x] **Step 2.1.14: Write `src/storage/workerHost.ts`** — the worker entry
 
 ```typescript
 /// <reference lib="webworker" />
@@ -1003,7 +1003,7 @@ scope.addEventListener('message', async (event: MessageEvent<Request>) => {
 })
 ```
 
-- [ ] **Step 2.1.15: Write `src/storage/opfs.ts`** (main-thread shell — only `init`/`close` for this task; CRUD methods are stubbed and land in 2.2–2.4)
+- [x] **Step 2.1.15: Write `src/storage/opfs.ts`** (main-thread shell — only `init`/`close` for this task; CRUD methods are stubbed and land in 2.2–2.4)
 
 ```typescript
 import type {
@@ -1090,7 +1090,7 @@ export class OPFSStorageProvider implements StorageProvider {
 }
 ```
 
-- [ ] **Step 2.1.16: Write `src/storage/memory.ts`** (skeleton — only init/close + stubbed CRUD; full impls land in 2.2–2.4)
+- [x] **Step 2.1.16: Write `src/storage/memory.ts`** (skeleton — only init/close + stubbed CRUD; full impls land in 2.2–2.4)
 
 ```typescript
 import type {
@@ -1179,12 +1179,12 @@ export class InMemoryStorageProvider implements StorageProvider {
 }
 ```
 
-- [ ] **Step 2.1.17: Run typecheck**
+- [x] **Step 2.1.17: Run typecheck**
 
 Run: `npm run typecheck`
 Expected: completes with no errors. (TypeScript is happy with the stubbed methods because each `throw` produces `never`, which is assignable to every return type.)
 
-- [ ] **Step 2.1.18: Run the full test suite**
+- [x] **Step 2.1.18: Run the full test suite**
 
 Run: `npm test`
 Expected: all existing Phase 1 tests still pass; the new `id.test.ts` passes too.
@@ -1254,11 +1254,11 @@ await root.removeEntry('couloir.db')
 
 Reload — schema is recreated cleanly at version 1.
 
-- [ ] **Step 2.1.22: Remove the smoke-test block from `src/main.tsx`**
+- [x] **Step 2.1.22: Remove the smoke-test block from `src/main.tsx`**
 
 Restore `src/main.tsx` to the Phase 1 state (no storage init — that lands properly in Task 2.5).
 
-- [ ] **Step 2.1.23: Commit**
+- [x] **Step 2.1.23: Commit**
 
 ```bash
 git add package.json package-lock.json vite.config.ts src/types/index.ts src/utils/id.ts src/utils/id.test.ts src/storage/

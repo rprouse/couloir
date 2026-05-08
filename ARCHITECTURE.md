@@ -17,7 +17,7 @@
 | Language | TypeScript | Type safety is worth it for a data-model-heavy app |
 | Map renderer | MapLibre GL JS | Open source, Maptiler-compatible, excellent 3D terrain support |
 | Terrain & tiles | Maptiler | RGB terrain tiles, satellite, topo, and winter basemaps |
-| Local database | wa-sqlite with `OPFSCoopSyncVFS` | Stable (1.0+), does not require COOP/COEP cross-origin-isolation, recommended in late-2025 sources for general-purpose browser SQLite |
+| Local database | wa-sqlite (async build) with `OriginPrivateFileSystemVFS` | wa-sqlite 1.0.0 on npm doesn't ship `OPFSCoopSyncVFS`, so we use the async-build OPFS VFS that does ship; it has the same architectural properties (no COOP/COEP requirement, OPFS access handles serialized via WebLocks) |
 | Photo storage | OPFS blobs alongside SQLite | Self-contained, no server required |
 | State management | Zustand | Lightweight, no boilerplate, works well with async storage layer |
 | Styling | CSS Modules + CSS custom properties | Scoped styles, no runtime cost, easy theming |
@@ -41,9 +41,19 @@ couloir/
 │   ├── App.tsx                # Root component, layout shell
 │   ├── storage/
 │   │   ├── interface.ts       # StorageProvider interface (the abstraction)
-│   │   ├── opfs.ts            # OPFS + wa-sqlite implementation
+│   │   ├── errors.ts          # SchemaVersionError, StorageNotInitializedError
+│   │   ├── provider.ts        # getStorage / setStorage DI seam
+│   │   ├── memory.ts          # InMemoryStorageProvider (used by tests)
+│   │   ├── opfs.ts            # OPFSStorageProvider main-thread shell (RPC client)
+│   │   ├── workerProtocol.ts  # Wire types between main thread and worker
+│   │   ├── workerClient.ts    # postMessage RPC wrapper (rejects pending on worker death, rehydrates SchemaVersionError)
+│   │   ├── workerHost.ts      # Worker entry: wa-sqlite + OPFS VFS + ensureSchema + blob ops
+│   │   ├── wa-sqlite.d.ts     # Ambient declarations for the wa-sqlite surface we use
 │   │   └── migrations/
-│   │       └── 1.sql          # Initial schema (source of truth for v1)
+│   │       ├── 1.sql          # Initial schema (source of truth for v1)
+│   │       └── index.ts       # MIGRATIONS list + SCHEMA_VERSION constant
+│   ├── dev/
+│   │   └── devConsole.ts      # window.__couloir helper, dev-only
 │   ├── store/
 │   │   ├── index.ts           # Zustand store root
 │   │   ├── routes.ts          # Route slice
@@ -156,12 +166,13 @@ The OPFS implementation (`src/storage/opfs.ts`) is the only file that contains S
 
 ## VFS Choice and OPFS Caveats
 
-The `OPFSCoopSyncVFS` is `wa-sqlite`'s general-purpose OPFS backend. Two important properties:
+We use `wa-sqlite`'s `OriginPrivateFileSystemVFS` paired with the async `wa-sqlite-async.mjs` build. (The plan originally specified `OPFSCoopSyncVFS` but that VFS only ships in unreleased wa-sqlite versions; the published 1.0.0 npm package only carries `OriginPrivateFileSystemVFS`. The substitute preserves the relevant architectural properties.) Three important properties:
 
 - It does **not** require COOP/COEP (cross-origin-isolation) headers. The Vite dev server can stay simple, and third-party iframes/images keep working.
-- It uses a single dedicated database worker per page. Opening Couloir in two tabs at once will cause the second tab to fail to acquire the access handle. Acceptable for a single-user app; not acceptable for multi-tab use without coordination.
+- It serializes access to the database file via OPFS sync access handles + Web Locks, which makes it effectively single-tab. Opening Couloir in two tabs at once will cause the second tab's `init()` to block (or fail) when the first holds the access handle. Acceptable for a single-user app; not acceptable for multi-tab use without coordination.
+- The async build forwards every wa-sqlite operation through a worker round-trip. Latency overhead is small for the CRUD-heavy workload Couloir produces.
 
-**Browser support caveats**:
+**Browser support caveats:**
 
 - **Safari incognito**: OPFS is unavailable. The app cannot operate in Safari private browsing.
 - **Chrome incognito**: 100 MB OPFS quota cap.

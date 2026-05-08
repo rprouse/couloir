@@ -154,8 +154,11 @@ export interface BackupManifest {
 -- Forward-compatible with Postgres when cloud sync is added.
 -- Avoid SQLite-specific types; use plain TEXT/REAL/INTEGER.
 
-PRAGMA journal_mode = WAL;
-PRAGMA foreign_keys = ON;
+-- Note: PRAGMAs are intentionally NOT in this migration.
+-- `PRAGMA foreign_keys = ON` is connection-scoped, so we run it from
+-- workerHost.ts on every open() rather than once during migration.
+-- We do not enable WAL because the async OPFS VFS we use does not
+-- support it (WAL needs sync access handles).
 
 CREATE TABLE schema_version (
   version     INTEGER PRIMARY KEY,
