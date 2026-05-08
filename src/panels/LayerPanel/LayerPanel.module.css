@@ -47,3 +47,22 @@
   min-width: 24px;
   text-align: right;
 }
+
+.actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.actions button {
+  background: var(--color-bg-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  font: inherit;
+}
+
+.actions button:hover {
+  background: var(--color-bg-1);
+}

@@ -1,23 +1,59 @@
+import { useCallback, useEffect, useState } from 'react'
 import styles from './App.module.css'
 import { Sidebar } from './panels/Sidebar'
 import { MapView } from './map/MapView'
 import { SettingsPanel } from './panels/SettingsPanel/SettingsPanel'
 import { LayerPanel } from './panels/LayerPanel/LayerPanel'
 import { useEscapeKey } from './hooks/useEscapeKey'
+import { FileDropzone } from './components/FileDropzone/FileDropzone'
+import { DuplicatePrompt, type DuplicatePromptHandle } from './features/import/DuplicatePrompt'
+import { runImport } from './features/import/ImportButton'
+import { subscribeToast } from './features/import/importToast'
 
 export default function App() {
   useEscapeKey()
+
+  const [promptHandle, setPromptHandle] = useState<DuplicatePromptHandle | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+
+  useEffect(() => subscribeToast(setToast), [])
+
+  // Stable callback so LayerPanel/dropzone don't re-bind on every render.
+  // If the handle isn't ready (StrictMode double-render edge), the prompt
+  // resolves immediately to 'skip' as a safe default.
+  const promptDuplicate = useCallback(
+    async (args: Parameters<DuplicatePromptHandle['enqueue']>[0]) => {
+      if (!promptHandle) return { choice: 'skip' as const, applyToAll: false }
+      return promptHandle.enqueue(args)
+    },
+    [promptHandle],
+  )
+
+  const onDropFiles = useCallback(
+    (files: File[]) => {
+      void runImport(files, promptDuplicate)
+    },
+    [promptDuplicate],
+  )
+
   return (
     <div className={styles.app}>
       <Sidebar
         panels={{
-          layers:   <LayerPanel />,
+          layers:   <LayerPanel promptDuplicate={promptDuplicate} />,
           settings: <SettingsPanel />,
         }}
       />
       <div data-testid="map-area" className={styles.mapArea}>
         <MapView />
+        <FileDropzone onFiles={onDropFiles} />
+        {toast && (
+          <div role="status" aria-live="polite" className={styles.toast}>
+            {toast}
+          </div>
+        )}
       </div>
+      <DuplicatePrompt onReady={setPromptHandle} />
     </div>
   )
 }

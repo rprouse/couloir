@@ -1,5 +1,7 @@
 import styles from './LayerPanel.module.css'
 import { useUiStore, type LayerKey } from '../../store/ui'
+import { ImportButton } from '../../features/import/ImportButton'
+import type { DuplicateDecision, DuplicatePromptArgs } from '../../features/import/gpxImport'
 
 interface RowDef {
   key: LayerKey
@@ -7,10 +9,6 @@ interface RowDef {
   color: string
 }
 
-// Colors mirror DEFAULTS.route.color / DEFAULTS.track.color from DATA-MODEL.md
-// and the DEFAULT clauses in the SQLite schema. Phase 2 will create a real
-// constants module; replace these literals with imports from there once that
-// lands so the values live in one place.
 const ROWS: ReadonlyArray<RowDef> = [
   { key: 'routes',    label: 'Routes',    color: '#E05C2A' },
   { key: 'tracks',    label: 'Tracks',    color: '#2A7BE0' },
@@ -18,13 +16,20 @@ const ROWS: ReadonlyArray<RowDef> = [
   { key: 'photos',    label: 'Photos',    color: '#94A3B8' },
 ]
 
-export function LayerPanel() {
+interface Props {
+  promptDuplicate: (args: DuplicatePromptArgs) => Promise<DuplicateDecision>
+}
+
+export function LayerPanel({ promptDuplicate }: Props) {
   const visibility = useUiStore((s) => s.layerVisibility)
   const toggleLayer = useUiStore((s) => s.toggleLayer)
 
   return (
     <div className={styles.panel}>
       <h2 className={styles.heading}>Layers</h2>
+      <div className={styles.actions}>
+        <ImportButton promptDuplicate={promptDuplicate} />
+      </div>
       <ul className={styles.rows}>
         {ROWS.map((row) => {
           const inputId = `layer-toggle-${row.key}`

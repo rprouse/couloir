@@ -34,8 +34,8 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 
 ### Phase 3 — Routes and Tracks  ·  Plan: not yet written
 
-- [ ] [3.1 GPX parser](#task-31---gpx-parser)
-- [ ] [3.2 GPX import UI](#task-32---gpx-import-ui)
+- [x] [3.1 GPX parser](#task-31---gpx-parser)
+- [x] [3.2 GPX import UI](#task-32---gpx-import-ui)
 - [ ] [3.3 Routes layer](#task-33---routes-layer)
 - [ ] [3.4 Tracks layer](#task-34---tracks-layer)
 - [ ] [3.5 Route detail panel](#task-35---route-detail-panel)
