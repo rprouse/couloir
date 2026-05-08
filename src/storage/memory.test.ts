@@ -1,5 +1,5 @@
 import { InMemoryStorageProvider } from './memory'
-import type { Photo, Route, Track, Waypoint } from '../types'
+import type { Photo, Route, Tag, Track, Waypoint } from '../types'
 
 const FIXED_GEOJSON = {
   type: 'LineString' as const,
@@ -328,5 +328,160 @@ describe('InMemoryStorageProvider — photos', () => {
     expect(await storage.getPhoto(photo.id)).toBeNull()
     expect(await storage.getPhotoBlob(photo.id)).toBeNull()
     expect(await storage.getPhotoThumb(photo.id)).toBeNull()
+  })
+})
+
+function buildTag(overrides: Partial<Tag> = {}): Tag {
+  return {
+    id: 'tag-1',
+    name: 'Steep',
+    color: '#FF8800',
+    created_at: '2026-05-06T12:00:00.000Z',
+    ...overrides,
+  }
+}
+
+describe('InMemoryStorageProvider — tags', () => {
+  let storage: InMemoryStorageProvider
+
+  beforeEach(async () => {
+    storage = new InMemoryStorageProvider()
+    await storage.init()
+  })
+
+  it('saves and reads tags sorted by name', async () => {
+    await storage.saveTag(buildTag({ id: 'b', name: 'Mellow' }))
+    await storage.saveTag(buildTag({ id: 'a', name: 'Aggressive' }))
+    const all = await storage.getTags()
+    expect(all.map(t => t.id)).toEqual(['a', 'b'])
+  })
+
+  it('overwrites a tag on save with same id', async () => {
+    await storage.saveTag(buildTag({ name: 'Old' }))
+    await storage.saveTag(buildTag({ name: 'New' }))
+    const all = await storage.getTags()
+    expect(all).toHaveLength(1)
+    expect(all[0].name).toBe('New')
+  })
+
+  it('deletes a tag and removes its junction rows', async () => {
+    await storage.saveTag(buildTag())
+    await storage.saveRoute(buildRoute({ tags: ['tag-1'] }))
+    await storage.deleteTag('tag-1')
+
+    expect(await storage.getTags()).toEqual([])
+    const route = await storage.getRoute('route-1')
+    expect(route?.tags).toEqual([])
+  })
+
+  it('setEntityTags replaces the entity-tag link list', async () => {
+    await storage.saveRoute(buildRoute({ tags: ['t1', 't2'] }))
+    await storage.setEntityTags('route', 'route-1', ['t3'])
+    const fresh = await storage.getRoute('route-1')
+    expect(fresh?.tags).toEqual(['t3'])
+  })
+})
+
+describe('InMemoryStorageProvider — backup', () => {
+  let storage: InMemoryStorageProvider
+
+  beforeEach(async () => {
+    storage = new InMemoryStorageProvider()
+    await storage.init()
+  })
+
+  it('exports an empty bundle for a fresh store', async () => {
+    const { bundle, photos, thumbs } = await storage.exportAll()
+    expect(bundle.bundle_version).toBe(1)
+    expect(bundle.routes).toEqual([])
+    expect(bundle.entity_tags).toEqual([])
+    expect(photos.size).toBe(0)
+    expect(thumbs.size).toBe(0)
+  })
+
+  it('round-trips routes, tags, and entity_tags through export+import', async () => {
+    await storage.saveTag(buildTag())
+    await storage.saveRoute(buildRoute({ tags: ['tag-1'] }))
+    const exported = await storage.exportAll()
+
+    const fresh = new InMemoryStorageProvider()
+    await fresh.init()
+    await fresh.importAll(exported.bundle, exported.photos, exported.thumbs)
+
+    const route = await fresh.getRoute('route-1')
+    expect(route?.tags).toEqual(['tag-1'])
+    const tags = await fresh.getTags()
+    expect(tags.map(t => t.id)).toEqual(['tag-1'])
+  })
+
+  it('round-trips photo blobs through export+import', async () => {
+    const photo = buildPhoto()
+    const fullBlob = new Blob(['full-bytes'], { type: 'image/jpeg' })
+    const thumbBlob = new Blob(['thumb-bytes'], { type: 'image/jpeg' })
+    await storage.savePhoto(photo, fullBlob, thumbBlob)
+    const exported = await storage.exportAll()
+
+    const fresh = new InMemoryStorageProvider()
+    await fresh.init()
+    await fresh.importAll(exported.bundle, exported.photos, exported.thumbs)
+
+    const blob = await fresh.getPhotoBlob(photo.id)
+    const thumb = await fresh.getPhotoThumb(photo.id)
+    // The in-memory provider stores blobs by reference, so a round-trip
+    // through export+import yields the same instances. Identity is the
+    // strongest assertion we can make here without depending on the jsdom
+    // Blob's `text()`/`arrayBuffer()` methods (which aren't implemented).
+    expect(blob).toBe(fullBlob)
+    expect(thumb).toBe(thumbBlob)
+  })
+
+  it('importAll is idempotent — running it twice changes nothing', async () => {
+    await storage.saveRoute(buildRoute({ name: 'A' }))
+    const exported = await storage.exportAll()
+
+    const fresh = new InMemoryStorageProvider()
+    await fresh.init()
+    await fresh.importAll(exported.bundle, exported.photos, exported.thumbs)
+    await fresh.importAll(exported.bundle, exported.photos, exported.thumbs)
+
+    const all = await fresh.getRoutes()
+    expect(all).toHaveLength(1)
+    expect(all[0].name).toBe('A')
+  })
+
+  it('importAll updates rows when the bundle is newer', async () => {
+    await storage.saveRoute(buildRoute({
+      name: 'Bundle version',
+      updated_at: '2026-05-06T13:00:00.000Z',
+    }))
+    const exported = await storage.exportAll()
+
+    const fresh = new InMemoryStorageProvider()
+    await fresh.init()
+    await fresh.saveRoute(buildRoute({
+      name: 'Local stale',
+      updated_at: '2026-05-06T12:00:00.000Z',
+    }))
+    await fresh.importAll(exported.bundle, exported.photos, exported.thumbs)
+
+    expect((await fresh.getRoute('route-1'))?.name).toBe('Bundle version')
+  })
+
+  it('importAll preserves rows when the local copy is newer', async () => {
+    await storage.saveRoute(buildRoute({
+      name: 'Bundle stale',
+      updated_at: '2026-05-06T12:00:00.000Z',
+    }))
+    const exported = await storage.exportAll()
+
+    const fresh = new InMemoryStorageProvider()
+    await fresh.init()
+    await fresh.saveRoute(buildRoute({
+      name: 'Local newer',
+      updated_at: '2026-05-06T13:00:00.000Z',
+    }))
+    await fresh.importAll(exported.bundle, exported.photos, exported.thumbs)
+
+    expect((await fresh.getRoute('route-1'))?.name).toBe('Local newer')
   })
 })

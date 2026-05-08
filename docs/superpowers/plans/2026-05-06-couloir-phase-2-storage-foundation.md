@@ -2633,7 +2633,7 @@ EOF
 
 `exportAll()` returns the in-memory bundle shape `{ bundle, photos, thumbs }` — Phase 6.4 wraps this in ZIP packaging. `importAll()` is additive: insert if missing, update if the bundle's `updated_at` is newer, skip otherwise. Re-importing the same bundle is a no-op.
 
-- [ ] **Step 2.4.1: Replace the tag stubs in `src/storage/memory.ts`**
+- [x] **Step 2.4.1: Replace the tag stubs in `src/storage/memory.ts`**
 
 ```typescript
   // --- Tags -----------------------------------------------------------------
@@ -2667,7 +2667,7 @@ EOF
   }
 ```
 
-- [ ] **Step 2.4.2: Implement `exportAll` / `importAll` in `src/storage/memory.ts`**
+- [x] **Step 2.4.2: Implement `exportAll` / `importAll` in `src/storage/memory.ts`**
 
 ```typescript
   // --- Backup ---------------------------------------------------------------
@@ -2789,7 +2789,7 @@ import { APP_VERSION } from '../types'
 import type { StorageProvider } from './interface'
 ```
 
-- [ ] **Step 2.4.3: Add tag tests to `src/storage/memory.test.ts`**
+- [x] **Step 2.4.3: Add tag tests to `src/storage/memory.test.ts`**
 
 Append:
 
@@ -2948,12 +2948,12 @@ describe('InMemoryStorageProvider — backup', () => {
 })
 ```
 
-- [ ] **Step 2.4.4: Run the test, verify it passes**
+- [x] **Step 2.4.4: Run the test, verify it passes**
 
 Run: `npm test src/storage/memory.test.ts`
 Expected: 32 tests passing.
 
-- [ ] **Step 2.4.5: Replace the tag stubs in `src/storage/opfs.ts`**
+- [x] **Step 2.4.5: Replace the tag stubs in `src/storage/opfs.ts`**
 
 ```typescript
   // --- Tags -----------------------------------------------------------------
@@ -2990,7 +2990,7 @@ Expected: 32 tests passing.
   }
 ```
 
-- [ ] **Step 2.4.6: Implement `exportAll` in `src/storage/opfs.ts`**
+- [x] **Step 2.4.6: Implement `exportAll` in `src/storage/opfs.ts`**
 
 ```typescript
   // --- Backup ---------------------------------------------------------------
@@ -3043,7 +3043,7 @@ Expected: 32 tests passing.
   }
 ```
 
-- [ ] **Step 2.4.7: Implement `importAll` in `src/storage/opfs.ts`**
+- [x] **Step 2.4.7: Implement `importAll` in `src/storage/opfs.ts`**
 
 `importAll` builds one big transaction with conditional `INSERT/UPDATE` per row driven by per-row `updated_at` checks. Photo blobs are written separately because they're file-system writes.
 
@@ -3200,7 +3200,7 @@ import type {
 import { APP_VERSION } from '../types'
 ```
 
-- [ ] **Step 2.4.8: Add backup helpers to `src/dev/devConsole.ts`**
+- [x] **Step 2.4.8: Add backup helpers to `src/dev/devConsole.ts`**
 
 Append to the `helper` object:
 
@@ -3228,7 +3228,7 @@ Append to the `helper` object:
     },
 ```
 
-- [ ] **Step 2.4.9: Run typecheck and tests**
+- [x] **Step 2.4.9: Run typecheck and tests**
 
 Run: `npm run typecheck && npm test`
 Expected: clean.
@@ -3285,7 +3285,7 @@ await __couloir.storage.deletePhoto(p.id)
 
 Expected: all assertions hold. A double-import does not produce duplicates.
 
-- [ ] **Step 2.4.12: Commit**
+- [x] **Step 2.4.12: Commit**
 
 ```bash
 git add src/storage/memory.ts src/storage/memory.test.ts src/storage/opfs.ts src/dev/devConsole.ts

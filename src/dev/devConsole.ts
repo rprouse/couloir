@@ -152,6 +152,28 @@ export function installDevConsole(storage: StorageProvider): void {
     async list(kind: 'routes' | 'tracks'): Promise<unknown[]> {
       return kind === 'routes' ? storage.getRoutes() : storage.getTracks()
     },
+
+    async exportAll() {
+      const result = await storage.exportAll()
+      // eslint-disable-next-line no-console
+      console.log('[couloir] exported',
+        result.bundle.routes.length, 'routes,',
+        result.bundle.tracks.length, 'tracks,',
+        result.bundle.waypoints.length, 'waypoints,',
+        result.bundle.photos.length, 'photos,',
+        result.bundle.tags.length, 'tags,',
+        result.bundle.entity_tags.length, 'entity_tags rows,',
+        result.photos.size, 'full blobs,',
+        result.thumbs.size, 'thumb blobs',
+      )
+      return result
+    },
+
+    async reimport(exported: Awaited<ReturnType<typeof storage.exportAll>>) {
+      await storage.importAll(exported.bundle, exported.photos, exported.thumbs)
+      // eslint-disable-next-line no-console
+      console.log('[couloir] re-imported (idempotent if same bundle)')
+    },
   }
 
   ;(globalThis as unknown as { __couloir: typeof helper }).__couloir = helper

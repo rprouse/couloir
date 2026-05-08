@@ -1,4 +1,5 @@
 import type {
+  EntityTagRow,
   EntityType,
   ExportBundle,
   Photo,
@@ -7,6 +8,7 @@ import type {
   Track,
   Waypoint,
 } from '../types'
+import { APP_VERSION } from '../types'
 import type { StorageProvider } from './interface'
 import { WorkerClient } from './workerClient'
 import StorageWorker from './workerHost?worker'
@@ -281,27 +283,220 @@ export class OPFSStorageProvider implements StorageProvider {
   }
 
   // --- Tags -----------------------------------------------------------------
-  getTags(): Promise<Tag[]> { throw new Error('not implemented') }
-  saveTag(_t: Tag): Promise<void> { throw new Error('not implemented') }
-  deleteTag(_id: string): Promise<void> { throw new Error('not implemented') }
-  setEntityTags(_t: EntityType, _id: string, _ids: string[]): Promise<void> {
-    throw new Error('not implemented')
+
+  async getTags(): Promise<Tag[]> {
+    const rows = await this.client.all(`SELECT * FROM tags ORDER BY name`)
+    return rows.map(r => ({
+      id:         r.id as string,
+      name:       r.name as string,
+      color:      r.color as string,
+      created_at: r.created_at as string,
+    }))
+  }
+
+  async saveTag(tag: Tag): Promise<void> {
+    await this.client.run(
+      `INSERT OR REPLACE INTO tags (id, name, color, created_at) VALUES (?, ?, ?, ?)`,
+      [tag.id, tag.name, tag.color, tag.created_at],
+    )
+  }
+
+  async deleteTag(id: string): Promise<void> {
+    // ON DELETE CASCADE on entity_tags(tag_id) cleans up junction rows
+    // automatically — no application-level cleanup needed (DATA-MODEL.md).
+    await this.client.run(`DELETE FROM tags WHERE id = ?`, [id])
+  }
+
+  async setEntityTags(
+    entityType: EntityType,
+    entityId: string,
+    tagIds: string[],
+  ): Promise<void> {
+    await this.client.tx(this.replaceTagsOps(entityType, entityId, tagIds))
   }
 
   // --- Backup ---------------------------------------------------------------
-  exportAll(): Promise<{
+
+  async exportAll(): Promise<{
     bundle: ExportBundle
     photos: Map<string, Blob>
     thumbs: Map<string, Blob>
   }> {
-    throw new Error('not implemented')
+    const [routes, tracks, waypoints, photos, tags] = await Promise.all([
+      this.getRoutes(),
+      this.getTracks(),
+      this.getWaypoints(),
+      this.getPhotos(),
+      this.getTags(),
+    ])
+
+    const junctionRows = await this.client.all(
+      `SELECT entity_type, entity_id, tag_id FROM entity_tags
+       ORDER BY entity_type, entity_id, tag_id`,
+    )
+    const entity_tags: EntityTagRow[] = junctionRows.map(r => ({
+      entity_type: r.entity_type as EntityType,
+      entity_id:   r.entity_id as string,
+      tag_id:      r.tag_id as string,
+    }))
+
+    const bundle: ExportBundle = {
+      bundle_version: 1,
+      app_version: APP_VERSION,
+      exported_at: new Date().toISOString(),
+      routes,
+      tracks,
+      waypoints,
+      photos,
+      tags,
+      entity_tags,
+    }
+
+    const photoBlobs = new Map<string, Blob>()
+    const thumbBlobs = new Map<string, Blob>()
+    for (const p of photos) {
+      const full = await this.getPhotoBlob(p.id)
+      const thumb = await this.getPhotoThumb(p.id)
+      if (full) photoBlobs.set(p.id, full)
+      if (thumb) thumbBlobs.set(p.id, thumb)
+    }
+
+    return { bundle, photos: photoBlobs, thumbs: thumbBlobs }
   }
-  importAll(
-    _b: ExportBundle,
-    _p: Map<string, Blob>,
-    _t: Map<string, Blob>,
+
+  async importAll(
+    bundle: ExportBundle,
+    photos: Map<string, Blob>,
+    thumbs: Map<string, Blob>,
   ): Promise<void> {
-    throw new Error('not implemented')
+    // Pull current updated_at for every entity in the bundle so we can decide
+    // insert-vs-update-vs-skip without making N round-trips.
+    const currentUpdatedAt = async (
+      table: 'routes' | 'tracks' | 'waypoints' | 'photos',
+      ids: string[],
+    ): Promise<Map<string, string>> => {
+      const result = new Map<string, string>()
+      if (ids.length === 0) return result
+      const placeholders = ids.map(() => '?').join(',')
+      const rows = await this.client.all(
+        `SELECT id, updated_at FROM ${table} WHERE id IN (${placeholders})`,
+        ids,
+      )
+      for (const row of rows) result.set(row.id as string, row.updated_at as string)
+      return result
+    }
+
+    const [
+      currentRoutes,
+      currentTracks,
+      currentWaypoints,
+      currentPhotos,
+      currentTags,
+    ] = await Promise.all([
+      currentUpdatedAt('routes', bundle.routes.map(r => r.id)),
+      currentUpdatedAt('tracks', bundle.tracks.map(t => t.id)),
+      currentUpdatedAt('waypoints', bundle.waypoints.map(w => w.id)),
+      currentUpdatedAt('photos', bundle.photos.map(p => p.id)),
+      this.client.all(
+        `SELECT id FROM tags WHERE id IN (${bundle.tags.map(() => '?').join(',') || 'NULL'})`,
+        bundle.tags.map(t => t.id),
+      ),
+    ])
+    const existingTagIds = new Set(currentTags.map(r => r.id as string))
+
+    const ops: SqlOp[] = []
+
+    // Tags — additive. Don't overwrite existing tags (no updated_at to compare).
+    for (const tag of bundle.tags) {
+      if (existingTagIds.has(tag.id)) continue
+      ops.push({
+        sql: `INSERT INTO tags (id, name, color, created_at) VALUES (?, ?, ?, ?)`,
+        params: [tag.id, tag.name, tag.color, tag.created_at],
+      })
+    }
+
+    // Routes
+    for (const r of bundle.routes) {
+      const existingTs = currentRoutes.get(r.id)
+      if (existingTs !== undefined && r.updated_at <= existingTs) continue
+      ops.push({
+        sql: `INSERT OR REPLACE INTO routes (
+                id, user_id, name, description, geojson,
+                source_hash, source_filename, color,
+                ates, technical_difficulty,
+                distance_m, elevation_gain_m, elevation_loss_m,
+                created_at, updated_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        params: this.routeToRow(r),
+      })
+    }
+
+    // Tracks
+    for (const t of bundle.tracks) {
+      const existingTs = currentTracks.get(t.id)
+      if (existingTs !== undefined && t.updated_at <= existingTs) continue
+      ops.push({
+        sql: `INSERT OR REPLACE INTO tracks (
+                id, user_id, name, description, geojson,
+                source_hash, source_filename, color,
+                distance_m, elevation_gain_m, elevation_loss_m,
+                duration_s, moving_time_s, recorded_at,
+                created_at, updated_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        params: this.trackToRow(t),
+      })
+    }
+
+    // Waypoints
+    for (const w of bundle.waypoints) {
+      const existingTs = currentWaypoints.get(w.id)
+      if (existingTs !== undefined && w.updated_at <= existingTs) continue
+      ops.push({
+        sql: `INSERT OR REPLACE INTO waypoints (
+                id, user_id, name, description,
+                lat, lng, elevation_m,
+                category, color,
+                created_at, updated_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        params: this.waypointToRow(w),
+      })
+    }
+
+    // Photos (metadata only — blobs handled below)
+    for (const p of bundle.photos) {
+      const existingTs = currentPhotos.get(p.id)
+      if (existingTs !== undefined && p.updated_at <= existingTs) continue
+      ops.push({
+        sql: `INSERT OR REPLACE INTO photos (
+                id, user_id, name, description,
+                lat, lng, elevation_m,
+                camera_lat, camera_lng, camera_elevation_m, bearing,
+                blob_ref,
+                width, height, file_size_bytes,
+                taken_at,
+                created_at, updated_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        params: this.photoToRow(p),
+      })
+    }
+
+    // Junction rows — INSERT OR IGNORE keeps things additive and idempotent.
+    for (const row of bundle.entity_tags) {
+      ops.push({
+        sql: `INSERT OR IGNORE INTO entity_tags (entity_type, entity_id, tag_id) VALUES (?, ?, ?)`,
+        params: [row.entity_type, row.entity_id, row.tag_id],
+      })
+    }
+
+    if (ops.length > 0) await this.client.tx(ops)
+
+    // Blobs — write outside the SQL transaction (file ops aren't transactional).
+    for (const [id, blob] of photos) {
+      await this.client.writeBlob(this.photoFullPath(id), await blob.arrayBuffer())
+    }
+    for (const [id, thumb] of thumbs) {
+      await this.client.writeBlob(this.photoThumbPath(id), await thumb.arrayBuffer())
+    }
   }
 
   // --- Row serialization ----------------------------------------------------

@@ -1,4 +1,5 @@
 import type {
+  EntityTagRow,
   EntityType,
   ExportBundle,
   Photo,
@@ -7,6 +8,7 @@ import type {
   Track,
   Waypoint,
 } from '../types'
+import { APP_VERSION } from '../types'
 import type { StorageProvider } from './interface'
 
 // In-memory reference implementation of StorageProvider. Used by every
@@ -15,9 +17,9 @@ import type { StorageProvider } from './interface'
 //
 // Storage maps are added incrementally as each task wires up its CRUD methods
 // (Task 2.2: routes, tracks, entityTags; Task 2.3: waypoints, photos, blobs,
-// thumbs). Task 2.4 adds the tags map. Declaring fields only once they're
-// actually read keeps `noUnusedLocals` happy without resorting to a placeholder
-// `close()` body that touches everything.
+// thumbs; Task 2.4: tags). Declaring fields only once they're actually read
+// keeps `noUnusedLocals` happy without resorting to a placeholder `close()`
+// body that touches everything.
 export class InMemoryStorageProvider implements StorageProvider {
   private routes = new Map<string, Route>()
   private tracks = new Map<string, Track>()
@@ -25,6 +27,7 @@ export class InMemoryStorageProvider implements StorageProvider {
   private photos = new Map<string, Photo>()
   private blobs = new Map<string, Blob>()
   private thumbs = new Map<string, Blob>()
+  private tags = new Map<string, Tag>()
   private entityTags = new Set<string>() // 'route|abc|tag1' style composite keys
 
   async init(): Promise<void> {
@@ -138,28 +141,135 @@ export class InMemoryStorageProvider implements StorageProvider {
     this.removeAllTagsFor('photo', id)
   }
 
-  // --- Tags (Task 2.4) ------------------------------------------------------
-  async getTags(): Promise<Tag[]> { throw new Error('not implemented') }
-  async saveTag(_t: Tag): Promise<void> { throw new Error('not implemented') }
-  async deleteTag(_id: string): Promise<void> { throw new Error('not implemented') }
-  async setEntityTags(_t: EntityType, _id: string, _ids: string[]): Promise<void> {
-    throw new Error('not implemented')
+  // --- Tags -----------------------------------------------------------------
+
+  async getTags(): Promise<Tag[]> {
+    return Array.from(this.tags.values())
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(t => ({ ...t }))
   }
 
-  // --- Backup (Task 2.4) ----------------------------------------------------
+  async saveTag(tag: Tag): Promise<void> {
+    this.tags.set(tag.id, { ...tag })
+  }
+
+  async deleteTag(id: string): Promise<void> {
+    this.tags.delete(id)
+    // Mirror the OPFS ON DELETE CASCADE: drop every junction row that
+    // referenced this tag.
+    for (const key of Array.from(this.entityTags)) {
+      // key shape: '<entityType>|<entityId>|<tagId>'
+      if (key.endsWith(`|${id}`)) this.entityTags.delete(key)
+    }
+  }
+
+  async setEntityTags(
+    entityType: EntityType,
+    entityId: string,
+    tagIds: string[],
+  ): Promise<void> {
+    this.replaceEntityTags(entityType, entityId, tagIds)
+  }
+
+  // --- Backup ---------------------------------------------------------------
+
   async exportAll(): Promise<{
     bundle: ExportBundle
     photos: Map<string, Blob>
     thumbs: Map<string, Blob>
   }> {
-    throw new Error('not implemented')
+    const [routes, tracks, waypoints, photos, tags] = await Promise.all([
+      this.getRoutes(),
+      this.getTracks(),
+      this.getWaypoints(),
+      this.getPhotos(),
+      this.getTags(),
+    ])
+
+    const entity_tags: EntityTagRow[] = []
+    for (const key of this.entityTags) {
+      const [entity_type, entity_id, tag_id] = key.split('|')
+      entity_tags.push({
+        entity_type: entity_type as EntityType,
+        entity_id,
+        tag_id,
+      })
+    }
+    entity_tags.sort((a, b) =>
+      `${a.entity_type}|${a.entity_id}|${a.tag_id}`.localeCompare(
+        `${b.entity_type}|${b.entity_id}|${b.tag_id}`,
+      ),
+    )
+
+    const bundle: ExportBundle = {
+      bundle_version: 1,
+      app_version: APP_VERSION,
+      exported_at: new Date().toISOString(),
+      routes,
+      tracks,
+      waypoints,
+      photos,
+      tags,
+      entity_tags,
+    }
+
+    return {
+      bundle,
+      photos: new Map(this.blobs),
+      thumbs: new Map(this.thumbs),
+    }
   }
+
   async importAll(
-    _b: ExportBundle,
-    _p: Map<string, Blob>,
-    _t: Map<string, Blob>,
+    bundle: ExportBundle,
+    photos: Map<string, Blob>,
+    thumbs: Map<string, Blob>,
   ): Promise<void> {
-    throw new Error('not implemented')
+    const isNewer = (a: string, b: string): boolean => a > b // ISO 8601 sorts lexically
+
+    // Tags first — entity_tags references them.
+    for (const tag of bundle.tags) {
+      const existing = this.tags.get(tag.id)
+      if (!existing) this.tags.set(tag.id, { ...tag })
+      // Tags don't carry updated_at; we treat existing rows as winning.
+    }
+
+    // Entities. Each implicitly carries its tags array; setEntityTags is
+    // applied as part of saveX in the live API. For import we explicitly
+    // process entity_tags below to honor whatever shape the bundle carries.
+    for (const r of bundle.routes) {
+      const existing = this.routes.get(r.id)
+      if (!existing || isNewer(r.updated_at, existing.updated_at)) {
+        this.routes.set(r.id, JSON.parse(JSON.stringify(r)) as Route)
+      }
+    }
+    for (const t of bundle.tracks) {
+      const existing = this.tracks.get(t.id)
+      if (!existing || isNewer(t.updated_at, existing.updated_at)) {
+        this.tracks.set(t.id, JSON.parse(JSON.stringify(t)) as Track)
+      }
+    }
+    for (const w of bundle.waypoints) {
+      const existing = this.waypoints.get(w.id)
+      if (!existing || isNewer(w.updated_at, existing.updated_at)) {
+        this.waypoints.set(w.id, JSON.parse(JSON.stringify(w)) as Waypoint)
+      }
+    }
+    for (const p of bundle.photos) {
+      const existing = this.photos.get(p.id)
+      if (!existing || isNewer(p.updated_at, existing.updated_at)) {
+        this.photos.set(p.id, JSON.parse(JSON.stringify(p)) as Photo)
+      }
+    }
+
+    // Junction rows — additive. Composite-key Set already deduplicates.
+    for (const row of bundle.entity_tags) {
+      this.entityTags.add(this.tagKey(row.entity_type, row.entity_id, row.tag_id))
+    }
+
+    // Blobs — additive (overwrite if present).
+    for (const [id, blob] of photos) this.blobs.set(id, blob)
+    for (const [id, thumb] of thumbs) this.thumbs.set(id, thumb)
   }
 
   // --- Tag helpers ----------------------------------------------------------
