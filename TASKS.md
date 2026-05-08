@@ -30,7 +30,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [2.2 Route and track CRUD](#task-22---route-and-track-crud)
 - [x] [2.3 Waypoint and photo CRUD](#task-23---waypoint-and-photo-crud)
 - [x] [2.4 Tags and backup](#task-24---tags-and-backup)
-- [ ] [2.5 Zustand store wiring](#task-25---zustand-store-wiring)
+- [x] [2.5 Zustand store wiring](#task-25---zustand-store-wiring)
 
 ### Phase 3 — Routes and Tracks  ·  Plan: not yet written
 

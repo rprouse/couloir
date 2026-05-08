@@ -3325,7 +3325,7 @@ The five entity slices follow an identical pattern: `load()` populates from stor
 
 The UI slice grows two new state machines (`PanelState`, `PlacementState`) implementing the actions catalogued in `ARCHITECTURE.md` "Panel and placement state". The `useEscapeKey()` hook owns ESC with the precedence in the same section.
 
-- [ ] **Step 2.5.1: Write `src/storage/provider.ts`**
+- [x] **Step 2.5.1: Write `src/storage/provider.ts`**
 
 ```typescript
 import type { StorageProvider } from './interface'
@@ -3348,7 +3348,7 @@ export function clearStorage(): void {
 }
 ```
 
-- [ ] **Step 2.5.2: Write `src/utils/time.ts`**
+- [x] **Step 2.5.2: Write `src/utils/time.ts`**
 
 ```typescript
 // Centralized "now" so tests can mock the clock with vi.useFakeTimers().
@@ -3358,7 +3358,7 @@ export function now(): string {
 }
 ```
 
-- [ ] **Step 2.5.3: Write the failing test `src/utils/time.test.ts`**
+- [x] **Step 2.5.3: Write the failing test `src/utils/time.test.ts`**
 
 ```typescript
 import { now } from './time'
@@ -3377,12 +3377,12 @@ describe('now', () => {
 })
 ```
 
-- [ ] **Step 2.5.4: Run the test, verify it passes**
+- [x] **Step 2.5.4: Run the test, verify it passes**
 
 Run: `npm test src/utils/time.test.ts`
 Expected: 2 tests passing.
 
-- [ ] **Step 2.5.5: Write `src/store/routes.ts`**
+- [x] **Step 2.5.5: Write `src/store/routes.ts`**
 
 ```typescript
 import { create } from 'zustand'
@@ -3443,7 +3443,7 @@ export const useRoutesStore = create<RoutesState>((set, get) => ({
 }))
 ```
 
-- [ ] **Step 2.5.6: Write the failing test `src/store/routes.test.ts`**
+- [x] **Step 2.5.6: Write the failing test `src/store/routes.test.ts`**
 
 ```typescript
 import { useRoutesStore } from './routes'
@@ -3541,12 +3541,12 @@ describe('routes store', () => {
 })
 ```
 
-- [ ] **Step 2.5.7: Run the test, verify it passes**
+- [x] **Step 2.5.7: Run the test, verify it passes**
 
 Run: `npm test src/store/routes.test.ts`
 Expected: 6 tests passing.
 
-- [ ] **Step 2.5.8: Write `src/store/tracks.ts`** (same shape as routes.ts)
+- [x] **Step 2.5.8: Write `src/store/tracks.ts`** (same shape as routes.ts)
 
 ```typescript
 import { create } from 'zustand'
@@ -3607,7 +3607,7 @@ export const useTracksStore = create<TracksState>((set, get) => ({
 }))
 ```
 
-- [ ] **Step 2.5.9: Write `src/store/tracks.test.ts`** (mirror of routes.test.ts — covers add+load round-trip and update advancing updated_at)
+- [x] **Step 2.5.9: Write `src/store/tracks.test.ts`** (mirror of routes.test.ts — covers add+load round-trip and update advancing updated_at)
 
 ```typescript
 import { useTracksStore } from './tracks'
@@ -3670,12 +3670,12 @@ describe('tracks store', () => {
 })
 ```
 
-- [ ] **Step 2.5.10: Run the tracks test, verify it passes**
+- [x] **Step 2.5.10: Run the tracks test, verify it passes**
 
 Run: `npm test src/store/tracks.test.ts`
 Expected: 3 tests passing.
 
-- [ ] **Step 2.5.11: Write `src/store/waypoints.ts`**
+- [x] **Step 2.5.11: Write `src/store/waypoints.ts`**
 
 ```typescript
 import { create } from 'zustand'
@@ -3736,7 +3736,7 @@ export const useWaypointsStore = create<WaypointsState>((set, get) => ({
 }))
 ```
 
-- [ ] **Step 2.5.12: Write `src/store/waypoints.test.ts`**
+- [x] **Step 2.5.12: Write `src/store/waypoints.test.ts`**
 
 ```typescript
 import { useWaypointsStore } from './waypoints'
@@ -3793,12 +3793,12 @@ describe('waypoints store', () => {
 })
 ```
 
-- [ ] **Step 2.5.13: Run the waypoints test, verify it passes**
+- [x] **Step 2.5.13: Run the waypoints test, verify it passes**
 
 Run: `npm test src/store/waypoints.test.ts`
 Expected: 3 tests passing.
 
-- [ ] **Step 2.5.14: Write `src/store/photos.ts`**
+- [x] **Step 2.5.14: Write `src/store/photos.ts`**
 
 The photos store differs from the others: `add()` takes the full blob and thumb in addition to the metadata input. The store sets `blob_ref` based on the generated id.
 
@@ -3878,7 +3878,7 @@ export const usePhotosStore = create<PhotosState>((set, get) => ({
 }))
 ```
 
-- [ ] **Step 2.5.15: Write `src/store/photos.test.ts`**
+- [x] **Step 2.5.15: Write `src/store/photos.test.ts`**
 
 ```typescript
 import { usePhotosStore } from './photos'
@@ -3947,12 +3947,12 @@ describe('photos store', () => {
 })
 ```
 
-- [ ] **Step 2.5.16: Run the photos test, verify it passes**
+- [x] **Step 2.5.16: Run the photos test, verify it passes**
 
 Run: `npm test src/store/photos.test.ts`
 Expected: 3 tests passing.
 
-- [ ] **Step 2.5.17: Write `src/store/tags.ts`**
+- [x] **Step 2.5.17: Write `src/store/tags.ts`**
 
 ```typescript
 import { create } from 'zustand'
@@ -4017,7 +4017,7 @@ export const useTagsStore = create<TagsState>((set, get) => ({
 }))
 ```
 
-- [ ] **Step 2.5.18: Write `src/store/tags.test.ts`**
+- [x] **Step 2.5.18: Write `src/store/tags.test.ts`**
 
 ```typescript
 import { useTagsStore } from './tags'
@@ -4058,12 +4058,12 @@ describe('tags store', () => {
 })
 ```
 
-- [ ] **Step 2.5.19: Run the tags test, verify it passes**
+- [x] **Step 2.5.19: Run the tags test, verify it passes**
 
 Run: `npm test src/store/tags.test.ts`
 Expected: 3 tests passing.
 
-- [ ] **Step 2.5.20: Extend `src/store/ui.ts`** with the panel + placement state machines
+- [x] **Step 2.5.20: Extend `src/store/ui.ts`** with the panel + placement state machines
 
 Replace the file with:
 
@@ -4226,7 +4226,7 @@ export const useUiStore = create<UiState>((set, get) => ({
 }))
 ```
 
-- [ ] **Step 2.5.21: Extend `src/store/ui.test.ts`** with panel + placement coverage
+- [x] **Step 2.5.21: Extend `src/store/ui.test.ts`** with panel + placement coverage
 
 Append after the existing tests:
 
@@ -4346,12 +4346,12 @@ describe('ui store — placement state machine', () => {
 })
 ```
 
-- [ ] **Step 2.5.22: Run the full ui store test, verify it passes**
+- [x] **Step 2.5.22: Run the full ui store test, verify it passes**
 
 Run: `npm test src/store/ui.test.ts`
 Expected: previous Phase 1 tests still pass; the 11 new panel/placement tests pass.
 
-- [ ] **Step 2.5.23: Write `src/hooks/useEscapeKey.ts`**
+- [x] **Step 2.5.23: Write `src/hooks/useEscapeKey.ts`**
 
 ```typescript
 import { useEffect } from 'react'
@@ -4395,7 +4395,7 @@ export function useEscapeKey(): void {
 }
 ```
 
-- [ ] **Step 2.5.24: Write the failing test `src/hooks/useEscapeKey.test.tsx`**
+- [x] **Step 2.5.24: Write the failing test `src/hooks/useEscapeKey.test.tsx`**
 
 ```typescript
 import { render } from '@testing-library/react'
@@ -4467,12 +4467,12 @@ describe('useEscapeKey precedence', () => {
 })
 ```
 
-- [ ] **Step 2.5.25: Run the ESC hook test, verify it passes**
+- [x] **Step 2.5.25: Run the ESC hook test, verify it passes**
 
 Run: `npm test src/hooks/useEscapeKey.test.tsx`
 Expected: 5 tests passing.
 
-- [ ] **Step 2.5.26: Mount the ESC hook in `src/App.tsx`**
+- [x] **Step 2.5.26: Mount the ESC hook in `src/App.tsx`**
 
 ```typescript
 import styles from './App.module.css'
@@ -4500,7 +4500,7 @@ export default function App() {
 }
 ```
 
-- [ ] **Step 2.5.27: Replace `src/main.tsx`** with the production bootstrap
+- [x] **Step 2.5.27: Replace `src/main.tsx`** with the production bootstrap
 
 ```typescript
 import React from 'react'
@@ -4556,7 +4556,7 @@ bootstrap().catch((err) => {
 })
 ```
 
-- [ ] **Step 2.5.28: Run typecheck and the full test suite**
+- [x] **Step 2.5.28: Run typecheck and the full test suite**
 
 Run: `npm run typecheck && npm test`
 Expected: clean. The full suite now contains route/track/waypoint/photo/tag store tests (~18 new), ui state-machine tests (11 new), the ESC hook (5 new), `time` (2 new) — plus everything from Phase 1 and Tasks 2.1–2.4.
@@ -4640,7 +4640,7 @@ ui.getState().panel.mode                  // -> 'idle' (now closed)
 
 Expected: every transition matches.
 
-- [ ] **Step 2.5.31: Commit**
+- [x] **Step 2.5.31: Commit**
 
 ```bash
 git add src/storage/provider.ts src/utils/time.ts src/utils/time.test.ts src/store/ src/hooks/ src/main.tsx src/App.tsx
