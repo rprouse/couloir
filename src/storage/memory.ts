@@ -156,10 +156,13 @@ export class InMemoryStorageProvider implements StorageProvider {
   async deleteTag(id: string): Promise<void> {
     this.tags.delete(id)
     // Mirror the OPFS ON DELETE CASCADE: drop every junction row that
-    // referenced this tag.
+    // referenced this tag. Match on the third tuple element (tag_id)
+    // rather than `endsWith` so this stays correct if a future tag id
+    // ever contains the separator character.
     for (const key of Array.from(this.entityTags)) {
       // key shape: '<entityType>|<entityId>|<tagId>'
-      if (key.endsWith(`|${id}`)) this.entityTags.delete(key)
+      const parts = key.split('|')
+      if (parts.length === 3 && parts[2] === id) this.entityTags.delete(key)
     }
   }
 
@@ -195,11 +198,14 @@ export class InMemoryStorageProvider implements StorageProvider {
         tag_id,
       })
     }
-    entity_tags.sort((a, b) =>
-      `${a.entity_type}|${a.entity_id}|${a.tag_id}`.localeCompare(
-        `${b.entity_type}|${b.entity_id}|${b.tag_id}`,
-      ),
-    )
+    // Sort by codepoint (matches SQL `ORDER BY entity_type, entity_id, tag_id`
+    // — locale-aware comparators would diverge from the OPFS implementation
+    // for the same input).
+    entity_tags.sort((a, b) => {
+      const ka = `${a.entity_type}|${a.entity_id}|${a.tag_id}`
+      const kb = `${b.entity_type}|${b.entity_id}|${b.tag_id}`
+      return ka < kb ? -1 : ka > kb ? 1 : 0
+    })
 
     const bundle: ExportBundle = {
       bundle_version: 1,

@@ -369,6 +369,9 @@ export class OPFSStorageProvider implements StorageProvider {
     photos: Map<string, Blob>,
     thumbs: Map<string, Blob>,
   ): Promise<void> {
+    // All `updated_at` comparisons below rely on ISO 8601's property that
+    // lexical ordering matches chronological ordering. The plain `<=` and
+    // `>` operators are correct here; do not change to numeric comparison.
     // Pull current updated_at for every entity in the bundle so we can decide
     // insert-vs-update-vs-skip without making N round-trips.
     const currentUpdatedAt = async (
@@ -377,6 +380,10 @@ export class OPFSStorageProvider implements StorageProvider {
     ): Promise<Map<string, string>> => {
       const result = new Map<string, string>()
       if (ids.length === 0) return result
+      // SQLite has a parameter-count cap (~999 by default; modern builds raise it).
+      // For MVP-scale backups this stays well under the limit, but if a future
+      // backup exceeds ~500 entities of one type, chunk this query. See the
+      // matching comment in tagsByEntity().
       const placeholders = ids.map(() => '?').join(',')
       const rows = await this.client.all(
         `SELECT id, updated_at FROM ${table} WHERE id IN (${placeholders})`,
@@ -397,6 +404,7 @@ export class OPFSStorageProvider implements StorageProvider {
       currentUpdatedAt('tracks', bundle.tracks.map(t => t.id)),
       currentUpdatedAt('waypoints', bundle.waypoints.map(w => w.id)),
       currentUpdatedAt('photos', bundle.photos.map(p => p.id)),
+      // Same SQLite parameter-count cap applies here as in currentUpdatedAt().
       this.client.all(
         `SELECT id FROM tags WHERE id IN (${bundle.tags.map(() => '?').join(',') || 'NULL'})`,
         bundle.tags.map(t => t.id),
