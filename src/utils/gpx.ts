@@ -145,10 +145,12 @@ function parseTrackElement(trk: Element, sourceFilename: string): ParsedTrack {
 
 // `<name>` and `<desc>` are *direct* children of <rte>/<trk>. We don't use
 // querySelector('name') because it would also match nested tag names inside
-// extension elements; iterate direct children instead.
+// extension elements; iterate direct children instead. Compare against
+// `localName`, not `tagName`, so namespace-prefixed exporters (e.g.
+// `<gpx:name>` from some Garmin tools) match the same as plain `<name>`.
 function textOf(parent: Element, tag: string): string | null {
   for (const child of Array.from(parent.children)) {
-    if (child.tagName === tag) {
+    if (child.localName === tag) {
       const txt = child.textContent?.trim() ?? ''
       return txt.length > 0 ? txt : null
     }

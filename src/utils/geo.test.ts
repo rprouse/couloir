@@ -78,6 +78,11 @@ describe('elevationGainLoss', () => {
 })
 
 describe('cumulativeDistanceMeters', () => {
+  it('returns an empty array for an empty line', () => {
+    const ls: LineStringZ = { type: 'LineString', coordinates: [] }
+    expect(cumulativeDistanceMeters(ls)).toEqual([])
+  })
+
   it('returns a [0, d1, d1+d2, ...] series matching coordinate count', () => {
     const ls: LineStringZ = {
       type: 'LineString',

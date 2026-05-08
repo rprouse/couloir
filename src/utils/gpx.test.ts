@@ -123,10 +123,9 @@ describe('parseGpx — tracks', () => {
     expect(result.geojson.coordinates).toHaveLength(4)
     // Total elapsed: 8:00 → 8:33 = 1980s
     expect(result.duration_s).toBe(1980)
-    // Moving time excludes the 31-minute mid-segment gap. Three moving
-    // intervals (≈60s each) at modest speed remain.
-    expect(result.moving_time_s).toBeLessThan(result.duration_s ?? 0)
-    expect(result.moving_time_s).toBeGreaterThan(0)
+    // Two ~60-second skinning intervals qualify; the 1860-second mid-gap is
+    // below MOVING_SPEED_THRESHOLD_M_S and is excluded.
+    expect(result.moving_time_s).toBe(120)
   })
 
   it('idle 30-minute mid-tour gap reduces moving_time materially', () => {
