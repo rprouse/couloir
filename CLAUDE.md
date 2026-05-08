@@ -14,6 +14,17 @@ Before writing any code in a new session, read these documents in order:
 2. `ARCHITECTURE.md` - tech stack, folder structure, storage interface, conventions
 3. `DATA-MODEL.md` - TypeScript types, SQLite schema, constants
 
+## Commands
+
+```bash
+npm run dev        # Vite dev server
+npm test           # Vitest run (unit tests, jsdom env)
+npm run typecheck  # tsc --noEmit
+npm run build      # Production build (TS + Vite)
+```
+
+If `npm test` hangs or errors with a Vitest "esbuild service" issue on Windows, run with `npx vitest run --pool=forks --poolOptions.forks.singleFork=true`. Do not change `package.json` — the workaround is per-invocation.
+
 ## Key Conventions
 
 - All data access goes through the `StorageProvider` interface in `src/storage/interface.ts`. Never call SQLite directly from feature code.
@@ -36,6 +47,7 @@ If no plan exists yet for the current phase, write one (`superpowers:writing-pla
 ## Tooling
 
 - All `git` commands must be run via the PowerShell tool, not Bash. The 1Password agent that signs commits is wired into the PowerShell session; Bash invocations of `git commit` fail with "Could not connect to socket".
+- Browser-side smoke testing: in dev mode `window.__couloir` exposes the live `StorageProvider` plus dummy-entity helpers (`createDummyRoute`, `createDummyTrack`, `createDummyWaypoint`, `createDummyPhoto`, `exportAll`, `reimport`, `listAll`). Defined in `src/dev/devConsole.ts`.
 
 ## Coding Style
 
