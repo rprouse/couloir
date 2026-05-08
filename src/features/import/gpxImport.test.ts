@@ -150,10 +150,18 @@ describe('importGpxFiles', () => {
     expect(summary.errors).toHaveLength(1)
     expect(summary.errors[0].filename).toBe('broken.gpx')
   })
-})
 
-// `minimalTrack` is defined for symmetry and future track-side duplicate tests.
-void minimalTrack
+  it('replaces a duplicate track when the user chooses replace', async () => {
+    const deps = baseDeps()
+    deps.lookupTrackByHash = async () => minimalTrack
+    deps.promptDuplicate = async () => ({ choice: 'replace', applyToAll: false })
+    const summary = await importGpxFiles([fakeFile('my-track.gpx')], deps)
+    expect(summary.tracksReplaced).toBe(1)
+    expect(summary.tracksImported).toBe(0)
+    expect(deps.replaceTrack).toHaveBeenCalledWith('existing-id', expect.any(Object))
+    expect(deps.saveTrack).not.toHaveBeenCalled()
+  })
+})
 
 // `DuplicateChoice` is a literal union, so the array annotation below would
 // fail typecheck if a string was misspelled — no runtime expect needed.
