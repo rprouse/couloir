@@ -79,11 +79,22 @@ export function RoutesLayer(): null {
     }
   }, [map])
 
+  // React commits effects in declaration order. On first mount with `map`
+  // non-null, effect (1) above runs first and synchronously calls
+  // `map.addSource(ROUTES_SOURCE_ID, ...)`. By the time this effect's
+  // `getSource(...)` lookup runs (still inside the same commit), the
+  // source exists and `setData` populates it correctly. The guard on the
+  // next line is for the early-render case where `map` is still null.
   // (2) Sync GeoJSON when routes change.
   useEffect(() => {
     if (!map) return
     const src = map.getSource(ROUTES_SOURCE_ID)
     if (!src || src.type !== 'geojson') return
+    // Local FeatureCollection in routesLayerData.ts uses Route['geojson']
+    // (LineStringZ — Z required) rather than GeoJSON.LineString (Z optional).
+    // setData accepts the value at runtime; `as never` documents that we've
+    // intentionally avoided pulling @types/geojson into the helper just to
+    // satisfy a structural shape that's already correct for our use.
     ;(src as GeoJSONSource).setData(buildRoutesGeoJson(routes) as never)
   }, [map, routes])
 
