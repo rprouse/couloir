@@ -2,24 +2,87 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { LayerPanel } from './LayerPanel'
 import { useUiStore } from '../../store/ui'
+import { useRoutesStore } from '../../store/routes'
+import { useTracksStore } from '../../store/tracks'
+import { useWaypointsStore } from '../../store/waypoints'
+import { usePhotosStore } from '../../store/photos'
+import type { Route, Track } from '../../types'
 
 const stubPrompt = async () =>
   ({ choice: 'skip' as const, applyToAll: false })
 
+const fakeRoute = (id: string): Route => ({
+  id,
+  user_id: 'local',
+  name: id,
+  description: '',
+  geojson: { type: 'LineString', coordinates: [[-116, 49.5, 1500]] },
+  source_hash: 'h',
+  source_filename: null,
+  color: '#E05C2A',
+  ates: null,
+  technical_difficulty: null,
+  distance_m: 0,
+  elevation_gain_m: 0,
+  elevation_loss_m: 0,
+  tags: [],
+  created_at: '2026-01-01T00:00:00.000Z',
+  updated_at: '2026-01-01T00:00:00.000Z',
+})
+
+const fakeTrack = (id: string): Track => ({
+  id,
+  user_id: 'local',
+  name: id,
+  description: '',
+  geojson: { type: 'LineString', coordinates: [[-116, 49.5, 1500]] },
+  source_hash: 'h',
+  source_filename: null,
+  color: '#2A7BE0',
+  distance_m: 0,
+  elevation_gain_m: 0,
+  elevation_loss_m: 0,
+  duration_s: null,
+  moving_time_s: null,
+  recorded_at: null,
+  tags: [],
+  created_at: '2026-01-01T00:00:00.000Z',
+  updated_at: '2026-01-01T00:00:00.000Z',
+})
+
 describe('LayerPanel', () => {
   beforeEach(() => {
     useUiStore.setState(useUiStore.getInitialState())
+    useRoutesStore.setState({ routes: [], loading: false, error: null })
+    useTracksStore.setState({ tracks: [], loading: false, error: null })
+    useWaypointsStore.setState({ waypoints: [], loading: false, error: null })
+    usePhotosStore.setState({ photos: [], loading: false, error: null })
   })
 
-  it('renders four rows with zero counts', () => {
+  it('shows zero counts for an empty store', () => {
     render(<LayerPanel promptDuplicate={stubPrompt} />)
     for (const label of ['Routes', 'Tracks', 'Waypoints', 'Photos']) {
       const row = screen.getByText(label).closest('[data-row]')
-      expect(row).not.toBeNull()
-      const count = row?.querySelector('[data-count]')
-      expect(count).toHaveAttribute('data-count', '0')
-      expect(count).toHaveTextContent('0')
+      expect(row?.querySelector('[data-count]')).toHaveAttribute('data-count', '0')
     }
+  })
+
+  it('reflects route and track counts from the stores', () => {
+    useRoutesStore.setState({
+      routes: [fakeRoute('a'), fakeRoute('b')],
+      loading: false,
+      error: null,
+    })
+    useTracksStore.setState({
+      tracks: [fakeTrack('x')],
+      loading: false,
+      error: null,
+    })
+    render(<LayerPanel promptDuplicate={stubPrompt} />)
+    const routesRow = screen.getByText('Routes').closest('[data-row]')
+    const tracksRow = screen.getByText('Tracks').closest('[data-row]')
+    expect(routesRow?.querySelector('[data-count]')).toHaveAttribute('data-count', '2')
+    expect(tracksRow?.querySelector('[data-count]')).toHaveAttribute('data-count', '1')
   })
 
   it('toggles layer visibility when the switch is clicked', async () => {
@@ -33,9 +96,20 @@ describe('LayerPanel', () => {
   it('toggles layer visibility when the visible label is clicked', async () => {
     const user = userEvent.setup()
     render(<LayerPanel promptDuplicate={stubPrompt} />)
-    // Clicking the <label> activates the associated input thanks to htmlFor.
     await user.click(screen.getByText('Tracks'))
     expect(screen.getByRole('switch', { name: 'Tracks' })).not.toBeChecked()
     expect(useUiStore.getState().layerVisibility.tracks).toBe(false)
+  })
+
+  it('updates the routes count when a route is added to the store after render', () => {
+    const { rerender } = render(<LayerPanel promptDuplicate={stubPrompt} />)
+    useRoutesStore.setState({
+      routes: [fakeRoute('a')],
+      loading: false,
+      error: null,
+    })
+    rerender(<LayerPanel promptDuplicate={stubPrompt} />)
+    const routesRow = screen.getByText('Routes').closest('[data-row]')
+    expect(routesRow?.querySelector('[data-count]')).toHaveAttribute('data-count', '1')
   })
 })
