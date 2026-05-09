@@ -1,0 +1,13 @@
+.wrap {
+  width: 100%;
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+}
+
+.empty {
+  color: var(--color-text-dim);
+  font-size: 12px;
+  padding: var(--space-md);
+}

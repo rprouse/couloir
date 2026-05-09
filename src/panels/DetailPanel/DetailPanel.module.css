@@ -1,0 +1,53 @@
+.panel {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  width: 360px;
+  max-height: calc(100% - var(--space-xl));
+  overflow-y: auto;
+  background: var(--color-bg-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  z-index: 40;
+  color: var(--color-text);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.heading {
+  margin: 0;
+  font-size: 16px;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.actions button {
+  background: var(--color-bg-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  font: inherit;
+}
+
+.actions button:hover {
+  background: var(--color-bg-0);
+}
+
+.subtle {
+  color: var(--color-text-dim);
+  font-size: 12px;
+}

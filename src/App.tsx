@@ -9,6 +9,7 @@ import { FileDropzone } from './components/FileDropzone/FileDropzone'
 import { DuplicatePrompt, type DuplicatePromptHandle } from './features/import/DuplicatePrompt'
 import { runImport } from './features/import/ImportButton'
 import { subscribeToast } from './features/import/importToast'
+import { DetailPanel } from './panels/DetailPanel/DetailPanel'
 
 export default function App() {
   useEscapeKey()
@@ -52,6 +53,7 @@ export default function App() {
             {toast}
           </div>
         )}
+        <DetailPanel />
       </div>
       <DuplicatePrompt onReady={setPromptHandle} />
     </div>
