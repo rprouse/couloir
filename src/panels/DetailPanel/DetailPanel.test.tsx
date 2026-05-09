@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { DetailPanel } from './DetailPanel'
 import { useUiStore } from '../../store/ui'
 import { useRoutesStore } from '../../store/routes'
+import { useTracksStore } from '../../store/tracks'
 import { useTagsStore } from '../../store/tags'
 import { InMemoryStorageProvider } from '../../storage/memory'
 import { setStorage, clearStorage } from '../../storage/provider'
@@ -61,9 +62,32 @@ describe('DetailPanel', () => {
     expect(screen.getByText('X')).toBeInTheDocument()
   })
 
-  it('renders the track placeholder before Task 3.6 lands', () => {
+  it('renders TrackDetail when entityType is track', async () => {
+    useTracksStore.setState({
+      tracks: [{
+        id: 't1',
+        user_id: 'local',
+        name: 'A track',
+        description: '',
+        geojson: { type: 'LineString', coordinates: [[-116, 49.5, 1500], [-116, 49.51, 1510]] },
+        source_hash: 'h',
+        source_filename: null,
+        color: '#2A7BE0',
+        distance_m: 0,
+        elevation_gain_m: 0,
+        elevation_loss_m: 0,
+        duration_s: null,
+        moving_time_s: null,
+        recorded_at: null,
+        tags: [],
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z',
+      }],
+      loading: false,
+      error: null,
+    })
     useUiStore.setState({ panel: { mode: 'view', entityType: 'track', entityId: 't1' } })
     render(<DetailPanel />)
-    expect(screen.getByText(/track detail/i)).toBeInTheDocument()
+    expect(screen.getByText('A track')).toBeInTheDocument()
   })
 })

@@ -1,7 +1,7 @@
 import styles from './DetailPanel.module.css'
 import { useUiStore } from '../../store/ui'
 import { RouteDetail } from './RouteDetail'
-// TrackDetail is added in Task 3.6.
+import { TrackDetail } from './TrackDetail'
 
 export function DetailPanel(): JSX.Element | null {
   const panel = useUiStore((s) => s.panel)
@@ -14,8 +14,7 @@ export function DetailPanel(): JSX.Element | null {
     if (panel.entityType === 'route') {
       body = <RouteDetail routeId={panel.entityId} mode={panel.mode} />
     } else if (panel.entityType === 'track') {
-      // TrackDetail wired in Task 3.6.
-      body = <TrackPlaceholder id={panel.entityId} />
+      body = <TrackDetail trackId={panel.entityId} mode={panel.mode} />
     } else {
       body = <UnsupportedPlaceholder type={panel.entityType} />
     }
@@ -36,10 +35,6 @@ export function DetailPanel(): JSX.Element | null {
       </button>
     </aside>
   )
-}
-
-function TrackPlaceholder({ id }: { id: string }): JSX.Element {
-  return <div>Track detail (id={id}) — Task 3.6.</div>
 }
 
 function UnsupportedPlaceholder({ type }: { type: string }): JSX.Element {

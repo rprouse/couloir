@@ -10,6 +10,7 @@ import { debug } from '../../utils/debug'
 import { ElevationProfile } from '../../components/ElevationProfile/ElevationProfile'
 import { TagPills } from './TagPills'
 import { ConfirmDelete } from './ConfirmDelete'
+import { Metric } from './Metric'
 
 interface Props {
   routeId: string
@@ -90,15 +91,6 @@ function RouteView({ route }: { route: Route }): JSX.Element {
         <p className={styles.subtle}>{route.source_filename ?? 'Unknown'}</p>
       </section>
     </>
-  )
-}
-
-function Metric({ label, value }: { label: string; value: string }): JSX.Element {
-  return (
-    <div className={shared.metric}>
-      <span className={shared.metricLabel}>{label}</span>
-      <span className={shared.metricValue}>{value}</span>
-    </div>
   )
 }
 
