@@ -62,7 +62,7 @@ describe('DetailPanel', () => {
     expect(screen.getByText('X')).toBeInTheDocument()
   })
 
-  it('renders TrackDetail when entityType is track', async () => {
+  it('renders TrackDetail when entityType is track', () => {
     useTracksStore.setState({
       tracks: [{
         id: 't1',

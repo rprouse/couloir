@@ -37,12 +37,16 @@ function TrackView({ track }: { track: Track }): JSX.Element {
       await remove(track.id)
       closePanel()
     } catch (err) {
+      // Error UI lands later (Phase 6 toast/error infrastructure). Log
+      // for now so a stale UI race or storage hiccup doesn't surface as
+      // an unhandled rejection.
       debug('track delete failed', err)
     }
   }
 
-  // Bare date format — recorded_at is "2026-04-01T08:00:00Z" — for header
-  // display we want something readable. Keep it short and locale-default.
+  // recorded_at is a UTC ISO-8601 string. We render the locale-default date
+  // because Couloir is single-user and the user's machine timezone is the
+  // right reference point — no need to normalise to UTC for display.
   const recordedAt = track.recorded_at
     ? new Date(track.recorded_at).toLocaleDateString()
     : '—'

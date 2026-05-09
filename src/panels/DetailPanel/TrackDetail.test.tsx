@@ -96,4 +96,25 @@ describe('TrackDetail', () => {
     expect(useTracksStore.getState().tracks).toHaveLength(0)
     expect(useUiStore.getState().panel.mode).toBe('idle')
   })
+
+  it('edit form rejects empty name', async () => {
+    const user = userEvent.setup()
+    render(<TrackDetail trackId="t1" mode="edit" />)
+    const nameInput = screen.getByDisplayValue('Tour A')
+    await user.clear(nameInput)
+    expect(screen.getByRole('button', { name: /^Save$/ })).toBeDisabled()
+  })
+
+  it('edit form rejects invalid hex color', async () => {
+    const user = userEvent.setup()
+    render(<TrackDetail trackId="t1" mode="edit" />)
+    // Same disambiguation as RouteDetail: the color row has two inputs
+    // displaying the same value; jsdom normalises the color picker's
+    // .value to lowercase, so the uppercase fixture string is unique
+    // to the text input.
+    const colorTextInput = screen.getByDisplayValue('#2A7BE0')
+    await user.clear(colorTextInput)
+    await user.type(colorTextInput, 'not-a-color')
+    expect(screen.getByRole('button', { name: /^Save$/ })).toBeDisabled()
+  })
 })
