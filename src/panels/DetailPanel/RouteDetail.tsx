@@ -6,6 +6,7 @@ import { useUiStore } from '../../store/ui'
 import { ATES_LABELS, TECHNICAL_DIFFICULTY_LABELS } from '../../types'
 import type { ATES, Route, TechnicalDifficulty } from '../../types'
 import { formatDistanceKm, formatElevationM, isValidHex } from '../../utils/format'
+import { debug } from '../../utils/debug'
 import { ElevationProfile } from '../../components/ElevationProfile/ElevationProfile'
 import { TagPills } from './TagPills'
 import { ConfirmDelete } from './ConfirmDelete'
@@ -29,8 +30,15 @@ function RouteView({ route }: { route: Route }): JSX.Element {
   const remove = useRoutesStore((s) => s.remove)
 
   const handleDelete = async () => {
-    await remove(route.id)
-    closePanel()
+    try {
+      await remove(route.id)
+      closePanel()
+    } catch (err) {
+      // Error UI lands later (Phase 6 toast/error infrastructure). Log
+      // for now so a stale UI race or storage hiccup doesn't surface as
+      // an unhandled rejection.
+      debug('route delete failed', err)
+    }
   }
 
   return (
@@ -119,14 +127,20 @@ function RouteEdit({ route }: { route: Route }): JSX.Element {
 
   const onSave = async () => {
     if (!canSave) return
-    await update(route.id, {
-      name: name.trim(),
-      description,
-      color,
-      ates: ates === '' ? null : ates,
-      technical_difficulty: tech === '' ? null : tech,
-    })
-    openEntity('route', route.id)
+    try {
+      await update(route.id, {
+        name: name.trim(),
+        description,
+        color,
+        ates: ates === '' ? null : ates,
+        technical_difficulty: tech === '' ? null : tech,
+      })
+      openEntity('route', route.id)
+    } catch (err) {
+      // See note in RouteView.handleDelete — Phase 6 will replace this
+      // with a user-visible error surface.
+      debug('route save failed', err)
+    }
   }
 
   const onCancel = () => openEntity('route', route.id)

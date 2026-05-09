@@ -20,6 +20,7 @@ export function Sidebar({ panels }: SidebarProps) {
 
   return (
     <aside
+      aria-label="Sidebar"
       className={styles.sidebar}
       data-collapsed={sidebarCollapsed ? 'true' : 'false'}
     >

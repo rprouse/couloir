@@ -40,7 +40,7 @@ describe('Sidebar', () => {
   it('toggles the collapse button label and aside state on click', async () => {
     const user = userEvent.setup()
     render(<Sidebar panels={{}} />)
-    const aside = screen.getByRole('complementary')
+    const aside = screen.getByRole('complementary', { name: 'Sidebar' })
     expect(aside).toHaveAttribute('data-collapsed', 'false')
 
     await user.click(screen.getByRole('button', { name: /collapse sidebar/i }))
