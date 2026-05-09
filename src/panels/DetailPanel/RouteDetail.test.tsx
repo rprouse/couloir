@@ -107,10 +107,11 @@ describe('RouteDetail', () => {
     const user = userEvent.setup()
     render(<RouteDetail routeId="r1" mode="edit" />)
     // The color row has two inputs — a `<input type="color">` and the text
-    // input — both initially showing the same hex value. Index [1] is the
-    // text input (the editable one for invalid-format tests).
-    const colorInputs = screen.getAllByDisplayValue('#e05c2a')
-    const colorTextInput = colorInputs[1]
+    // input — both initially showing the same hex value. Browsers (and
+    // jsdom) normalize the color picker's `.value` to lowercase, so the
+    // displayed value `#E05C2A` is unique to the text input. Keep the
+    // exact-case query and rely on jsdom's normalization to disambiguate.
+    const colorTextInput = screen.getByDisplayValue('#E05C2A')
     await user.clear(colorTextInput)
     await user.type(colorTextInput, 'not-a-color')
     expect(screen.getByRole('button', { name: /^Save$/ })).toBeDisabled()

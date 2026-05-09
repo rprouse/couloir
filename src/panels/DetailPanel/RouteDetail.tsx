@@ -100,7 +100,7 @@ function RouteEdit({ route }: { route: Route }): JSX.Element {
 
   const [name, setName] = useState(route.name)
   const [description, setDescription] = useState(route.description)
-  const [color, setColor] = useState(route.color.toLowerCase())
+  const [color, setColor] = useState(route.color)
   const [ates, setAtes] = useState<ATES | ''>(route.ates ?? '')
   const [tech, setTech] = useState<TechnicalDifficulty | ''>(route.technical_difficulty ?? '')
 
@@ -109,7 +109,7 @@ function RouteEdit({ route }: { route: Route }): JSX.Element {
   useEffect(() => {
     setName(route.name)
     setDescription(route.description)
-    setColor(route.color.toLowerCase())
+    setColor(route.color)
     setAtes(route.ates ?? '')
     setTech(route.technical_difficulty ?? '')
   }, [route.id, route.updated_at])
