@@ -38,7 +38,13 @@ async function init(): Promise<void> {
   // foreign_keys is connection-scoped in SQLite, so it must be set per
   // connection (here in init) rather than in a migration. The async OPFS
   // VFS we use does not support WAL, so no journal_mode pragma is set.
-  await api.exec(handle, 'PRAGMA foreign_keys = ON;')
+  // We route the PRAGMA through the statements() iterator (via run) rather
+  // than the legacy api.exec() multi-statement path: on wa-sqlite-async +
+  // OriginPrivateFileSystemVFS the legacy exec leaves the wasm in a state
+  // where the next statements()-based query crashes with "memory access
+  // out of bounds". statements() steps each prepared statement explicitly
+  // and works correctly under the async VFS contract.
+  await run('PRAGMA foreign_keys = ON;')
   await ensureSchema()
 }
 
@@ -60,8 +66,13 @@ function db(): number {
 
 // ---- SQL helpers -----------------------------------------------------------
 
+// Single-statement execute. We deliberately do NOT use the legacy
+// api().exec(db, sql) multi-statement path — on wa-sqlite-async paired with
+// OriginPrivateFileSystemVFS that path corrupts the wasm such that the next
+// statements()-based query crashes. Routing every statement through
+// statements()/step() (here via run) keeps the wasm in a consistent state.
 async function exec(sql: string): Promise<void> {
-  await api().exec(db(), sql)
+  await run(sql)
 }
 
 async function all(sql: string, params: SqlValue[] = []): Promise<SqlRow[]> {
