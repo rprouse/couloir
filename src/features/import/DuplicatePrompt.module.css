@@ -1,0 +1,57 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: grid;
+  place-items: center;
+  z-index: 100;
+}
+
+.dialog {
+  background: var(--color-bg-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  min-width: 360px;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  color: var(--color-text);
+}
+
+.title {
+  margin: 0;
+  font-size: 14px;
+}
+
+.subtle {
+  color: var(--color-text-dim);
+  font-size: 12px;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+}
+
+.actions button {
+  background: var(--color-bg-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  font: inherit;
+}
+
+.actions button:hover {
+  background: var(--color-bg-0);
+}
+
+.applyAll {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}

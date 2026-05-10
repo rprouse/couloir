@@ -1,12 +1,20 @@
 /// <reference lib="webworker" />
 
-// wa-sqlite@1.0.0 (npm) ships an async OPFS VFS but not OPFSCoopSyncVFS; we
-// pair the async wasm factory with OriginPrivateFileSystemVFS until a newer
-// wa-sqlite is published. See src/storage/wa-sqlite.d.ts for the rationale.
-import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite-async.mjs'
+// We use AccessHandlePoolVFS — the OPFS VFS that uses synchronous file
+// system access handles directly, paired with the regular (non-Asyncify)
+// wa-sqlite build. The other OPFS VFS shipped in wa-sqlite@1.0.0
+// (OriginPrivateFileSystemVFS, async) routes every file op through
+// Asyncify; its callbacks throw OPFS NotFoundError into the wasm bridge
+// during normal SQLite housekeeping (xDelete on stale journals, etc.)
+// and abort the entire SQLite session. AccessHandlePoolVFS pre-allocates
+// a pool of OPFS sync access handles in a managed directory, so SQLite's
+// xDelete, xAccess, xLock all work synchronously without async-VFS
+// fragility. Tradeoff: single-tab use only (the pool's sync handles are
+// exclusive), which matches the architecture document's requirements.
+import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite.mjs'
 import * as SQLite from 'wa-sqlite'
-import { OriginPrivateFileSystemVFS } from 'wa-sqlite/src/examples/OriginPrivateFileSystemVFS.js'
-import wasmUrl from 'wa-sqlite/dist/wa-sqlite-async.wasm?url'
+import wasmUrl from 'wa-sqlite/dist/wa-sqlite.wasm?url'
+import { AccessHandlePoolVFS } from 'wa-sqlite/src/examples/AccessHandlePoolVFS.js'
 import { SchemaVersionError } from './errors'
 import { MIGRATIONS, SCHEMA_VERSION } from './migrations'
 import type {
@@ -30,15 +38,22 @@ async function init(): Promise<void> {
   // when the module is bundled and served from a hashed path.
   const module = await SQLiteESMFactory({ locateFile: () => wasmUrl })
   const api = SQLite.Factory(module)
-  const vfs = new OriginPrivateFileSystemVFS()
+  // AccessHandlePoolVFS keeps all its files inside a single OPFS directory
+  // so they don't collide with the photos/ directory or anything else. The
+  // VFS pre-allocates a pool of sync access handles in this directory; the
+  // logical DB filename ("couloir.db") becomes a handle in the pool, not a
+  // discrete OPFS file at the root.
+  const vfs = new AccessHandlePoolVFS('/couloir-db')
+  await vfs.isReady
   api.vfs_register(vfs, true)
   const handle = await api.open_v2(DB_FILENAME)
   sqlite3 = api
   dbHandle = handle
   // foreign_keys is connection-scoped in SQLite, so it must be set per
-  // connection (here in init) rather than in a migration. The async OPFS
-  // VFS we use does not support WAL, so no journal_mode pragma is set.
-  await api.exec(handle, 'PRAGMA foreign_keys = ON;')
+  // connection (here in init) rather than in a migration. We route the
+  // PRAGMA through run() (statements iterator) rather than legacy
+  // api.exec() for consistency with the rest of the file.
+  await run('PRAGMA foreign_keys = ON;')
   await ensureSchema()
 }
 
@@ -60,8 +75,13 @@ function db(): number {
 
 // ---- SQL helpers -----------------------------------------------------------
 
+// Single-statement execute. We deliberately do NOT use the legacy
+// api().exec(db, sql) multi-statement path — on wa-sqlite-async paired with
+// OriginPrivateFileSystemVFS that path corrupts the wasm such that the next
+// statements()-based query crashes. Routing every statement through
+// statements()/step() (here via run) keeps the wasm in a consistent state.
 async function exec(sql: string): Promise<void> {
-  await api().exec(db(), sql)
+  await run(sql)
 }
 
 async function all(sql: string, params: SqlValue[] = []): Promise<SqlRow[]> {
@@ -145,8 +165,14 @@ async function ensureSchema(): Promise<void> {
     if (m.version <= current) continue
     await exec('BEGIN')
     try {
-      // Migration files contain multi-statement SQL; exec() handles that.
-      await api().exec(db(), m.sql)
+      // Migration files contain multi-statement SQL. We iterate via the
+      // `statements()` async iterator (run helper) rather than the legacy
+      // `api().exec(db, sql)` path: on wa-sqlite-async + OriginPrivateFileSystemVFS
+      // the legacy exec can leave the wasm in a bad state after the first
+      // statement, so subsequent SELECTs against newly-created tables crash
+      // with "memory access out of bounds". Iterating via statements() steps
+      // each statement to completion under the async VFS contract.
+      await run(m.sql)
       await run(
         `INSERT OR REPLACE INTO schema_version (version, applied_at) VALUES (?, ?)`,
         [m.version, new Date().toISOString()],

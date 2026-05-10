@@ -1,5 +1,11 @@
 import styles from './LayerPanel.module.css'
 import { useUiStore, type LayerKey } from '../../store/ui'
+import { ImportButton } from '../../features/import/ImportButton'
+import type { DuplicateDecision, DuplicatePromptArgs } from '../../features/import/gpxImport'
+import { useRoutesStore } from '../../store/routes'
+import { useTracksStore } from '../../store/tracks'
+import { useWaypointsStore } from '../../store/waypoints'
+import { usePhotosStore } from '../../store/photos'
 
 interface RowDef {
   key: LayerKey
@@ -7,10 +13,6 @@ interface RowDef {
   color: string
 }
 
-// Colors mirror DEFAULTS.route.color / DEFAULTS.track.color from DATA-MODEL.md
-// and the DEFAULT clauses in the SQLite schema. Phase 2 will create a real
-// constants module; replace these literals with imports from there once that
-// lands so the values live in one place.
 const ROWS: ReadonlyArray<RowDef> = [
   { key: 'routes',    label: 'Routes',    color: '#E05C2A' },
   { key: 'tracks',    label: 'Tracks',    color: '#2A7BE0' },
@@ -18,13 +20,31 @@ const ROWS: ReadonlyArray<RowDef> = [
   { key: 'photos',    label: 'Photos',    color: '#94A3B8' },
 ]
 
-export function LayerPanel() {
+interface Props {
+  promptDuplicate: (args: DuplicatePromptArgs) => Promise<DuplicateDecision>
+}
+
+export function LayerPanel({ promptDuplicate }: Props) {
   const visibility = useUiStore((s) => s.layerVisibility)
   const toggleLayer = useUiStore((s) => s.toggleLayer)
+  const routesCount    = useRoutesStore((s) => s.routes.length)
+  const tracksCount    = useTracksStore((s) => s.tracks.length)
+  const waypointsCount = useWaypointsStore((s) => s.waypoints.length)
+  const photosCount    = usePhotosStore((s) => s.photos.length)
+
+  const counts: Record<LayerKey, number> = {
+    routes: routesCount,
+    tracks: tracksCount,
+    waypoints: waypointsCount,
+    photos: photosCount,
+  }
 
   return (
     <div className={styles.panel}>
       <h2 className={styles.heading}>Layers</h2>
+      <div className={styles.actions}>
+        <ImportButton promptDuplicate={promptDuplicate} />
+      </div>
       <ul className={styles.rows}>
         {ROWS.map((row) => {
           const inputId = `layer-toggle-${row.key}`
@@ -38,8 +58,8 @@ export function LayerPanel() {
               <label htmlFor={inputId} className={styles.label}>
                 {row.label}
               </label>
-              <span className={styles.count} data-count={0}>
-                0
+              <span className={styles.count} data-count={counts[row.key]}>
+                {counts[row.key]}
               </span>
               <input
                 id={inputId}

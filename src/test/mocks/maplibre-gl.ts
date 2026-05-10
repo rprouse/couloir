@@ -29,6 +29,14 @@ export class MockMap {
   addSource = vi.fn()
   removeSource = vi.fn()
   getSource = vi.fn(() => null)
+  addLayer = vi.fn()
+  removeLayer = vi.fn()
+  getLayer = vi.fn(() => null)
+  setLayoutProperty = vi.fn()
+  // Returning true keeps tests on the synchronous-install code path so the
+  // existing layer effects are exercised. Real MapLibre returns false briefly
+  // between Map() construction and the first style.load event.
+  isStyleLoaded = vi.fn(() => true)
   setStyle = vi.fn()
   resize = vi.fn()
   flyTo = vi.fn()

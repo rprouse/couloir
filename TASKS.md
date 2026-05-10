@@ -32,15 +32,15 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [2.4 Tags and backup](#task-24---tags-and-backup)
 - [x] [2.5 Zustand store wiring](#task-25---zustand-store-wiring)
 
-### Phase 3 — Routes and Tracks  ·  Plan: not yet written
+### Phase 3 — Routes and Tracks  ·  Plan: [`2026-05-07-couloir-phase-3-routes-and-tracks.md`](docs/superpowers/plans/2026-05-07-couloir-phase-3-routes-and-tracks.md)
 
-- [ ] [3.1 GPX parser](#task-31---gpx-parser)
-- [ ] [3.2 GPX import UI](#task-32---gpx-import-ui)
-- [ ] [3.3 Routes layer](#task-33---routes-layer)
-- [ ] [3.4 Tracks layer](#task-34---tracks-layer)
-- [ ] [3.5 Route detail panel](#task-35---route-detail-panel)
-- [ ] [3.6 Track detail panel](#task-36---track-detail-panel)
-- [ ] [3.7 Layer panel counts](#task-37---layer-panel-counts)
+- [x] [3.1 GPX parser](#task-31---gpx-parser)
+- [x] [3.2 GPX import UI](#task-32---gpx-import-ui)
+- [x] [3.3 Routes layer](#task-33---routes-layer)
+- [x] [3.4 Tracks layer](#task-34---tracks-layer)
+- [x] [3.5 Route detail panel](#task-35---route-detail-panel)
+- [x] [3.6 Track detail panel](#task-36---track-detail-panel)
+- [x] [3.7 Layer panel counts](#task-37---layer-panel-counts)
 
 ### Phase 4 — Waypoints  ·  Plan: not yet written
 
