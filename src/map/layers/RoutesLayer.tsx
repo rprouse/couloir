@@ -19,17 +19,24 @@ export function RoutesLayer(): null {
   const routes = useRoutesStore((s) => s.routes)
   const visible = useUiStore((s) => s.layerVisibility.routes)
 
-  // (1) Add source and layers when the map first becomes available.
-  // setStyle() (basemap or key change) wipes sources, so re-attach on every
-  // style.load — same pattern as the DEM source in MapView.tsx.
+  // (1) Add source and layers once the style is ready. addSource/addLayer
+  // throw "Style is not done loading" if called before MapLibre has fetched
+  // and parsed the style JSON — install() must wait for style.load.
+  // setStyle() (basemap or key change) re-fires style.load; the listener
+  // covers both first-load and subsequent style swaps.
+  // install() reads fresh state from the stores so it can run later via
+  // style.load with current data, not whatever was in scope at mount time.
   useEffect(() => {
     if (!map) return
 
     const install = () => {
       if (map.getSource(ROUTES_SOURCE_ID)) return
+      const initialRoutes = useRoutesStore.getState().routes
+      const initialVisible = useUiStore.getState().layerVisibility.routes
+      const visibility = initialVisible ? 'visible' : 'none'
       map.addSource(ROUTES_SOURCE_ID, {
         type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
+        data: buildRoutesGeoJson(initialRoutes) as never,
       })
       map.addLayer({
         id: ROUTES_GLOW_LAYER_ID,
@@ -41,7 +48,7 @@ export function RoutesLayer(): null {
           'line-opacity': ROUTE_LINE_GLOW_OPACITY,
           'line-blur': 1,
         },
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        layout: { 'line-cap': 'round', 'line-join': 'round', visibility },
       })
       map.addLayer({
         id: ROUTES_LINE_LAYER_ID,
@@ -51,11 +58,11 @@ export function RoutesLayer(): null {
           'line-color': ['get', 'color'],
           'line-width': ROUTE_LINE_WIDTH,
         },
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        layout: { 'line-cap': 'round', 'line-join': 'round', visibility },
       })
     }
 
-    install()
+    if (map.isStyleLoaded()) install()
     map.on('style.load', install)
 
     const onClick = (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
@@ -79,13 +86,12 @@ export function RoutesLayer(): null {
     }
   }, [map])
 
-  // React commits effects in declaration order. On first mount with `map`
-  // non-null, effect (1) above runs first and synchronously calls
-  // `map.addSource(ROUTES_SOURCE_ID, ...)`. By the time this effect's
-  // `getSource(...)` lookup runs (still inside the same commit), the
-  // source exists and `setData` populates it correctly. The guard on the
-  // next line is for the early-render case where `map` is still null.
   // (2) Sync GeoJSON when routes change.
+  // The source may not exist yet — install() runs on style.load, which is
+  // asynchronous. install() seeds the source with the current routes via
+  // useRoutesStore.getState(), so the initial data isn't lost; this effect
+  // handles every subsequent change. The guard short-circuits cleanly when
+  // the source isn't installed yet.
   useEffect(() => {
     if (!map) return
     const src = map.getSource(ROUTES_SOURCE_ID)

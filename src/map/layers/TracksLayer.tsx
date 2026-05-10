@@ -17,17 +17,24 @@ export function TracksLayer(): null {
   const tracks = useTracksStore((s) => s.tracks)
   const visible = useUiStore((s) => s.layerVisibility.tracks)
 
-  // (1) Add source and layer when the map first becomes available.
-  // setStyle() (basemap or key change) wipes sources, so re-attach on every
-  // style.load — same pattern as the DEM source in MapView.tsx.
+  // (1) Add source and layer once the style is ready. addSource/addLayer
+  // throw "Style is not done loading" if called before MapLibre has fetched
+  // and parsed the style JSON — install() must wait for style.load.
+  // setStyle() (basemap or key change) re-fires style.load; the listener
+  // covers both first-load and subsequent style swaps.
+  // install() reads fresh state from the stores so it can run later via
+  // style.load with current data, not whatever was in scope at mount time.
   useEffect(() => {
     if (!map) return
 
     const install = () => {
       if (map.getSource(TRACKS_SOURCE_ID)) return
+      const initialTracks = useTracksStore.getState().tracks
+      const initialVisible = useUiStore.getState().layerVisibility.tracks
+      const visibility = initialVisible ? 'visible' : 'none'
       map.addSource(TRACKS_SOURCE_ID, {
         type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
+        data: buildTracksGeoJson(initialTracks) as never,
       })
       map.addLayer({
         id: TRACKS_LINE_LAYER_ID,
@@ -38,11 +45,11 @@ export function TracksLayer(): null {
           'line-width': TRACK_LINE_WIDTH,
           'line-dasharray': TRACK_LINE_DASH,
         },
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        layout: { 'line-cap': 'round', 'line-join': 'round', visibility },
       })
     }
 
-    install()
+    if (map.isStyleLoaded()) install()
     map.on('style.load', install)
 
     const onClick = (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
@@ -67,12 +74,11 @@ export function TracksLayer(): null {
   }, [map])
 
   // (2) Sync GeoJSON when tracks change.
-  // React commits effects in declaration order. On first mount with `map`
-  // non-null, effect (1) above runs first and synchronously calls
-  // `map.addSource(TRACKS_SOURCE_ID, ...)`. By the time this effect's
-  // `getSource(...)` lookup runs (still inside the same commit), the
-  // source exists and `setData` populates it correctly. The guard on the
-  // next line is for the early-render case where `map` is still null.
+  // The source may not exist yet — install() runs on style.load, which is
+  // asynchronous. install() seeds the source with the current tracks via
+  // useTracksStore.getState(), so the initial data isn't lost; this effect
+  // handles every subsequent change. The guard short-circuits cleanly when
+  // the source isn't installed yet.
   useEffect(() => {
     if (!map) return
     const src = map.getSource(TRACKS_SOURCE_ID)
