@@ -5,8 +5,8 @@
 // wa-sqlite is published. See src/storage/wa-sqlite.d.ts for the rationale.
 import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite-async.mjs'
 import * as SQLite from 'wa-sqlite'
-import { OriginPrivateFileSystemVFS } from 'wa-sqlite/src/examples/OriginPrivateFileSystemVFS.js'
 import wasmUrl from 'wa-sqlite/dist/wa-sqlite-async.wasm?url'
+import { TolerantOPFSVFS } from './tolerantOPFSVFS'
 import { SchemaVersionError } from './errors'
 import { MIGRATIONS, SCHEMA_VERSION } from './migrations'
 import type {
@@ -30,7 +30,10 @@ async function init(): Promise<void> {
   // when the module is bundled and served from a hashed path.
   const module = await SQLiteESMFactory({ locateFile: () => wasmUrl })
   const api = SQLite.Factory(module)
-  const vfs = new OriginPrivateFileSystemVFS()
+  // TolerantOPFSVFS overrides xDelete to tolerate NotFoundError. Without it,
+  // SQLite's normal "delete this journal that may not exist" call aborts the
+  // wasm. See src/storage/tolerantOPFSVFS.ts for the full rationale.
+  const vfs = new TolerantOPFSVFS()
   api.vfs_register(vfs, true)
   const handle = await api.open_v2(DB_FILENAME)
   sqlite3 = api

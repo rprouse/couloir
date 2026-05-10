@@ -52,6 +52,14 @@ declare module 'wa-sqlite/src/examples/OriginPrivateFileSystemVFS.js' {
     constructor()
     readonly name: string
     close(): Promise<void>
+    // handleAsync is the protocol shim wa-sqlite's VFS.Base provides for
+    // routing async work through the wasm bridge. We declare it so subclass
+    // overrides (TolerantOPFSVFS) can call it without a cast.
+    handleAsync<T>(fn: () => Promise<T>): T | Promise<T>
+    // xDelete and the other VFS callbacks return either a number (SQLITE
+    // result code) or a Promise<number> when handleAsync defers — declare
+    // only the methods we override.
+    xDelete(name: string, syncDir: number): number | Promise<number>
   }
 }
 
