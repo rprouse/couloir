@@ -2,13 +2,16 @@
 // We only declare what the worker actually calls; expand on demand.
 //
 // NOTE: wa-sqlite@1.0.0 (the only published npm version) does not include the
-// `OPFSCoopSyncVFS` referenced in the original plan — that VFS lives only on
-// the GitHub master branch in newer wa-sqlite revisions. Until a newer version
-// is published, we use `OriginPrivateFileSystemVFS` (async) plus the async
-// wasm factory `wa-sqlite-async.mjs`. The architectural properties we care
-// about (worker-hosted, OPFS-backed, single-tab) are preserved.
+// `OPFSCoopSyncVFS` referenced in the original Phase 2 plan — that VFS lives
+// only on the GitHub master branch. We use `AccessHandlePoolVFS` (the other
+// OPFS VFS shipped in 1.0.0) paired with the regular (non-Asyncify) wasm
+// factory `wa-sqlite.mjs`. AccessHandlePoolVFS uses synchronous OPFS sync
+// access handles directly, avoiding the async-VFS-callback-into-wasm path
+// that aborts SQLite during routine housekeeping (xDelete on stale
+// journals, etc.). Architectural properties (worker-hosted, OPFS-backed,
+// single-tab) are preserved.
 
-declare module 'wa-sqlite/dist/wa-sqlite-async.mjs' {
+declare module 'wa-sqlite/dist/wa-sqlite.mjs' {
   type Module = unknown
   type FactoryOptions = { locateFile?: (path: string) => string }
   const factory: (opts?: FactoryOptions) => Promise<Module>
@@ -47,23 +50,16 @@ declare module 'wa-sqlite' {
   export function Factory(module: unknown): SQLiteAPI
 }
 
-declare module 'wa-sqlite/src/examples/OriginPrivateFileSystemVFS.js' {
-  export class OriginPrivateFileSystemVFS {
-    constructor()
+declare module 'wa-sqlite/src/examples/AccessHandlePoolVFS.js' {
+  export class AccessHandlePoolVFS {
+    constructor(directoryPath: string)
     readonly name: string
+    readonly isReady: Promise<void>
     close(): Promise<void>
-    // handleAsync is the protocol shim wa-sqlite's VFS.Base provides for
-    // routing async work through the wasm bridge. We declare it so subclass
-    // overrides (TolerantOPFSVFS) can call it without a cast.
-    handleAsync<T>(fn: () => Promise<T>): T | Promise<T>
-    // xDelete and the other VFS callbacks return either a number (SQLITE
-    // result code) or a Promise<number> when handleAsync defers — declare
-    // only the methods we override.
-    xDelete(name: string, syncDir: number): number | Promise<number>
   }
 }
 
-declare module 'wa-sqlite/dist/wa-sqlite-async.wasm?url' {
+declare module 'wa-sqlite/dist/wa-sqlite.wasm?url' {
   const url: string
   export default url
 }

@@ -1,12 +1,20 @@
 /// <reference lib="webworker" />
 
-// wa-sqlite@1.0.0 (npm) ships an async OPFS VFS but not OPFSCoopSyncVFS; we
-// pair the async wasm factory with OriginPrivateFileSystemVFS until a newer
-// wa-sqlite is published. See src/storage/wa-sqlite.d.ts for the rationale.
-import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite-async.mjs'
+// We use AccessHandlePoolVFS — the OPFS VFS that uses synchronous file
+// system access handles directly, paired with the regular (non-Asyncify)
+// wa-sqlite build. The other OPFS VFS shipped in wa-sqlite@1.0.0
+// (OriginPrivateFileSystemVFS, async) routes every file op through
+// Asyncify; its callbacks throw OPFS NotFoundError into the wasm bridge
+// during normal SQLite housekeeping (xDelete on stale journals, etc.)
+// and abort the entire SQLite session. AccessHandlePoolVFS pre-allocates
+// a pool of OPFS sync access handles in a managed directory, so SQLite's
+// xDelete, xAccess, xLock all work synchronously without async-VFS
+// fragility. Tradeoff: single-tab use only (the pool's sync handles are
+// exclusive), which matches the architecture document's requirements.
+import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite.mjs'
 import * as SQLite from 'wa-sqlite'
-import wasmUrl from 'wa-sqlite/dist/wa-sqlite-async.wasm?url'
-import { TolerantOPFSVFS } from './tolerantOPFSVFS'
+import wasmUrl from 'wa-sqlite/dist/wa-sqlite.wasm?url'
+import { AccessHandlePoolVFS } from 'wa-sqlite/src/examples/AccessHandlePoolVFS.js'
 import { SchemaVersionError } from './errors'
 import { MIGRATIONS, SCHEMA_VERSION } from './migrations'
 import type {
@@ -30,23 +38,21 @@ async function init(): Promise<void> {
   // when the module is bundled and served from a hashed path.
   const module = await SQLiteESMFactory({ locateFile: () => wasmUrl })
   const api = SQLite.Factory(module)
-  // TolerantOPFSVFS overrides xDelete to tolerate NotFoundError. Without it,
-  // SQLite's normal "delete this journal that may not exist" call aborts the
-  // wasm. See src/storage/tolerantOPFSVFS.ts for the full rationale.
-  const vfs = new TolerantOPFSVFS()
+  // AccessHandlePoolVFS keeps all its files inside a single OPFS directory
+  // so they don't collide with the photos/ directory or anything else. The
+  // VFS pre-allocates a pool of sync access handles in this directory; the
+  // logical DB filename ("couloir.db") becomes a handle in the pool, not a
+  // discrete OPFS file at the root.
+  const vfs = new AccessHandlePoolVFS('/couloir-db')
+  await vfs.isReady
   api.vfs_register(vfs, true)
   const handle = await api.open_v2(DB_FILENAME)
   sqlite3 = api
   dbHandle = handle
   // foreign_keys is connection-scoped in SQLite, so it must be set per
-  // connection (here in init) rather than in a migration. The async OPFS
-  // VFS we use does not support WAL, so no journal_mode pragma is set.
-  // We route the PRAGMA through the statements() iterator (via run) rather
-  // than the legacy api.exec() multi-statement path: on wa-sqlite-async +
-  // OriginPrivateFileSystemVFS the legacy exec leaves the wasm in a state
-  // where the next statements()-based query crashes with "memory access
-  // out of bounds". statements() steps each prepared statement explicitly
-  // and works correctly under the async VFS contract.
+  // connection (here in init) rather than in a migration. We route the
+  // PRAGMA through run() (statements iterator) rather than legacy
+  // api.exec() for consistency with the rest of the file.
   await run('PRAGMA foreign_keys = ON;')
   await ensureSchema()
 }
