@@ -145,8 +145,14 @@ async function ensureSchema(): Promise<void> {
     if (m.version <= current) continue
     await exec('BEGIN')
     try {
-      // Migration files contain multi-statement SQL; exec() handles that.
-      await api().exec(db(), m.sql)
+      // Migration files contain multi-statement SQL. We iterate via the
+      // `statements()` async iterator (run helper) rather than the legacy
+      // `api().exec(db, sql)` path: on wa-sqlite-async + OriginPrivateFileSystemVFS
+      // the legacy exec can leave the wasm in a bad state after the first
+      // statement, so subsequent SELECTs against newly-created tables crash
+      // with "memory access out of bounds". Iterating via statements() steps
+      // each statement to completion under the async VFS contract.
+      await run(m.sql)
       await run(
         `INSERT OR REPLACE INTO schema_version (version, applied_at) VALUES (?, ?)`,
         [m.version, new Date().toISOString()],
