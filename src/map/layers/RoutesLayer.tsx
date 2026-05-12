@@ -66,6 +66,7 @@ export function RoutesLayer(): null {
     map.on('style.load', install)
 
     const onClick = (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
+      if (useUiStore.getState().placement.mode !== 'idle') return
       const id = e.features?.[0]?.properties?.id
       if (typeof id === 'string') {
         useUiStore.getState().openEntity('route', id)
@@ -73,8 +74,16 @@ export function RoutesLayer(): null {
     }
     map.on('click', ROUTES_LINE_LAYER_ID, onClick)
     // Cursor affordance — show pointer when hovering a clickable line.
-    const onEnter = () => { map.getCanvas().style.cursor = 'pointer' }
-    const onLeave = () => { map.getCanvas().style.cursor = '' }
+    // Guard against overriding the placement-mode crosshair.
+    const onEnter = () => {
+      if (useUiStore.getState().placement.mode !== 'idle') return
+      map.getCanvas().style.cursor = 'pointer'
+    }
+    const onLeave = () => {
+      if (useUiStore.getState().placement.mode === 'idle') {
+        map.getCanvas().style.cursor = ''
+      }
+    }
     map.on('mouseenter', ROUTES_LINE_LAYER_ID, onEnter)
     map.on('mouseleave', ROUTES_LINE_LAYER_ID, onLeave)
 
