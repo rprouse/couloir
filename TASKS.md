@@ -44,7 +44,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 
 ### Phase 4 — Waypoints  ·  Plan: not yet written
 
-- [ ] [4.1 Waypoint placement mode](#task-41---waypoint-placement-mode)
+- [x] [4.1 Waypoint placement mode](#task-41---waypoint-placement-mode)
 - [ ] [4.2 Waypoint creation form](#task-42---waypoint-creation-form)
 - [ ] [4.3 Waypoints layer](#task-43---waypoints-layer)
 - [ ] [4.4 Waypoint detail panel](#task-44---waypoint-detail-panel)
