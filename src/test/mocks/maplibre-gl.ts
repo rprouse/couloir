@@ -40,6 +40,20 @@ export class MockMap {
   setStyle = vi.fn()
   resize = vi.fn()
   flyTo = vi.fn()
+  hasImage = vi.fn(() => false)
+  addImage = vi.fn()
+  once = vi.fn((event: string, handler: (...args: unknown[]) => void) => {
+    const wrapped = (...args: unknown[]) => {
+      this.off(event, wrapped)
+      handler(...args)
+    }
+    this.on(event, wrapped)
+    return this
+  })
+  dragPan = {
+    enable: vi.fn(),
+    disable: vi.fn(),
+  }
 }
 
 export const NavigationControl = vi.fn().mockImplementation(() => ({}))

@@ -11,6 +11,7 @@ import { TerrainControl } from './controls/TerrainControl'
 import { setMap } from '../hooks/useMap'
 import { RoutesLayer } from './layers/RoutesLayer'
 import { TracksLayer } from './layers/TracksLayer'
+import { WaypointsLayer } from './layers/WaypointsLayer'
 import { usePlacementMapBinding } from './placement/usePlacementMapBinding'
 import { MAP_DEFAULTS } from '../types'
 import { debug } from '../utils/debug'
@@ -165,6 +166,7 @@ export function MapView() {
       <TerrainControl />
       <RoutesLayer />
       <TracksLayer />
+      <WaypointsLayer />
       {styleError && (
         <div role="alert" className={styles.banner}>
           <span>{styleError}</span>
