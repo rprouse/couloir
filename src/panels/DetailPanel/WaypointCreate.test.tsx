@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { act } from 'react'
 import { useUiStore } from '../../store/ui'
 import { useWaypointsStore } from '../../store/waypoints'
@@ -35,9 +35,10 @@ describe('WaypointCreate', () => {
     fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Summit Hut' } })
     fireEvent.change(screen.getByLabelText(/category/i), { target: { value: 'summit' } })
     fireEvent.click(screen.getByRole('button', { name: /save/i }))
-    await new Promise((r) => setTimeout(r, 0))
+    await waitFor(() => {
+      expect(useWaypointsStore.getState().waypoints).toHaveLength(1)
+    })
     const stored = useWaypointsStore.getState().waypoints
-    expect(stored).toHaveLength(1)
     expect(stored[0].name).toBe('Summit Hut')
     expect(stored[0].category).toBe('summit')
     expect(stored[0].lat).toBe(49.5)
