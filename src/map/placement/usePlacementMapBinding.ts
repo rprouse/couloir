@@ -21,6 +21,8 @@ export function applyPlacementBinding(
   const handler = (e: { lngLat: { lat: number; lng: number } }) => {
     onComplete(e.lngLat.lat, e.lngLat.lng)
   }
+  // `handler` accepts a narrower shape than MapLibre's generic MapMouseEvent overload
+  // requires. The cast is safe because MapMouseEvent structurally satisfies { lngLat: { lat, lng } }.
   map.on('click', handler as never)
 
   return () => {
