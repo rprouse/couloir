@@ -27,6 +27,7 @@ interface Props {
 export function LayerPanel({ promptDuplicate }: Props) {
   const visibility = useUiStore((s) => s.layerVisibility)
   const toggleLayer = useUiStore((s) => s.toggleLayer)
+  const startWaypointPlacement = useUiStore((s) => s.startWaypointPlacement)
   const routesCount    = useRoutesStore((s) => s.routes.length)
   const tracksCount    = useTracksStore((s) => s.tracks.length)
   const waypointsCount = useWaypointsStore((s) => s.waypoints.length)
@@ -44,6 +45,9 @@ export function LayerPanel({ promptDuplicate }: Props) {
       <h2 className={styles.heading}>Layers</h2>
       <div className={styles.actions}>
         <ImportButton promptDuplicate={promptDuplicate} />
+        <button type="button" onClick={startWaypointPlacement}>
+          Add Waypoint
+        </button>
       </div>
       <ul className={styles.rows}>
         {ROWS.map((row) => {
