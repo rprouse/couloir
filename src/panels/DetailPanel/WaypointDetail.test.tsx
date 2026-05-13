@@ -81,6 +81,36 @@ describe('WaypointDetail (edit)', () => {
       entityId: 'w1',
     })
   })
+
+  it('disables Save when name is whitespace-only', () => {
+    render(<WaypointDetail waypointId="w1" mode="edit" />)
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: '   ' } })
+    expect(screen.getByRole('button', { name: /save/i })).toBeDisabled()
+  })
+
+  it('keeps Save enabled when elevation is a valid number', () => {
+    // jsdom sanitises type="number" inputs — non-numeric strings become ''.
+    // Test the Number.isFinite(elevNum) branch by providing a real number.
+    render(<WaypointDetail waypointId="w1" mode="edit" />)
+    fireEvent.change(screen.getByLabelText(/elevation/i), { target: { value: '1500' } })
+    expect(screen.getByRole('button', { name: /save/i })).not.toBeDisabled()
+  })
+
+  it('keeps Save enabled when elevation is blank (null path)', () => {
+    render(<WaypointDetail waypointId="w1" mode="edit" />)
+    fireEvent.change(screen.getByLabelText(/elevation/i), { target: { value: '' } })
+    // Name still has its initial 'Summit Hut' value, so canSave depends on elevation.
+    expect(screen.getByRole('button', { name: /save/i })).not.toBeDisabled()
+  })
+
+  it('disables Save when color override is an invalid hex', () => {
+    render(<WaypointDetail waypointId="w1" mode="edit" />)
+    // The hex text input has placeholder "leave blank to use category default"
+    // and no explicit aria-label. Find it via placeholder text.
+    const hexInput = screen.getByPlaceholderText(/leave blank/i)
+    fireEvent.change(hexInput, { target: { value: '#gg0000' } })
+    expect(screen.getByRole('button', { name: /save/i })).toBeDisabled()
+  })
 })
 
 describe('WaypointDetail (delete)', () => {
