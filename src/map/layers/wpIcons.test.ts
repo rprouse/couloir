@@ -7,8 +7,7 @@ describe('categoryGlyph', () => {
   it('returns a single-character glyph for each category', () => {
     for (const k of Object.keys(WAYPOINT_CATEGORIES) as WaypointCategory[]) {
       const g = categoryGlyph(k)
-      expect(g.length).toBeGreaterThan(0)
-      expect(g.length).toBeLessThanOrEqual(2)
+      expect(g.length).toBe(1)
     }
   })
 
