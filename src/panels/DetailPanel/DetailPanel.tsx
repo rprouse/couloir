@@ -3,6 +3,7 @@ import { useUiStore } from '../../store/ui'
 import { RouteDetail } from './RouteDetail'
 import { TrackDetail } from './TrackDetail'
 import { WaypointCreate } from './WaypointCreate'
+import { WaypointDetail } from './WaypointDetail'
 
 export function DetailPanel(): JSX.Element | null {
   const panel = useUiStore((s) => s.panel)
@@ -16,8 +17,10 @@ export function DetailPanel(): JSX.Element | null {
       body = <RouteDetail routeId={panel.entityId} mode={panel.mode} />
     } else if (panel.entityType === 'track') {
       body = <TrackDetail trackId={panel.entityId} mode={panel.mode} />
+    } else if (panel.entityType === 'waypoint') {
+      body = <WaypointDetail waypointId={panel.entityId} mode={panel.mode} />
     } else {
-      // Waypoint view/edit ships in Task 4.4; photo in Phase 5.
+      // photo view/edit ships in Phase 5
       body = <UnsupportedPlaceholder type={panel.entityType} />
     }
   } else if (panel.entityType === 'waypoint') {
