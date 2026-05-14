@@ -147,4 +147,33 @@ describe('LayerPanel', () => {
     })
     expect(screen.getByText('Waypoints').parentElement?.querySelector('[data-count]')?.getAttribute('data-count')).toBe('1')
   })
+
+  it('drops back to 0 when the last waypoint is removed', () => {
+    render(<LayerPanel promptDuplicate={stubPrompt} />)
+    act(() => {
+      useWaypointsStore.setState({
+        waypoints: [
+          {
+            id: 'w1',
+            user_id: 'local',
+            name: 'A',
+            description: '',
+            lat: 0,
+            lng: 0,
+            elevation_m: null,
+            category: 'poi',
+            color: null,
+            tags: [],
+            created_at: '2026-01-01T00:00:00.000Z',
+            updated_at: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+      })
+    })
+    expect(screen.getByText('Waypoints').parentElement?.querySelector('[data-count]')?.getAttribute('data-count')).toBe('1')
+    act(() => {
+      useWaypointsStore.setState({ waypoints: [] })
+    })
+    expect(screen.getByText('Waypoints').parentElement?.querySelector('[data-count]')?.getAttribute('data-count')).toBe('0')
+  })
 })
