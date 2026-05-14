@@ -10,6 +10,7 @@ import { DuplicatePrompt, type DuplicatePromptHandle } from './features/import/D
 import { runImport } from './features/import/ImportButton'
 import { subscribeToast } from './features/import/importToast'
 import { DetailPanel } from './panels/DetailPanel/DetailPanel'
+import { PlacementBanner } from './panels/PlacementBanner/PlacementBanner'
 
 export default function App() {
   useEscapeKey()
@@ -47,6 +48,7 @@ export default function App() {
       />
       <div data-testid="map-area" className={styles.mapArea}>
         <MapView />
+        <PlacementBanner />
         <FileDropzone onFiles={onDropFiles} />
         {toast && (
           <div role="status" aria-live="polite" className={styles.toast}>

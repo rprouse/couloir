@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import { act } from 'react'
 import userEvent from '@testing-library/user-event'
 import { LayerPanel } from './LayerPanel'
 import { useUiStore } from '../../store/ui'
@@ -111,5 +112,68 @@ describe('LayerPanel', () => {
     rerender(<LayerPanel promptDuplicate={stubPrompt} />)
     const routesRow = screen.getByText('Routes').closest('[data-row]')
     expect(routesRow?.querySelector('[data-count]')).toHaveAttribute('data-count', '1')
+  })
+
+  it('dispatches startWaypointPlacement when the Add Waypoint button is clicked', () => {
+    render(<LayerPanel promptDuplicate={stubPrompt} />)
+    act(() => {
+      screen.getByRole('button', { name: /add waypoint/i }).click()
+    })
+    expect(useUiStore.getState().placement.mode).toBe('waypoint')
+  })
+
+  it('reflects the live waypoint count via data-count attribute', () => {
+    render(<LayerPanel promptDuplicate={stubPrompt} />)
+    expect(screen.getByText('Waypoints').parentElement?.querySelector('[data-count]')?.getAttribute('data-count')).toBe('0')
+    act(() => {
+      useWaypointsStore.setState({
+        waypoints: [
+          {
+            id: 'w1',
+            user_id: 'local',
+            name: 'A',
+            description: '',
+            lat: 49.5,
+            lng: -116,
+            elevation_m: 1500,
+            category: 'summit',
+            color: null,
+            tags: [],
+            created_at: '2026-01-01T00:00:00.000Z',
+            updated_at: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+      })
+    })
+    expect(screen.getByText('Waypoints').parentElement?.querySelector('[data-count]')?.getAttribute('data-count')).toBe('1')
+  })
+
+  it('drops back to 0 when the last waypoint is removed', () => {
+    render(<LayerPanel promptDuplicate={stubPrompt} />)
+    act(() => {
+      useWaypointsStore.setState({
+        waypoints: [
+          {
+            id: 'w1',
+            user_id: 'local',
+            name: 'A',
+            description: '',
+            lat: 0,
+            lng: 0,
+            elevation_m: null,
+            category: 'poi',
+            color: null,
+            tags: [],
+            created_at: '2026-01-01T00:00:00.000Z',
+            updated_at: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+      })
+    })
+    expect(screen.getByText('Waypoints').parentElement?.querySelector('[data-count]')?.getAttribute('data-count')).toBe('1')
+    act(() => {
+      useWaypointsStore.setState({ waypoints: [] })
+    })
+    expect(screen.getByText('Waypoints').parentElement?.querySelector('[data-count]')?.getAttribute('data-count')).toBe('0')
   })
 })

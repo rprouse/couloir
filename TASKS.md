@@ -42,13 +42,13 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [3.6 Track detail panel](#task-36---track-detail-panel)
 - [x] [3.7 Layer panel counts](#task-37---layer-panel-counts)
 
-### Phase 4 — Waypoints  ·  Plan: not yet written
+### Phase 4 — Waypoints  ·  Plan: [`2026-05-10-couloir-phase-4-waypoints.md`](docs/superpowers/plans/2026-05-10-couloir-phase-4-waypoints.md)
 
-- [ ] [4.1 Waypoint placement mode](#task-41---waypoint-placement-mode)
-- [ ] [4.2 Waypoint creation form](#task-42---waypoint-creation-form)
-- [ ] [4.3 Waypoints layer](#task-43---waypoints-layer)
-- [ ] [4.4 Waypoint detail panel](#task-44---waypoint-detail-panel)
-- [ ] [4.5 Waypoint count badge](#task-45---waypoint-count-badge)
+- [x] [4.1 Waypoint placement mode](#task-41---waypoint-placement-mode)
+- [x] [4.2 Waypoint creation form](#task-42---waypoint-creation-form)
+- [x] [4.3 Waypoints layer](#task-43---waypoints-layer)
+- [x] [4.4 Waypoint detail panel](#task-44---waypoint-detail-panel)
+- [x] [4.5 Waypoint count badge](#task-45---waypoint-count-badge)
 
 ### Phase 5 — Photos  ·  Plan: not yet written
 

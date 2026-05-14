@@ -11,3 +11,12 @@ export const ROUTES_LINE_LAYER_ID = 'routes-line'
 
 export const TRACKS_SOURCE_ID = 'tracks-source'
 export const TRACKS_LINE_LAYER_ID = 'tracks-line'
+
+export const WAYPOINTS_SOURCE_ID = 'waypoints-source'
+export const WAYPOINTS_SYMBOLS_LAYER_ID = 'waypoints-symbols'
+
+// Pixel size of the generated category icon images (square). Tuned so that
+// icons remain readable over satellite/topo basemaps without dominating the
+// viewport. The MapLibre symbol layer renders them at this nominal size with
+// icon-size: 1.0.
+export const WAYPOINT_ICON_PX = 32

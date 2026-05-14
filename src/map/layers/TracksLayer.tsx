@@ -53,6 +53,7 @@ export function TracksLayer(): null {
     map.on('style.load', install)
 
     const onClick = (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
+      if (useUiStore.getState().placement.mode !== 'idle') return
       const id = e.features?.[0]?.properties?.id
       if (typeof id === 'string') {
         useUiStore.getState().openEntity('track', id)
@@ -60,8 +61,16 @@ export function TracksLayer(): null {
     }
     map.on('click', TRACKS_LINE_LAYER_ID, onClick)
     // Cursor affordance — show pointer when hovering a clickable line.
-    const onEnter = () => { map.getCanvas().style.cursor = 'pointer' }
-    const onLeave = () => { map.getCanvas().style.cursor = '' }
+    // Guard against overriding the placement-mode crosshair.
+    const onEnter = () => {
+      if (useUiStore.getState().placement.mode !== 'idle') return
+      map.getCanvas().style.cursor = 'pointer'
+    }
+    const onLeave = () => {
+      if (useUiStore.getState().placement.mode === 'idle') {
+        map.getCanvas().style.cursor = ''
+      }
+    }
     map.on('mouseenter', TRACKS_LINE_LAYER_ID, onEnter)
     map.on('mouseleave', TRACKS_LINE_LAYER_ID, onLeave)
 

@@ -2,6 +2,8 @@ import styles from './DetailPanel.module.css'
 import { useUiStore } from '../../store/ui'
 import { RouteDetail } from './RouteDetail'
 import { TrackDetail } from './TrackDetail'
+import { WaypointCreate } from './WaypointCreate'
+import { WaypointDetail } from './WaypointDetail'
 
 export function DetailPanel(): JSX.Element | null {
   const panel = useUiStore((s) => s.panel)
@@ -15,11 +17,16 @@ export function DetailPanel(): JSX.Element | null {
       body = <RouteDetail routeId={panel.entityId} mode={panel.mode} />
     } else if (panel.entityType === 'track') {
       body = <TrackDetail trackId={panel.entityId} mode={panel.mode} />
+    } else if (panel.entityType === 'waypoint') {
+      body = <WaypointDetail waypointId={panel.entityId} mode={panel.mode} />
     } else {
+      // photo view/edit ships in Phase 5
       body = <UnsupportedPlaceholder type={panel.entityType} />
     }
+  } else if (panel.entityType === 'waypoint') {
+    body = <WaypointCreate />
   } else {
-    // panel.mode === 'create' (waypoints/photos in Phase 4–5).
+    // panel.mode === 'create' && entityType === 'photo' — Phase 5.
     body = <UnsupportedPlaceholder type={panel.entityType} />
   }
 
