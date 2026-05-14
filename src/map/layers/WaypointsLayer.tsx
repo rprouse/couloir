@@ -149,7 +149,7 @@ export function WaypointsLayer(): null {
       drag.current = { id, lat: e.lngLat.lat, lng: e.lngLat.lng }
       map.dragPan.disable()
       map.on('mousemove', onMouseMove)
-      map.once('mouseup', onMouseUp)
+      map.on('mouseup', onMouseUp)
       window.addEventListener('mouseup', onWindowMouseUp)
     }
 
