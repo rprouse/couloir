@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { DatabaseSync } from './sqlite'
 import { MIGRATIONS } from '../src/storage/migrations'
+import { InMemoryStorageProvider } from '../src/storage/memory'
 import { createApp } from './app'
 
 describe('server toolchain', () => {
@@ -16,7 +17,10 @@ describe('server toolchain', () => {
   })
 
   it('serves /api/health through hono', async () => {
-    const res = await createApp().request('/api/health')
+    const res = await createApp({
+      storage: new InMemoryStorageProvider(),
+      config: { maptilerKey: null },
+    }).request('/api/health')
     expect(await res.json()).toEqual({ ok: true, schemaVersion: MIGRATIONS.length })
   })
 })

@@ -155,9 +155,9 @@ Pure refactor: no behaviour change in the running app.
 
 **Files:** create `server/app.ts`, `server/app.test.ts`.
 
-`createApp({ storage, config }: { storage: StorageProvider; config: { maptilerKey: string | null; schemaVersion: number } })` returns a Hono app. It takes a `StorageProvider`, not a backend, so routes stay thin and the app tests can use `InMemoryStorageProvider`.
+`createApp({ storage, config }: { storage: StorageProvider; config: { maptilerKey: string | null } })` (the schema version comes from `SCHEMA_VERSION` directly) returns a Hono app. It takes a `StorageProvider`, not a backend, so routes stay thin and the app tests can use `InMemoryStorageProvider`.
 
-- [ ] **Step 8.3.1: Routes.** They mirror the interface 1:1:
+- [x] **Step 8.3.1: Routes.** They mirror the interface 1:1:
 
   | Method | Path | Storage call |
   |---|---|---|
@@ -175,23 +175,30 @@ Pure refactor: no behaviour change in the running app.
   | DELETE | `/api/photos/:id` | `deletePhoto` |
   | GET/PUT/DELETE | `/api/tags`, `/api/tags/:id` | tag CRUD |
   | PUT | `/api/entity-tags/:type/:id` | `{ tagIds }` → `setEntityTags` |
-  | GET | `/api/export/bundle` | `exportAll().bundle` (blobs are fetched per photo by the client) |
   | POST | `/api/import` | multipart: `bundle` (JSON), `full:{id}` and `thumb:{id}` files → `importAll` |
 
-- [ ] **Step 8.3.2: Guards.**
+- [x] **Step 8.3.2: Guards.**
   - Every `:id` is checked against the Decision 13 regex, else 400.
   - `PUT` rejects a body whose `id` differs from the path (400).
   - `:type` must be one of the `EntityType` values.
   - Malformed JSON gives 400.
   - Storage errors are caught by an `onError` handler and returned as `500 { error }`, logged through a server `debug()`.
   - Photo blobs are immutable per id, so a `PUT` for an id that already has blobs overwrites them. That matches `savePhoto` semantics.
-- [ ] **Step 8.3.3: Tests** (`app.request()`, `InMemoryStorageProvider`). One round-trip per resource. Also cover:
+- [x] **Step 8.3.3: Tests** (`app.request()`, `InMemoryStorageProvider`). One round-trip per resource. Also cover:
   - 404s and 400s, including a traversal id like `..%2F..%2Fetc`
   - the id mismatch case
   - blob content-type and cache headers
   - a multipart photo upload
   - an import with two photos
   - the `/api/config` key passthrough
+
+> **Notes (2026-10-26):**
+> - **No export endpoint (plan change).** `GET /api/export/bundle` was dropped. On the server it would call `exportAll()`, which loads every photo blob into memory just to return JSON. `HttpStorageProvider.exportAll` builds the identical bundle from the list endpoints instead. `entity_tags` is fully derivable from each entity's hydrated `tags`, because deletes clear junction rows and the foreign key stops dangling tag ids. The API table and Step 8.4.1 are updated to match.
+> - **Status codes:** writes return `204`. Missing entities and blobs return `404 { error }`. Guard failures return `400 { error }`. Unknown `/api` paths return a JSON 404. Other errors return `500 { error }`, logged to stderr through `server/log.ts` (the container log; the browser's `debug()` is localStorage-gated and can't run on the server).
+> - **`PATCH /api/photos/:id` checks existence first and returns 404,** rather than matching the provider's `not found` error message.
+> - **Hono decodes path params before the ID check,** so `..%2Fx` arrives as `../x` and is refused. Import blob field names (`full:{id}`, `thumb:{id}`) go through the same check. A mutation check (pattern loosened to `/^.+$/`) failed all 5 guard tests.
+> - **Step 8.5.2 was done here,** to avoid breaking dev `/api`, because `createApp` now needs a provider. `server/devApp.ts` caches one `SqlStorageProvider` on `globalThis` (`./data`, or `DATA_DIR`) and rebuilds the Hono app per request, so route edits hot-reload without reopening the DB. `server/main.ts` is a minimal API-only entry until 8.5.1.
+> - Verified live over real HTTP through the dev middleware with `curl` (JSON PUT/GET, multipart photo upload, blob GET, traversal refusal); the files landed in the data dir with WAL.
 
 ---
 
@@ -207,7 +214,7 @@ Pure refactor: no behaviour change in the running app.
   - **Errors:** non-2xx → `Error` with status and server message.
   - **`savePhoto`:** `FormData` with `photo` JSON, plus `full`/`thumb` as Blobs.
   - **`getPhotoBlob`/`getPhotoThumb`:** `fetch(...).blob()`. The browser HTTP cache handles repeats, because the server sends `immutable`.
-  - **`exportAll`:** bundle from `/api/export/bundle`, then fetch each photo's full and thumb. Concurrency is limited to 4.
+  - **`exportAll`:** build the bundle client-side from the list endpoints (`/api/routes`, `/tracks`, `/waypoints`, `/photos`, `/tags`). `entity_tags` is derived from each entity's hydrated `tags`, sorted like the SQL export (type, entity id, tag id). Then fetch each photo's full and thumb, with concurrency limited to 4. There's no export endpoint; see the 8.3 notes.
   - **`importAll`:** a single multipart `POST /api/import`.
 - [ ] **Step 8.4.2: Contract.** Run `storageContract('HttpStorageProvider', …)` with `fetchFn: (input, init) => app.fetch(new Request(new URL(input, 'http://test'), init))`, where `app = createApp({ storage: new SqlStorageProvider(new NodeSqlBackend(tmp)) })`. This is the end-to-end proof: browser provider → HTTP → SQL → disk.
 - [ ] **Step 8.4.3:** Http-specific tests: server down → clear error; `schemaVersion` ahead → `SchemaVersionError`; 500 → error carries the server's message.
@@ -223,7 +230,7 @@ Pure refactor: no behaviour change in the running app.
   - Build `NodeSqlBackend` → `SqlStorageProvider` → `createApp`. Add `serveStatic` for `STATIC_DIR`, with an SPA fallback: non-`/api` GETs that miss a file get `index.html` with `Cache-Control: no-cache`, and hashed `assets/*` get `immutable`.
   - Start with `serve()`.
   - On `SIGTERM`/`SIGINT`, stop accepting connections, close the provider (WAL checkpoint) and exit 0. Docker stop then never leaves a dirty DB.
-- [ ] **Step 8.5.2: `server/devPlugin.ts`.** Make Step 8.0.4 real. Dev data lives in `./data` (add it to `.gitignore`). The provider is cached on `globalThis` so hot reloads of `app.ts` don't reopen the DB.
+- [x] **Step 8.5.2: `server/devPlugin.ts`.** *(Done early in 8.3; see the 8.3 notes.)* Make Step 8.0.4 real. Dev data lives in `./data` (add it to `.gitignore`). The provider is cached on `globalThis` so hot reloads of `app.ts` don't reopen the DB.
 - [ ] **Step 8.5.3: `src/main.tsx`.** Replace `new OPFSStorageProvider()` with `new HttpStorageProvider()`. If `init()` fails, the existing bootstrap error screen shows "Couloir failed to start", which is acceptable for an unreachable server. Make its message suggest checking the server. Wrap `registerSW` so a failure on insecure origins is swallowed.
 - [ ] **Step 8.5.4: `newId()` fallback.** If `crypto.randomUUID` is undefined, build an RFC 4122 v4 UUID from `crypto.getRandomValues(new Uint8Array(16))`. Test both branches, and the version and variant bits.
 - [ ] **Step 8.5.5: Maptiler key.** In `settings.ts` hydration, if `localStorage` has no key, `GET /api/config` and use `maptilerKey` as an in-memory default. Don't write it to `localStorage`, so a server-side key change takes effect. Test: local key wins; server key used when local is empty; server unreachable → no key (existing onboarding).

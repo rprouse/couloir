@@ -85,7 +85,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [8.0 Spike: toolchain compatibility](#task-80---spike-toolchain-compatibility)
 - [x] [8.1 Extract SqlStorageProvider and the contract suite](#task-81---extract-sqlstorageprovider-and-the-contract-suite)
 - [x] [8.2 Node backend](#task-82---node-backend)
-- [ ] [8.3 HTTP API](#task-83---http-api)
+- [x] [8.3 HTTP API](#task-83---http-api)
 - [ ] [8.4 HttpStorageProvider](#task-84---httpstorageprovider)
 - [ ] [8.5 Wire the app to the server](#task-85---wire-the-app-to-the-server)
 - [ ] [8.6 Remove OPFS](#task-86---remove-opfs)
@@ -767,7 +767,7 @@ Lift the SQL logic out of `OPFSStorageProvider` into `SqlStorageProvider` over a
 
 ### Task 8.3 - HTTP API
 
-Hono app exposing every `StorageProvider` method under `/api`, plus health, config, export bundle and multipart import. IDs validated before any filesystem access.
+Hono app exposing every `StorageProvider` method under `/api`, plus health, config and multipart import. IDs validated before any filesystem access.
 
 **Acceptance criteria**:
 - Round-trip, 400/404, traversal, header and multipart tests pass

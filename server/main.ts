@@ -1,15 +1,15 @@
-import { DatabaseSync } from './sqlite'
 import { serve } from '@hono/node-server'
-import { MIGRATIONS } from '../src/storage/migrations'
+import { SqlStorageProvider } from '../src/storage/sqlProvider'
 import { createApp } from './app'
+import { NodeSqlBackend } from './nodeBackend'
 
-// Spike entry (Task 8.0): proves node:sqlite, ?raw migrations and hono all
-// survive the SSR bundle. Replaced by the real entry in Task 8.5.
-const db = new DatabaseSync(':memory:')
-db.exec(MIGRATIONS[0].sql)
-const tables = db.prepare(`SELECT count(*) AS n FROM sqlite_master WHERE type = 'table'`).get()
-
+// Minimal entry: API only. Static SPA serving, graceful shutdown and backups
+// arrive in Tasks 8.5 and 8.7.
 const port = Number(process.env.PORT ?? 8080)
-serve({ fetch: createApp().fetch, port }, () => {
-  process.stdout.write(`couloir spike on :${port}, tables=${JSON.stringify(tables)}\n`)
+const storage = new SqlStorageProvider(new NodeSqlBackend(process.env.DATA_DIR ?? './data'))
+await storage.init()
+
+const app = createApp({ storage, config: { maptilerKey: process.env.MAPTILER_KEY || null } })
+serve({ fetch: app.fetch, port }, () => {
+  process.stdout.write(`couloir listening on :${port}\n`)
 })
