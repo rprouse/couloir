@@ -74,7 +74,7 @@ Browser-only and quick. The constants in 7.4 depend on it.
 
 Ends with: pure, tested functions that turn terrain-rgb pixels into an RGBA slope image.
 
-- [ ] **Step 7.1.1: Tests first — `slopeMath.test.ts`**
+- [x] **Step 7.1.1: Tests first — `slopeMath.test.ts`**
 
 ```ts
 import { decodeTerrainRgb, metersPerPixel, slopeDegrees, tileCenterLat } from './slopeMath'
@@ -141,7 +141,7 @@ describe('slopeDegrees', () => {
 })
 ```
 
-- [ ] **Step 7.1.2: Implement `slopeMath.ts`**
+- [x] **Step 7.1.2: Implement `slopeMath.ts`**
 
 ```ts
 // Slope maths for the slope-angle overlay. Pure functions over row-major
@@ -207,7 +207,7 @@ export function slopeDegrees(
 
 The interior can skip `at()` for speed if profiling in 7.6 shows the closure matters. Leave it simple until then.
 
-- [ ] **Step 7.1.3: Tests — `slopeBands.test.ts`**
+- [x] **Step 7.1.3: Tests — `slopeBands.test.ts`**
 
 ```ts
 import { SLOPE_BANDS, bandForSlope, colorizeSlope } from './slopeBands'
@@ -235,7 +235,7 @@ describe('colorizeSlope', () => {
 })
 ```
 
-- [ ] **Step 7.1.4: Implement `slopeBands.ts`**
+- [x] **Step 7.1.4: Implement `slopeBands.ts`**
 
 ```ts
 // Avalanche slope-angle bands. Literal hex (not CSS variables) because the
@@ -279,7 +279,7 @@ export function colorizeSlope(slope: Float32Array): Uint8ClampedArray {
 }
 ```
 
-- [ ] **Step 7.1.5:** `npm test -- slope` and `npm run typecheck` pass. Commit `feat(slope): slope maths and avalanche colour bands`.
+- [x] **Step 7.1.5:** `npm test -- slope` and `npm run typecheck` pass. Commit `feat(slope): slope maths and avalanche colour bands`.
 
 ---
 

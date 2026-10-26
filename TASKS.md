@@ -73,7 +73,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 ### Phase 7 — Slope Angle Overlay  ·  Plan: [`2026-10-26-couloir-phase-7-slope-overlay.md`](docs/superpowers/plans/2026-10-26-couloir-phase-7-slope-overlay.md)
 
 - [ ] [7.0 Confirm DEM tile facts](#task-70---confirm-dem-tile-facts)
-- [ ] [7.1 Slope maths and colour bands](#task-71---slope-maths-and-colour-bands)
+- [x] [7.1 Slope maths and colour bands](#task-71---slope-maths-and-colour-bands)
 - [ ] [7.2 Slope tile protocol](#task-72---slope-tile-protocol)
 - [ ] [7.3 Slope UI state](#task-73---slope-ui-state)
 - [ ] [7.4 Slope layer](#task-74---slope-layer)
