@@ -1,4 +1,5 @@
 import React from 'react'
+import maplibregl from 'maplibre-gl'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './theme.css'
@@ -12,6 +13,8 @@ import { useTagsStore } from './store/tags'
 import { useUiStore } from './store/ui'
 import { useSettingsStore } from './store/settings'
 import { installDevConsole } from './dev/devConsole'
+import { registerSlopeProtocol } from './map/slope/slopeProtocol'
+import { browserCodec } from './map/slope/browserCodec'
 
 async function bootstrap(): Promise<void> {
   const storage = new OPFSStorageProvider()
@@ -31,6 +34,13 @@ async function bootstrap(): Promise<void> {
   void useWaypointsStore.getState().load()
   void usePhotosStore.getState().load()
   void useTagsStore.getState().load()
+
+  // slope:// tiles read the key live, so a key change needs no re-register.
+  registerSlopeProtocol(maplibregl.addProtocol, {
+    fetchFn: fetch.bind(globalThis),
+    codec: browserCodec,
+    getKey: () => useSettingsStore.getState().maptilerKey,
+  })
 
   if (import.meta.env.DEV) installDevConsole(storage)
 

@@ -91,4 +91,7 @@ export const __mocks__ = { MockMap, MockMarker }
 
 export const Map = vi.fn().mockImplementation(() => new MockMap())
 
-export default { Map, NavigationControl, Marker }
+export const addProtocol = vi.fn()
+export const removeProtocol = vi.fn()
+
+export default { Map, NavigationControl, Marker, addProtocol, removeProtocol }

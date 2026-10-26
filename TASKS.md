@@ -74,7 +74,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 
 - [ ] [7.0 Confirm DEM tile facts](#task-70---confirm-dem-tile-facts)
 - [x] [7.1 Slope maths and colour bands](#task-71---slope-maths-and-colour-bands)
-- [ ] [7.2 Slope tile protocol](#task-72---slope-tile-protocol)
+- [x] [7.2 Slope tile protocol](#task-72---slope-tile-protocol)
 - [ ] [7.3 Slope UI state](#task-73---slope-ui-state)
 - [ ] [7.4 Slope layer](#task-74---slope-layer)
 - [ ] [7.5 Slope controls and legend](#task-75---slope-controls-and-legend)

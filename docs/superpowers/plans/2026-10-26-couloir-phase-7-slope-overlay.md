@@ -292,7 +292,7 @@ export function colorizeSlope(slope: Float32Array): Uint8ClampedArray {
 
 Ends with: `slope://{z}/{x}/{y}` requests resolve to coloured PNG tiles.
 
-- [ ] **Step 7.2.1: Tests first — `slopeProtocol.test.ts`.** Use a fake `TileCodec` whose `decode` returns a hand-built terrain-rgb grid (a 4×4 plane at a known slope) and whose `encodePng` records its arguments and returns `new ArrayBuffer(8)`. Use a fake `fetchFn` that serves `tiles.json` and tile URLs from a map. Cover:
+- [x] **Step 7.2.1: Tests first — `slopeProtocol.test.ts`.** Use a fake `TileCodec` whose `decode` returns a hand-built terrain-rgb grid (a 4×4 plane at a known slope) and whose `encodePng` records its arguments and returns `new ArrayBuffer(8)`. Use a fake `fetchFn` that serves `tiles.json` and tile URLs from a map. Cover:
   - `parseSlopeUrl('slope://12/738/1397')` → `{ z: 12, x: 738, y: 1397 }`; malformed URLs → `null`.
   - The loader fills in the `tiles.json` template (`{z}/{x}/{y}`) and requests that tile URL, passing the abort signal through.
   - `tiles.json` is fetched **once** across several tile requests with the same key, and again after the key changes.
@@ -302,7 +302,7 @@ Ends with: `slope://{z}/{x}/{y}` requests resolve to coloured PNG tiles.
   - No key → rejects with a clear error.
   - Malformed URL → rejects.
 
-- [ ] **Step 7.2.2: Implement `slopeProtocol.ts`**
+- [x] **Step 7.2.2: Implement `slopeProtocol.ts`**
 
 ```ts
 import type { RequestParameters, GetResourceResponse } from 'maplibre-gl'
@@ -350,7 +350,7 @@ export function registerSlopeProtocol(addProtocol: (name: string, fn: ReturnType
 
 Wire `getKey` live to `useSettingsStore.getState().maptilerKey` in `main.tsx`, so a key change takes effect without registering again. `{ data }` must be an `ArrayBuffer` of an encoded image: MapLibre 4 decodes raster responses itself. Add `debug('slope tile', z, x, y, ms)` timing behind the existing `debug()` util for the 7.6 perf check.
 
-- [ ] **Step 7.2.3: Implement `browserCodec.ts`**
+- [x] **Step 7.2.3: Implement `browserCodec.ts`**
 
 ```ts
 import type { TileCodec } from './slopeProtocol'
@@ -380,9 +380,9 @@ export const browserCodec: TileCodec = {
 
 Not unit-tested, because jsdom has no `OffscreenCanvas`. It's covered in 7.6.
 
-- [ ] **Step 7.2.4:** In `main.tsx`, call `registerSlopeProtocol(maplibregl.addProtocol, { fetchFn: fetch.bind(globalThis), codec: browserCodec, getKey: () => useSettingsStore.getState().maptilerKey })` before rendering. Add `addProtocol: vi.fn()` (and `removeProtocol`) to the default export of `src/test/mocks/maplibre-gl.ts`.
+- [x] **Step 7.2.4:** In `main.tsx`, call `registerSlopeProtocol(maplibregl.addProtocol, { fetchFn: fetch.bind(globalThis), codec: browserCodec, getKey: () => useSettingsStore.getState().maptilerKey })` before rendering. Add `addProtocol: vi.fn()` (and `removeProtocol`) to the default export of `src/test/mocks/maplibre-gl.ts`.
 
-- [ ] **Step 7.2.5:** Tests and typecheck pass. Commit `feat(slope): slope tile protocol over Maptiler terrain-rgb`.
+- [x] **Step 7.2.5:** Tests and typecheck pass. Commit `feat(slope): slope tile protocol over Maptiler terrain-rgb`.
 
 ---
 

@@ -32,7 +32,7 @@ export function bandForSlope(deg: number): SlopeBand | null {
 
 // RGBA image: band colour at full alpha, transparent below the first band.
 // Overall translucency comes from the layer's raster-opacity.
-export function colorizeSlope(slope: Float32Array): Uint8ClampedArray {
+export function colorizeSlope(slope: Float32Array): Uint8ClampedArray<ArrayBuffer> {
   const out = new Uint8ClampedArray(slope.length * 4)
   for (let i = 0; i < slope.length; i++) {
     const idx = bandIndex(slope[i])
