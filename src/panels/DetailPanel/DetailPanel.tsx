@@ -3,6 +3,7 @@ import { useUiStore } from '../../store/ui'
 import { RouteDetail } from './RouteDetail'
 import { TrackDetail } from './TrackDetail'
 import { WaypointCreate } from './WaypointCreate'
+import { PhotoCreate } from './PhotoCreate'
 import { WaypointDetail } from './WaypointDetail'
 
 export function DetailPanel(): JSX.Element | null {
@@ -26,8 +27,7 @@ export function DetailPanel(): JSX.Element | null {
   } else if (panel.entityType === 'waypoint') {
     body = <WaypointCreate />
   } else {
-    // panel.mode === 'create' && entityType === 'photo' — Phase 5.
-    body = <UnsupportedPlaceholder type={panel.entityType} />
+    body = <PhotoCreate />
   }
 
   return (

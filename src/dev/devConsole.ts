@@ -1,3 +1,4 @@
+import exifr from 'exifr'
 import type { StorageProvider } from '../storage/interface'
 import { newId } from '../utils/id'
 import type { Photo, Route, Track, Waypoint } from '../types'
@@ -151,6 +152,13 @@ export function installDevConsole(storage: StorageProvider): void {
         storage.getPhotos(),
       ])
       return { routes, tracks, waypoints, photos }
+    },
+
+    // Expected to resolve undefined: stored JPEGs are re-encoded without EXIF.
+    async inspectPhotoExif(id: string): Promise<unknown> {
+      const blob = await storage.getPhotoBlob(id)
+      if (!blob) throw new Error(`no blob for ${id}`)
+      return exifr.parse(blob, true)
     },
 
     async renameRoute(id: string, name: string): Promise<Route> {

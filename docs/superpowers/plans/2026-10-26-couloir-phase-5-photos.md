@@ -1456,7 +1456,7 @@ Tick 5.1 in `TASKS.md` Progress → commit `chore(tasks): tick 5.1`.
 
 This task ends with: the create panel shows a full preview, name (from the filename), description, bearing with a compass rose, taken-at, elevation, location and tags. A draggable pin sits on the map and the lat/lng follow it. Save writes the blob, thumbnail and row, then switches to view mode (the placeholder until 5.4). Cancel discards everything.
 
-- [ ] **Step 5.2.1: `bearingFromVector` — test then implement**
+- [x] **Step 5.2.1: `bearingFromVector` — test then implement**
 
 `geo.test.ts`:
 
@@ -1480,7 +1480,7 @@ export function bearingFromVector(dx: number, dy: number): number {
 }
 ```
 
-- [ ] **Step 5.2.2: datetime-local helpers — test then implement**
+- [x] **Step 5.2.2: datetime-local helpers — test then implement**
 
 `time.test.ts`:
 
@@ -1520,7 +1520,7 @@ export function localInputToIso(value: string): string | null {
 }
 ```
 
-- [ ] **Step 5.2.3: `CompassRose` — test first**
+- [x] **Step 5.2.3: `CompassRose` — test first**
 
 `src/components/CompassRose/CompassRose.test.tsx`:
 
@@ -1616,7 +1616,7 @@ export function CompassRose({ bearing, size = 96, onChange }: Props): JSX.Elemen
 
 Run. Expected: PASS.
 
-- [ ] **Step 5.2.4: `useObjectUrl` — test then implement**
+- [x] **Step 5.2.4: `useObjectUrl` — test then implement**
 
 `src/hooks/useObjectUrl.test.tsx`:
 
@@ -1664,7 +1664,7 @@ export function useObjectUrl(blob: Blob | null): string | null {
 }
 ```
 
-- [ ] **Step 5.2.5: Shared terrain lookup — `src/map/terrain.ts`**
+- [x] **Step 5.2.5: Shared terrain lookup — `src/map/terrain.ts`**
 
 Test (`terrain.test.ts`):
 
@@ -1702,7 +1702,7 @@ export function queryElevation(map: maplibregl.Map, lat: number, lng: number): n
 
 In `WaypointCreate.tsx`, replace the inline cast and lookup in the autofill effect with `const elev = queryElevation(map, seedLat, seedLng)` and `if (elev !== null) setElevation(String(Math.round(elev)))`. The existing `WaypointCreate` tests must still pass.
 
-- [ ] **Step 5.2.6: Form parsing — test first, `src/panels/DetailPanel/photoForm.test.ts`**
+- [x] **Step 5.2.6: Form parsing — test first, `src/panels/DetailPanel/photoForm.test.ts`**
 
 ```ts
 import { parsePhotoForm, valuesFromPhoto, type PhotoFormValues } from './photoForm'
@@ -1805,7 +1805,7 @@ function parseOptionalNumber(raw: string): number | null | undefined {
 ```
 
 
-- [ ] **Step 5.2.7: `PhotoFields` and `PhotoPositionFields`**
+- [x] **Step 5.2.7: `PhotoFields` and `PhotoPositionFields`**
 
 `src/panels/DetailPanel/PhotoFields.tsx`:
 
@@ -1939,7 +1939,7 @@ export function PhotoPositionFields(): JSX.Element {
 
 (`updateDraft({ [key]: n })` creates an object with a computed key. If TS rejects it as an `EntityDraft`, use `key === 'lat' ? updateDraft({ lat: n }) : updateDraft({ lng: n })`.)
 
-- [ ] **Step 5.2.8: Draggable position pin — test first, `src/map/placement/PhotoPositionMarker.test.tsx`**
+- [x] **Step 5.2.8: Draggable position pin — test first, `src/map/placement/PhotoPositionMarker.test.tsx`**
 
 ```tsx
 import { render } from '@testing-library/react'
@@ -2067,7 +2067,7 @@ export function PhotoPositionMarker(): null {
 
 Mount `<PhotoPositionMarker />` in `MapView.tsx` after `<WaypointsLayer />`. Run the test. Expected: PASS.
 
-- [ ] **Step 5.2.9: `PhotoCreate` — test first, `src/panels/DetailPanel/PhotoCreate.test.tsx`**
+- [x] **Step 5.2.9: `PhotoCreate` — test first, `src/panels/DetailPanel/PhotoCreate.test.tsx`**
 
 ```tsx
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -2171,7 +2171,7 @@ describe('PhotoCreate', () => {
 
 Run. Expected: FAIL (module missing).
 
-- [ ] **Step 5.2.10: Implement `src/panels/DetailPanel/PhotoCreate.tsx`**
+- [x] **Step 5.2.10: Implement `src/panels/DetailPanel/PhotoCreate.tsx`**
 
 ```tsx
 import { useEffect, useState } from 'react'
@@ -2321,7 +2321,7 @@ Add to `DetailPanel.shared.module.css`:
 
 Run `PhotoCreate.test.tsx` and `DetailPanel.test.tsx`. Expected: PASS. (If `DetailPanel.test.tsx` asserts the old photo-create placeholder text, update it to assert the "New photo" heading, using a full `pending`.)
 
-- [ ] **Step 5.2.11: Dev helper to prove EXIF is stripped — `src/dev/devConsole.ts`**
+- [x] **Step 5.2.11: Dev helper to prove EXIF is stripped — `src/dev/devConsole.ts`**
 
 ```ts
     // Expected to resolve undefined: stored JPEGs are re-encoded without EXIF.
@@ -2334,7 +2334,7 @@ Run `PhotoCreate.test.tsx` and `DetailPanel.test.tsx`. Expected: PASS. (If `Deta
 
 with `import exifr from 'exifr'` at the top. Dev-only, so the `import.meta.env.DEV` guard keeps it out of production builds.
 
-- [ ] **Step 5.2.12: Verify**
+- [x] **Step 5.2.12: Verify**
 
 `npm run typecheck`, `npm test` → green.
 
@@ -2345,7 +2345,7 @@ Browser:
 - Import again and press Cancel or ESC. `listAll()` shows no new photo.
 - In the no-GPS path, after clicking the map the text reads "Placed on the map", and elevation comes from terrain (with 3D terrain on).
 
-- [ ] **Step 5.2.13: Commit and tick**
+- [x] **Step 5.2.13: Commit and tick**
 
 ```bash
 git add src TASKS.md

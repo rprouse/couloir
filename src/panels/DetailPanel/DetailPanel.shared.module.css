@@ -57,3 +57,12 @@
 .metricValue {
   font-size: 14px;
 }
+
+.photoPreview {
+  display: block;
+  width: 100%;
+  max-height: 240px;
+  object-fit: contain;
+  background: var(--color-bg-0);
+  border-radius: var(--radius-sm);
+}

@@ -65,3 +65,9 @@ export interface ProfilePoint {
 export function normalizeBearing(degrees: number): number {
   return ((Math.round(degrees) % 360) + 360) % 360
 }
+
+// Compass bearing (0 = north, clockwise) of a screen-space vector. dy grows
+// downward, as in DOM/SVG coordinates.
+export function bearingFromVector(dx: number, dy: number): number {
+  return normalizeBearing((Math.atan2(dx, -dy) * 180) / Math.PI)
+}

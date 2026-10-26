@@ -4,6 +4,7 @@ import shared from './DetailPanel.shared.module.css'
 import { useUiStore } from '../../store/ui'
 import { useWaypointsStore } from '../../store/waypoints'
 import { useMap } from '../../hooks/useMap'
+import { queryElevation } from '../../map/terrain'
 import { WAYPOINT_CATEGORIES } from '../../types'
 import type { WaypointCategory } from '../../types'
 import { TagPills } from './TagPills'
@@ -44,13 +45,8 @@ export function WaypointCreate(): JSX.Element {
   // we leave the field blank in those cases rather than guess a value.
   useEffect(() => {
     if (!map || seedLat === null || seedLng === null) return
-    const m = map as unknown as {
-      queryTerrainElevation?: (lngLat: { lng: number; lat: number }) => number | null
-    }
-    const elev = m.queryTerrainElevation?.({ lng: seedLng, lat: seedLat }) ?? null
-    if (typeof elev === 'number' && Number.isFinite(elev)) {
-      setElevation(String(Math.round(elev)))
-    }
+    const elev = queryElevation(map, seedLat, seedLng)
+    if (elev !== null) setElevation(String(Math.round(elev)))
   }, [map, seedLat, seedLng])
 
   // Guard: if invariants drift, render an explanatory message rather than throw.

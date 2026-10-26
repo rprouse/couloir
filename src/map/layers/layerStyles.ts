@@ -20,3 +20,7 @@ export const WAYPOINTS_SYMBOLS_LAYER_ID = 'waypoints-symbols'
 // viewport. The MapLibre symbol layer renders them at this nominal size with
 // icon-size: 1.0.
 export const WAYPOINT_ICON_PX = 32
+
+// Draggable pin shown while a photo is created or edited. A literal hex
+// because maplibregl.Marker paints it into an SVG fill attribute.
+export const PHOTO_PIN_COLOR = '#F472B6'
