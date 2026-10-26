@@ -8,11 +8,12 @@ export interface SlopeBand {
 }
 
 export const SLOPE_BANDS: readonly SlopeBand[] = [
-  { minDeg: 27, maxDeg: 30, color: '#F5E400', label: '27–29°' },
-  { minDeg: 30, maxDeg: 35, color: '#F59E0B', label: '30–34°' },
-  { minDeg: 35, maxDeg: 40, color: '#EF4444', label: '35–39°' },
-  { minDeg: 40, maxDeg: 45, color: '#A855F7', label: '40–44°' },
-  { minDeg: 45, maxDeg: Infinity, color: '#111111', label: '45°+' },
+  { minDeg: 12, maxDeg: 25, color: '#BEEB6A', label: '12–24°' },
+  { minDeg: 25, maxDeg: 30, color: '#F4EE70', label: '25–29°' },
+  { minDeg: 30, maxDeg: 35, color: '#CCA14F', label: '30–34°' },
+  { minDeg: 35, maxDeg: 40, color: '#C8402E', label: '35–39°' },
+  { minDeg: 40, maxDeg: 45, color: '#8338E6', label: '40–44°' },
+  { minDeg: 45, maxDeg: Infinity, color: '#2F35F2', label: '45°+' },
 ]
 
 const BAND_RGB = SLOPE_BANDS.map((b) => [

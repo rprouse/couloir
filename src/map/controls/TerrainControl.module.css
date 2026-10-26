@@ -69,10 +69,10 @@
 }
 
 .swatch {
-  width: 28px;
+  width: 26px;
   height: 10px;
   border-radius: 2px;
-  /* Outline keeps the near-black 45°+ swatch visible on the dark panel. */
+  /* Outline separates the darker swatches from the dark panel. */
   outline: 1px solid var(--color-border);
 }
 

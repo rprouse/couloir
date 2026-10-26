@@ -87,7 +87,7 @@ describe('createSlopeLoader', () => {
     await load(params(), new AbortController())
     const [rgba, w, h] = encodePng.mock.calls[0]
     expect([w, h]).toEqual([W, W])
-    const orange = [1, 3, 5].map((i) => parseInt(SLOPE_BANDS[1].color.slice(i, i + 2), 16))
+    const orange = [1, 3, 5].map((i) => parseInt(SLOPE_BANDS[2].color.slice(i, i + 2), 16))
     for (let p = 0; p < W * W; p++) {
       expect(Array.from(rgba.slice(p * 4, p * 4 + 4))).toEqual([...orange, 255])
     }

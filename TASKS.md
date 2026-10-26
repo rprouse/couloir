@@ -678,7 +678,7 @@ Fetch the Maptiler terrain-rgb-v2 `tiles.json` and one tile with a real key. Con
 
 ### Task 7.1 - Slope maths and colour bands
 
-Pure functions: decode terrain-rgb to elevations, ground metres per pixel for a tile, slope in degrees (Horn's method with extrapolated edges), and colouring into bands 27–29°, 30–34°, 35–39°, 40–44°, 45°+.
+Pure functions: decode terrain-rgb to elevations, ground metres per pixel for a tile, slope in degrees (Horn's method with extrapolated edges), and colouring into bands 12–24°, 25–29°, 30–34°, 35–39°, 40–44°, 45°+.
 
 **Acceptance criteria**:
 - A tilted plane yields the exact slope at every pixel including edges and corners

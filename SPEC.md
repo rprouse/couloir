@@ -39,7 +39,7 @@ A geolocated photograph for recon photography: photos taken from across the vall
 - MapLibre GL JS as the map renderer
 - Maptiler as the tile and terrain provider (API key stored in settings)
 - 3D terrain with adjustable exaggeration
-- Slope angle overlay: avalanche angle bands (27–30°, 30–35°, 35–40°, 40–45°, 45°+) computed in the browser from the Maptiler terrain tiles, with adjustable opacity and a legend
+- Slope angle overlay: avalanche angle bands (12–24°, 25–29°, 30–34°, 35–39°, 40–44°, 45°+) computed in the browser from the Maptiler terrain tiles, with adjustable opacity and a legend
 - Basemap switcher: Satellite, Outdoor/Topo, Winter
 - Compass and zoom controls
 - Current location indicator (when available)

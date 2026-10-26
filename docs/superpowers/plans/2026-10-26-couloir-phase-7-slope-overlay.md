@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Leave browser-only verification steps unticked unless you actually ran them in a browser.
 
-**Goal:** A toggleable map overlay that colours terrain by slope angle using the standard avalanche bands (27–30°, 30–35°, 35–40°, 40–45°, 45°+). Slope is computed in the browser from the Maptiler terrain-rgb tiles the app already uses for 3D terrain.
+**Goal:** A toggleable map overlay that colours terrain by slope angle using the avalanche bands 12–24° green, 25–29° yellow, 30–34° orange, 35–39° red, 40–44° purple, 45°+ blue. *(Revised 2026-10-26 after the first browser look: the bands and colours now match the user's reference chart. The original 27°+ scale is superseded. The code snippets below show the original scale; `slopeBands.ts` is the source of truth.)* Slope is computed in the browser from the Maptiler terrain-rgb tiles the app already uses for 3D terrain.
 
 **Decisions taken in planning (2026-10-26):**
 
