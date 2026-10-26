@@ -93,7 +93,7 @@ Pure refactor: no behaviour change in the running app.
 
 **Files:** create `src/storage/sqlBackend.ts`, `sqlProvider.ts`, `schema.ts`, `schema.test.ts`, `contract.ts`. Modify `opfs.ts`, `workerHost.ts`, `memory.test.ts`.
 
-- [ ] **Step 8.1.1: `sqlBackend.ts`.** Move `SqlValue`, `SqlRow` and `SqlOp` out of `workerProtocol.ts` (re-export them there for now) and define:
+- [x] **Step 8.1.1: `sqlBackend.ts`.** Move `SqlValue`, `SqlRow` and `SqlOp` out of `workerProtocol.ts` (re-export them there for now) and define:
   ```ts
   export interface SqlBackend {
     init(): Promise<void>
@@ -108,10 +108,19 @@ Pure refactor: no behaviour change in the running app.
   }
   ```
   `WorkerClient` already has exactly this shape; make it `implements SqlBackend`.
-- [ ] **Step 8.1.2: `sqlProvider.ts`.** Move the body of `OPFSStorageProvider` into `class SqlStorageProvider implements StorageProvider { constructor(private db: SqlBackend) }`, swapping `this.client` for `this.db`. `opfs.ts` shrinks to `class OPFSStorageProvider extends SqlStorageProvider` that constructs the `WorkerClient` and terminates it on close.
-- [ ] **Step 8.1.3: `schema.ts`.** Move `ensureSchema` out of `workerHost.ts` as `ensureSchema(db: Pick<SqlBackend, 'one' | 'run'>)`, keeping the explicit `BEGIN`/`COMMIT` per migration and the `SchemaVersionError` path. The worker calls it with its local helpers. `schema.test.ts` (in-memory fake that records SQL) covers: fresh DB runs all migrations; up-to-date DB is a no-op; newer DB throws `SchemaVersionError`; a failing migration rolls back.
-- [ ] **Step 8.1.4: `contract.ts`.** Turn the bodies of `memory.test.ts` into `export function storageContract(name: string, make: () => Promise<StorageProvider>)` (with `afterEach` closing the provider). `memory.test.ts` becomes `storageContract('InMemoryStorageProvider', async () => new InMemoryStorageProvider())`. Any test that pokes memory internals stays in `memory.test.ts`.
-- [ ] **Step 8.1.5:** `npm test` and `npm run typecheck` green. Quick browser smoke via `npm run dev` + `window.__couloir.listAll()`, to confirm OPFS still works after the refactor.
+- [x] **Step 8.1.2: `sqlProvider.ts`.** Move the body of `OPFSStorageProvider` into `class SqlStorageProvider implements StorageProvider { constructor(private db: SqlBackend) }`, swapping `this.client` for `this.db`. `opfs.ts` shrinks to `class OPFSStorageProvider extends SqlStorageProvider` that constructs the `WorkerClient` and terminates it on close.
+- [x] **Step 8.1.3: `schema.ts`.** Move `ensureSchema` out of `workerHost.ts` as `ensureSchema(db: Pick<SqlBackend, 'one' | 'run'>)`, keeping the explicit `BEGIN`/`COMMIT` per migration and the `SchemaVersionError` path. The worker calls it with its local helpers. `schema.test.ts` (in-memory fake that records SQL) covers: fresh DB runs all migrations; up-to-date DB is a no-op; newer DB throws `SchemaVersionError`; a failing migration rolls back.
+- [x] **Step 8.1.4: `contract.ts`.** Turn the bodies of `memory.test.ts` into `export function storageContract(name: string, make: () => Promise<StorageProvider>)` (with `afterEach` closing the provider). `memory.test.ts` becomes `storageContract('InMemoryStorageProvider', async () => new InMemoryStorageProvider())`. Any test that pokes memory internals stays in `memory.test.ts`.
+- [x] **Step 8.1.5:** `npm test` and `npm run typecheck` green. Quick browser smoke via `npm run dev` + `window.__couloir.listAll()`, to confirm OPFS still works after the refactor.
+
+> **Notes (2026-10-26):**
+> - **`ensureSchema` runs from `SqlStorageProvider.init()`, after `db.init()`, not inside the backend.** In the browser it now drives migrations from the main thread through the worker's `one`/`run` RPCs. `SchemaVersionError` is thrown on the main thread directly, so `WorkerClient`'s prefix rehydration is now unused; it goes away with the worker in 8.6. `SqlBackend.init()` only opens the connection.
+> - `sqlProvider.ts` was produced from `opfs.ts` by a mechanical `this.client` → `this.db` rename, so the SQL is unchanged. Only comments that named OPFS or the worker were made backend-neutral. `closed` is `protected` so `OPFSStorageProvider.close()` can terminate the worker exactly once.
+> - **The contract needs real tags.** The memory tests attached tag IDs that were never saved, which an SQL provider would reject (the `entity_tags.tag_id` foreign key). The contract saves tags first with `seedTags`.
+> - **Blobs are compared by content, not identity:** `blob.text()`, via the jsdom polyfill in `src/test/setup.ts`.
+> - `create()` must return a fresh, empty, uninitialized provider on every call. The backup tests call it twice per test, for the source and the restore target. The node backend's factory therefore needs a new temp dir per call, cleaned up in `cleanup`.
+> - The contract grew from 33 to 39 tests: null for missing entities, tag hydration on list reads, track list/delete, and waypoint/photo list reads.
+> - **Browser smoke (8.1.5):** Playwright's MCP server needs Google Chrome, which isn't installed. I ran the check in headless Edge via a dependency-free CDP script in the session scratchpad instead. Results: fresh-profile migration, create → reload → all four entity types present, export + re-import with blobs, and no page errors.
 
 ---
 
@@ -120,7 +129,7 @@ Pure refactor: no behaviour change in the running app.
 **Files:** create `server/nodeBackend.ts`, `server/nodeBackend.test.ts`.
 
 - [ ] **Step 8.2.1: `NodeSqlBackend implements SqlBackend`**, with `constructor(dataDir: string)`.
-  - **`init`:** `mkdir -p {dataDir}/photos`, open `{dataDir}/couloir.db` with `DatabaseSync`, then set `PRAGMA journal_mode = WAL`, `foreign_keys = ON` and `busy_timeout = 5000`, then call `ensureSchema(this)`.
+  - **`init`:** `mkdir -p {dataDir}/photos`, open `{dataDir}/couloir.db` with `DatabaseSync`, then set `PRAGMA journal_mode = WAL`, `foreign_keys = ON` and `busy_timeout = 5000`. Don't migrate here: `SqlStorageProvider.init()` runs `ensureSchema` (see the 8.1 notes).
   - **`all`/`one`/`run`:** `prepare(sql)` with `.all/.get/.run(...params)`. Multi-statement SQL (only migrations use it) goes through `db.exec(sql)` when `params` is empty and the SQL contains more than one statement. Simplest rule: `run` without params uses `exec`.
   - **`tx`:** wrap in `BEGIN`/`COMMIT`/`ROLLBACK`.
   - **Blobs:** `fs/promises` under `{dataDir}/{path}`. `readBlob` returns `null` on `ENOENT`, and `deleteBlob` ignores `ENOENT`. Write to `{file}.tmp` and then `rename`, so a crash never leaves a half-written photo.

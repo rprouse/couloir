@@ -15,8 +15,6 @@ import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite.mjs'
 import * as SQLite from 'wa-sqlite'
 import wasmUrl from 'wa-sqlite/dist/wa-sqlite.wasm?url'
 import { AccessHandlePoolVFS } from 'wa-sqlite/src/examples/AccessHandlePoolVFS.js'
-import { SchemaVersionError } from './errors'
-import { MIGRATIONS, SCHEMA_VERSION } from './migrations'
 import type {
   Request,
   Response,
@@ -54,7 +52,8 @@ async function init(): Promise<void> {
   // PRAGMA through run() (statements iterator) rather than legacy
   // api.exec() for consistency with the rest of the file.
   await run('PRAGMA foreign_keys = ON;')
-  await ensureSchema()
+  // Schema migration runs from SqlStorageProvider.init() on the main thread,
+  // through this worker's run/one handlers.
 }
 
 async function close(): Promise<void> {
@@ -131,62 +130,6 @@ async function tx(ops: SqlOp[]): Promise<void> {
   } catch (err) {
     try { await exec('ROLLBACK') } catch { /* swallow — preserve original */ }
     throw err
-  }
-}
-
-// ---- Schema migration ------------------------------------------------------
-
-async function ensureSchema(): Promise<void> {
-  // schema_version table may not exist yet on a fresh DB; check via sqlite_master.
-  const meta = await one(
-    `SELECT name FROM sqlite_master WHERE type='table' AND name='schema_version'`,
-  )
-  let current = 0
-  if (meta) {
-    // MAX, not LIMIT 1: builds before the single-row fix below appended a row
-    // per migration, so a DB can hold both 1 and 2. The highest is current.
-    const row = await one(`SELECT MAX(version) AS version FROM schema_version`)
-    if (row && typeof row.version === 'number') current = row.version
-  }
-
-  if (current === SCHEMA_VERSION) return
-  if (current > SCHEMA_VERSION) {
-    // Throw the real class instance so String(err) produces
-    // "SchemaVersionError: <message>" via the class's `name`. The main-thread
-    // client unwraps this prefix and rehydrates a SchemaVersionError.
-    throw new SchemaVersionError(
-      `Database is v${current}; this build expects v${SCHEMA_VERSION}. ` +
-      `Refresh or downgrade the app.`,
-    )
-  }
-
-  // Migration SQL must contain only transactional statements. Do not include
-  // VACUUM, ATTACH, or PRAGMAs that must run outside a transaction (e.g.
-  // journal_mode) — they'll be silently ignored or throw inside BEGIN/COMMIT.
-  for (const m of MIGRATIONS) {
-    if (m.version <= current) continue
-    await exec('BEGIN')
-    try {
-      // Migration files contain multi-statement SQL. We iterate via the
-      // `statements()` async iterator (run helper) rather than the legacy
-      // `api().exec(db, sql)` path: on wa-sqlite-async + OriginPrivateFileSystemVFS
-      // the legacy exec can leave the wasm in a bad state after the first
-      // statement, so subsequent SELECTs against newly-created tables crash
-      // with "memory access out of bounds". Iterating via statements() steps
-      // each statement to completion under the async VFS contract.
-      await run(m.sql)
-      // `version` is the primary key, so INSERT OR REPLACE with a new version
-      // appends rather than replaces. Clear first to keep the table single-row.
-      await run(`DELETE FROM schema_version`)
-      await run(
-        `INSERT INTO schema_version (version, applied_at) VALUES (?, ?)`,
-        [m.version, new Date().toISOString()],
-      )
-      await exec('COMMIT')
-    } catch (err) {
-      try { await exec('ROLLBACK') } catch { /* swallow — preserve original */ }
-      throw err
-    }
   }
 }
 

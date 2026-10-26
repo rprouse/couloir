@@ -2,12 +2,9 @@
 // All requests carry a numeric `id`; the worker echoes it on the response so
 // the client can match against an in-flight promise.
 
-export type SqlValue = string | number | bigint | null | Uint8Array
+import type { SqlOp, SqlRow, SqlValue } from './sqlBackend'
 
-export interface SqlOp {
-  sql: string
-  params?: SqlValue[]
-}
+export type { SqlOp, SqlRow, SqlValue }
 
 export type Request =
   | { id: number; type: 'init' }
@@ -19,10 +16,6 @@ export type Request =
   | { id: number; type: 'writeBlob'; path: string; data: ArrayBuffer }
   | { id: number; type: 'readBlob'; path: string }
   | { id: number; type: 'deleteBlob'; path: string }
-
-export interface SqlRow {
-  [column: string]: SqlValue
-}
 
 export type Response =
   | { id: number; ok: true; result: SqlRow[] | SqlRow | null | ArrayBuffer | undefined }

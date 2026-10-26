@@ -1,11 +1,6 @@
 import { SchemaVersionError } from './errors'
-import type {
-  Request,
-  Response,
-  SqlOp,
-  SqlRow,
-  SqlValue,
-} from './workerProtocol'
+import type { SqlBackend, SqlOp, SqlRow, SqlValue } from './sqlBackend'
+import type { Request, Response } from './workerProtocol'
 
 const SCHEMA_VERSION_ERROR_PREFIX = 'SchemaVersionError: '
 
@@ -17,7 +12,7 @@ type DistributiveOmit<T, K extends keyof never> = T extends unknown
 
 // One in-flight RPC per request id. The client posts a Request and resolves
 // the corresponding promise when a Response with the matching id arrives.
-export class WorkerClient {
+export class WorkerClient implements SqlBackend {
   private nextId = 1
   private pending = new Map<
     number,
