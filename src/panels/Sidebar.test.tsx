@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Sidebar } from './Sidebar'
 import { useUiStore } from '../store/ui'
@@ -7,6 +7,8 @@ describe('Sidebar', () => {
   beforeEach(() => {
     useUiStore.setState(useUiStore.getInitialState())
   })
+
+  afterEach(() => vi.unstubAllGlobals())
 
   it('renders three tab buttons', () => {
     render(<Sidebar panels={{}} />)
@@ -61,5 +63,26 @@ describe('Sidebar', () => {
     useUiStore.setState({ sidebarCollapsed: true, activeTab: 'settings' })
     render(<Sidebar panels={{ settings: <div>SETTINGS_PANEL</div> }} />)
     expect(screen.queryByText('SETTINGS_PANEL')).not.toBeInTheDocument()
+  })
+
+  it('clicking a tab while collapsed expands the sidebar', () => {
+    act(() => useUiStore.setState({ sidebarCollapsed: true, activeTab: 'layers' }))
+    render(<Sidebar panels={{ layers: <div>L</div>, search: <div>S</div> }} />)
+    fireEvent.click(screen.getByRole('button', { name: /search/i }))
+    expect(useUiStore.getState()).toMatchObject({ sidebarCollapsed: false, activeTab: 'search' })
+  })
+
+  it('on mobile, tapping the active tab collapses the sheet', () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
+    act(() => useUiStore.setState({ sidebarCollapsed: false, activeTab: 'layers' }))
+    render(<Sidebar panels={{ layers: <div>L</div> }} />)
+    fireEvent.click(screen.getByRole('button', { name: /layers/i }))
+    expect(useUiStore.getState().sidebarCollapsed).toBe(true)
+  })
+
+  it('on desktop, tapping the active tab keeps the sidebar open', () => {
+    render(<Sidebar panels={{ layers: <div>L</div> }} />)
+    fireEvent.click(screen.getByRole('button', { name: /layers/i }))
+    expect(useUiStore.getState().sidebarCollapsed).toBe(false)
   })
 })

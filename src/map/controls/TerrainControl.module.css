@@ -35,3 +35,9 @@
   color: var(--color-text-dim);
   font-variant-numeric: tabular-nums;
 }
+
+@media (max-width: 640px) {
+  .control {
+    bottom: calc(var(--mobile-tabbar-h) + var(--space-md));
+  }
+}

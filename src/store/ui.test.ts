@@ -23,6 +23,11 @@ describe('ui store — sidebar tabs', () => {
     useUiStore.getState().toggleSidebar()
     expect(useUiStore.getState().sidebarCollapsed).toBe(false)
   })
+
+  it('sets the collapsed state explicitly', () => {
+    useUiStore.getState().setSidebarCollapsed(true)
+    expect(useUiStore.getState().sidebarCollapsed).toBe(true)
+  })
 })
 
 describe('ui store — terrain', () => {

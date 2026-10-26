@@ -33,6 +33,7 @@ interface UiState {
   layerVisibility: Record<LayerKey, boolean>
   setActiveTab: (tab: SidebarTab) => void
   toggleSidebar: () => void
+  setSidebarCollapsed: (collapsed: boolean) => void
   toggleTerrain: () => void
   setTerrainExaggeration: (value: number) => void
   setBasemap: (basemap: Basemap) => void
@@ -96,6 +97,7 @@ export const useUiStore = create<UiState>((set, get) => {
     layerVisibility: { routes: true, tracks: true, waypoints: true, photos: true },
     setActiveTab: (tab) => set({ activeTab: tab }),
     toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+    setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
     toggleTerrain: () => set((s) => ({ terrainEnabled: !s.terrainEnabled })),
     setTerrainExaggeration: (value) => {
       const next = clamp(value)

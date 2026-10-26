@@ -22,3 +22,15 @@
   padding: var(--space-sm) var(--space-md);
   z-index: 60;
 }
+
+@media (max-width: 640px) {
+  /* The sidebar is a fixed overlay on mobile, so the map takes the whole screen. */
+  .mapArea {
+    height: 100%;
+  }
+
+  .toast {
+    bottom: calc(var(--mobile-tabbar-h) + var(--space-md));
+    max-width: calc(100% - 2 * var(--space-md));
+  }
+}

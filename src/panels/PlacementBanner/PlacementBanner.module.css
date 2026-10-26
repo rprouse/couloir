@@ -15,3 +15,16 @@
   z-index: 5;
   pointer-events: auto;
 }
+
+@media (max-width: 640px) {
+  /* Centred, the banner would wrap into a narrow column over the basemap
+     switcher (top-right). Span the width instead, clear of MapLibre's
+     navigation control (top-left) and below the basemap switcher. */
+  .banner {
+    left: 52px;
+    right: var(--space-md);
+    top: calc(var(--space-md) + 44px);
+    transform: none;
+    justify-content: space-between;
+  }
+}

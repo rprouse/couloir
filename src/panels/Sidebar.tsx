@@ -1,6 +1,7 @@
 import styles from './Sidebar.module.css'
 import { useUiStore, type SidebarTab } from '../store/ui'
 import { ReactNode } from 'react'
+import { MOBILE_QUERY, useMediaQuery } from '../hooks/useMediaQuery'
 
 const TABS: ReadonlyArray<{ id: SidebarTab; label: string; icon: string }> = [
   { id: 'layers',   label: 'Layers',   icon: '☰' },
@@ -17,12 +18,25 @@ export function Sidebar({ panels }: SidebarProps) {
   const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed)
   const setActiveTab = useUiStore((s) => s.setActiveTab)
   const toggleSidebar = useUiStore((s) => s.toggleSidebar)
+  const setSidebarCollapsed = useUiStore((s) => s.setSidebarCollapsed)
+  const isMobile = useMediaQuery(MOBILE_QUERY)
+
+  const onTab = (tab: SidebarTab) => {
+    // Mobile bottom sheet: the active tab doubles as the close control.
+    if (isMobile && !sidebarCollapsed && tab === activeTab) {
+      setSidebarCollapsed(true)
+      return
+    }
+    setActiveTab(tab)
+    if (sidebarCollapsed) setSidebarCollapsed(false)
+  }
 
   return (
     <aside
       aria-label="Sidebar"
       className={styles.sidebar}
       data-collapsed={sidebarCollapsed ? 'true' : 'false'}
+      data-mobile={isMobile ? 'true' : 'false'}
     >
       <nav className={styles.tabs} aria-label="Sidebar tabs">
         {TABS.map((tab) => (
@@ -31,7 +45,7 @@ export function Sidebar({ panels }: SidebarProps) {
             type="button"
             className={styles.tabButton}
             aria-pressed={activeTab === tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => onTab(tab.id)}
           >
             <span aria-hidden="true" className={styles.tabIcon}>{tab.icon}</span>
             <span className={styles.tabLabel}>{tab.label}</span>

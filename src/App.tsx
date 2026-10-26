@@ -12,6 +12,8 @@ import { runImport } from './features/import/ImportButton'
 import { subscribeToast } from './features/import/importToast'
 import { DetailPanel } from './panels/DetailPanel/DetailPanel'
 import { PlacementBanner } from './panels/PlacementBanner/PlacementBanner'
+import { MOBILE_QUERY, useMediaQuery } from './hooks/useMediaQuery'
+import { useUiStore } from './store/ui'
 
 export default function App() {
   useEscapeKey()
@@ -20,6 +22,21 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => subscribeToast(setToast), [])
+
+  const isMobile = useMediaQuery(MOBILE_QUERY)
+  const panelOpen = useUiStore((s) => s.panel.mode !== 'idle')
+  const placementActive = useUiStore((s) => s.placement.mode !== 'idle')
+  const setSidebarCollapsed = useUiStore((s) => s.setSidebarCollapsed)
+
+  // Phone: start with the sheet closed so the map is unobstructed, and close
+  // it whenever the detail sheet opens or placement starts, so sheets never
+  // stack and the placement banner and map stay clear.
+  useEffect(() => {
+    if (isMobile) setSidebarCollapsed(true)
+  }, [isMobile, setSidebarCollapsed])
+  useEffect(() => {
+    if (isMobile && (panelOpen || placementActive)) setSidebarCollapsed(true)
+  }, [isMobile, panelOpen, placementActive, setSidebarCollapsed])
 
   // Stable callback so LayerPanel/dropzone don't re-bind on every render.
   // If the handle isn't ready (StrictMode double-render edge), the prompt

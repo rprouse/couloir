@@ -2567,7 +2567,7 @@ git commit -m "feat(pwa): installable app with offline app shell and icons"
 
 Breakpoint: `(max-width: 640px)`. Ends with: on a 375 px screen the map fills the viewport. The sidebar is a bottom sheet: a tab bar is always visible, and tapping a tab slides the panel up (tapping the active tab or the handle closes it). The detail panel is a bottom sheet above it. The terrain control sits above the tab bar. Nothing scrolls horizontally.
 
-- [ ] **Step 6.6.1: `useMediaQuery` — test then implement**
+- [x] **Step 6.6.1: `useMediaQuery` — test then implement**
 
 ```tsx
 import { renderHook } from '@testing-library/react'
@@ -2612,11 +2612,11 @@ export function useMediaQuery(query: string): boolean {
 }
 ```
 
-- [ ] **Step 6.6.2: `setSidebarCollapsed` in the UI store**
+- [x] **Step 6.6.2: `setSidebarCollapsed` in the UI store**
 
 Add `setSidebarCollapsed: (collapsed: boolean) => void` → `set({ sidebarCollapsed: collapsed })`, plus a one-line test.
 
-- [ ] **Step 6.6.3: Sidebar behaviour — test first (`Sidebar.test.tsx`)**
+- [x] **Step 6.6.3: Sidebar behaviour — test first (`Sidebar.test.tsx`)**
 
 ```tsx
   it('clicking a tab while collapsed expands the sidebar', () => {
@@ -2655,7 +2655,7 @@ Add `setSidebarCollapsed: (collapsed: boolean) => void` → `set({ sidebarCollap
 
 Also add `data-mobile={isMobile ? 'true' : 'false'}` to the `<aside>`. The CSS uses media queries, so this attribute is only a test hook.
 
-- [ ] **Step 6.6.4: Bottom-sheet CSS**
+- [x] **Step 6.6.4: Bottom-sheet CSS**
 
 `src/theme.css` `:root`: `--mobile-tabbar-h: 56px;`
 
@@ -2772,7 +2772,7 @@ Append to `TerrainControl.module.css`:
 
 Check `BasemapControl` (top-right) against MapLibre's NavigationControl (top-left) at 375 px. If they collide, shrink `.button` padding inside the same media query. Also add `overflow: hidden` to `html, body` in `theme.css` (the app is a fixed-viewport map; nothing should scroll the page).
 
-- [ ] **Step 6.6.5: App-level mobile effects — test first (`App.test.tsx`)**
+- [x] **Step 6.6.5: App-level mobile effects — test first (`App.test.tsx`)**
 
 ```tsx
   it('on mobile, opening the detail panel closes the sidebar sheet', () => {
@@ -2827,7 +2827,7 @@ Browser at 375×667 (DevTools device mode, or Playwright `browser_resize` + `bro
 - Nothing scrolls horizontally (`document.documentElement.scrollWidth === 375`).
 - Desktop width is unchanged.
 
-- [ ] **Step 6.6.7: Ticks, commit**
+- [x] **Step 6.6.7: Ticks, commit**
 
 ```
 git add -A
