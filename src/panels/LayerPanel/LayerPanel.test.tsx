@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { act } from 'react'
 import userEvent from '@testing-library/user-event'
 import { LayerPanel } from './LayerPanel'
@@ -7,6 +7,7 @@ import { useRoutesStore } from '../../store/routes'
 import { useTracksStore } from '../../store/tracks'
 import { useWaypointsStore } from '../../store/waypoints'
 import { usePhotosStore } from '../../store/photos'
+import { useTagsStore } from '../../store/tags'
 import type { Photo, Route, Track } from '../../types'
 
 const stubPrompt = async () =>
@@ -58,6 +59,8 @@ describe('LayerPanel', () => {
     useTracksStore.setState({ tracks: [], loading: false, error: null })
     useWaypointsStore.setState({ waypoints: [], loading: false, error: null })
     usePhotosStore.setState({ photos: [], loading: false, error: null })
+    useTagsStore.setState({ tags: [], loading: false, error: null })
+    useUiStore.setState({ tagFilters: { routes: [], tracks: [], waypoints: [], photos: [] } })
   })
 
   it('renders an Add Photo button', () => {
@@ -191,5 +194,29 @@ describe('LayerPanel', () => {
     expect(count()).toBe('1')
     act(() => usePhotosStore.setState({ photos: [] }))
     expect(count()).toBe('0')
+  })
+
+  it('filters a layer by tag and shows "shown of total"', () => {
+    act(() => {
+      useTagsStore.setState({ tags: [{ id: 't1', name: 'Steep', color: '#EF4444', created_at: '' }] })
+      useRoutesStore.setState({ routes: [{ ...fakeRoute('r1'), tags: ['t1'] }, fakeRoute('r2')] })
+    })
+    render(<LayerPanel promptDuplicate={stubPrompt} />)
+    const row = screen.getByText('Routes').closest('li')!
+    fireEvent.click(within(row).getByText('Filter'))
+    fireEvent.click(within(row).getByLabelText('Steep'))
+    expect(useUiStore.getState().tagFilters.routes).toEqual(['t1'])
+    expect(within(row).getByText('1 of 2')).toBeInTheDocument()
+    fireEvent.click(within(row).getByRole('button', { name: 'Clear filter' }))
+    expect(useUiStore.getState().tagFilters.routes).toEqual([])
+  })
+
+  it('keeps filters independent per layer', () => {
+    act(() => useTagsStore.setState({ tags: [{ id: 't1', name: 'Steep', color: '#EF4444', created_at: '' }] }))
+    render(<LayerPanel promptDuplicate={stubPrompt} />)
+    const photos = screen.getByText('Photos').closest('li')!
+    fireEvent.click(within(photos).getByText('Filter'))
+    fireEvent.click(within(photos).getByLabelText('Steep'))
+    expect(useUiStore.getState().tagFilters).toMatchObject({ routes: [], photos: ['t1'] })
   })
 })

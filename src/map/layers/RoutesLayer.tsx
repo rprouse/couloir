@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import type maplibregl from 'maplibre-gl'
 import type { GeoJSONSource } from 'maplibre-gl'
 import { useMap } from '../../hooks/useMap'
 import { useRoutesStore } from '../../store/routes'
 import { useUiStore } from '../../store/ui'
+import { filterByTags } from '../../utils/tags'
 import { buildRoutesGeoJson } from './routesLayerData'
 import {
   ROUTES_GLOW_LAYER_ID,
@@ -17,6 +18,8 @@ import {
 export function RoutesLayer(): null {
   const map = useMap()
   const routes = useRoutesStore((s) => s.routes)
+  const tagFilter = useUiStore((s) => s.tagFilters.routes)
+  const shown = useMemo(() => filterByTags(routes, tagFilter), [routes, tagFilter])
   const visible = useUiStore((s) => s.layerVisibility.routes)
 
   // (1) Add source and layers once the style is ready. addSource/addLayer
@@ -31,7 +34,10 @@ export function RoutesLayer(): null {
 
     const install = () => {
       if (map.getSource(ROUTES_SOURCE_ID)) return
-      const initialRoutes = useRoutesStore.getState().routes
+      const initialRoutes = filterByTags(
+        useRoutesStore.getState().routes,
+        useUiStore.getState().tagFilters.routes,
+      )
       const initialVisible = useUiStore.getState().layerVisibility.routes
       const visibility = initialVisible ? 'visible' : 'none'
       map.addSource(ROUTES_SOURCE_ID, {
@@ -95,7 +101,7 @@ export function RoutesLayer(): null {
     }
   }, [map])
 
-  // (2) Sync GeoJSON when routes change.
+  // (2) Sync GeoJSON when routes or the routes tag filter change.
   // The source may not exist yet — install() runs on style.load, which is
   // asynchronous. install() seeds the source with the current routes via
   // useRoutesStore.getState(), so the initial data isn't lost; this effect
@@ -110,8 +116,8 @@ export function RoutesLayer(): null {
     // setData accepts the value at runtime; `as never` documents that we've
     // intentionally avoided pulling @types/geojson into the helper just to
     // satisfy a structural shape that's already correct for our use.
-    ;(src as GeoJSONSource).setData(buildRoutesGeoJson(routes) as never)
-  }, [map, routes])
+    ;(src as GeoJSONSource).setData(buildRoutesGeoJson(shown) as never)
+  }, [map, shown])
 
   // (3) Sync visibility on toggle change.
   useEffect(() => {

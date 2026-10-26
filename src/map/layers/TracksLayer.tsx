@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import type maplibregl from 'maplibre-gl'
 import type { GeoJSONSource } from 'maplibre-gl'
 import { useMap } from '../../hooks/useMap'
 import { useTracksStore } from '../../store/tracks'
 import { useUiStore } from '../../store/ui'
+import { filterByTags } from '../../utils/tags'
 import { buildTracksGeoJson } from './tracksLayerData'
 import {
   TRACKS_LINE_LAYER_ID,
@@ -15,6 +16,8 @@ import {
 export function TracksLayer(): null {
   const map = useMap()
   const tracks = useTracksStore((s) => s.tracks)
+  const tagFilter = useUiStore((s) => s.tagFilters.tracks)
+  const shown = useMemo(() => filterByTags(tracks, tagFilter), [tracks, tagFilter])
   const visible = useUiStore((s) => s.layerVisibility.tracks)
 
   // (1) Add source and layer once the style is ready. addSource/addLayer
@@ -29,7 +32,10 @@ export function TracksLayer(): null {
 
     const install = () => {
       if (map.getSource(TRACKS_SOURCE_ID)) return
-      const initialTracks = useTracksStore.getState().tracks
+      const initialTracks = filterByTags(
+        useTracksStore.getState().tracks,
+        useUiStore.getState().tagFilters.tracks,
+      )
       const initialVisible = useUiStore.getState().layerVisibility.tracks
       const visibility = initialVisible ? 'visible' : 'none'
       map.addSource(TRACKS_SOURCE_ID, {
@@ -82,7 +88,7 @@ export function TracksLayer(): null {
     }
   }, [map])
 
-  // (2) Sync GeoJSON when tracks change.
+  // (2) Sync GeoJSON when tracks or the tracks tag filter change.
   // The source may not exist yet — install() runs on style.load, which is
   // asynchronous. install() seeds the source with the current tracks via
   // useTracksStore.getState(), so the initial data isn't lost; this effect
@@ -97,8 +103,8 @@ export function TracksLayer(): null {
     // setData accepts the value at runtime; `as never` documents that we've
     // intentionally avoided pulling @types/geojson into the helper just to
     // satisfy a structural shape that's already correct for our use.
-    ;(src as GeoJSONSource).setData(buildTracksGeoJson(tracks) as never)
-  }, [map, tracks])
+    ;(src as GeoJSONSource).setData(buildTracksGeoJson(shown) as never)
+  }, [map, shown])
 
   // (3) Sync visibility on toggle change.
   useEffect(() => {

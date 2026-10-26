@@ -943,7 +943,7 @@ git commit -m "feat(tags): tag management in Settings and tag picker in every fo
 
 Ends with: each layer row has a Filter control (shown when any tags exist) listing every tag as a checkbox. Selecting one or more tags shows only entities with at least one of them (OR). "Clear filter" resets. Each layer's filter is independent. The count badge reads "shown of total" while a filter is active.
 
-- [ ] **Step 6.2.1: `filterByTags` — test then implement**
+- [x] **Step 6.2.1: `filterByTags` — test then implement**
 
 ```ts
 describe('filterByTags', () => {
@@ -970,7 +970,7 @@ export function filterByTags<T extends { tags: string[] }>(items: T[], tagIds: r
 }
 ```
 
-- [ ] **Step 6.2.2: Store tests for the filter actions (`ui.test.ts`)**
+- [x] **Step 6.2.2: Store tests for the filter actions (`ui.test.ts`)**
 
 ```ts
 describe('tag filters', () => {
@@ -984,7 +984,7 @@ describe('tag filters', () => {
 })
 ```
 
-- [ ] **Step 6.2.3: Apply the filter in each layer component**
+- [x] **Step 6.2.3: Apply the filter in each layer component**
 
 The same change goes into all four layer components. Shown for `RoutesLayer.tsx`:
 
@@ -1007,7 +1007,7 @@ Layer-specific notes:
 
 There are no new tests here. The layer components are verified in the browser, and `filterByTags` carries the logic. Run the existing layer tests to confirm nothing regressed.
 
-- [ ] **Step 6.2.4: `TagFilterMenu` — a native `<details>` popover**
+- [x] **Step 6.2.4: `TagFilterMenu` — a native `<details>` popover**
 
 `TagFilterMenu.module.css`:
 
@@ -1113,7 +1113,7 @@ export function TagFilterMenu({ layer, label }: Props): JSX.Element | null {
 }
 ```
 
-- [ ] **Step 6.2.5: Layer panel row — test first**
+- [x] **Step 6.2.5: Layer panel row — test first**
 
 Add to `LayerPanel.test.tsx`:
 
@@ -1160,7 +1160,7 @@ Run → PASS.
 
 Browser: tag one route "Steep" and another "North". Filter Routes by Steep and only that route shows. Add North and both show. Clear and all show. Filter Photos independently and Routes is unaffected. Count reads "1 of 3" etc.
 
-- [ ] **Step 6.2.7: Ticks, commit**
+- [x] **Step 6.2.7: Ticks, commit**
 
 ```
 git commit -am "feat(layers): per-layer tag filters"

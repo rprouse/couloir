@@ -1,4 +1,4 @@
-import { countTagUsage, nextTagColor, readableTextColor, validateTagInput } from './tags'
+import { countTagUsage, filterByTags, nextTagColor, readableTextColor, validateTagInput } from './tags'
 import { TAG_PALETTE, type Tag } from '../types'
 
 const tag = (id: string, name: string): Tag => ({ id, name, color: '#888888', created_at: '' })
@@ -47,5 +47,18 @@ describe('nextTagColor', () => {
     expect(nextTagColor([])).toBe(TAG_PALETTE[0])
     expect(nextTagColor(Array.from({ length: TAG_PALETTE.length + 1 }, (_, i) => tag(`t${i}`, `n${i}`))))
       .toBe(TAG_PALETTE[1])
+  })
+})
+
+describe('filterByTags', () => {
+  const items = [{ id: 'a', tags: ['t1'] }, { id: 'b', tags: ['t2'] }, { id: 'c', tags: [] }]
+  it('returns everything when no tags are selected', () => {
+    expect(filterByTags(items, [])).toBe(items)
+  })
+  it('keeps entities carrying any selected tag (OR)', () => {
+    expect(filterByTags(items, ['t1', 't2']).map((i) => i.id)).toEqual(['a', 'b'])
+  })
+  it('drops untagged entities while a filter is active', () => {
+    expect(filterByTags(items, ['t1']).map((i) => i.id)).toEqual(['a'])
   })
 })

@@ -46,3 +46,11 @@ export function readableTextColor(hex: string): '#000000' | '#FFFFFF' {
 export function nextTagColor(existing: readonly Tag[]): string {
   return TAG_PALETTE[existing.length % TAG_PALETTE.length]
 }
+
+// OR semantics: an entity shows when it carries any selected tag. An empty
+// selection means "no filter" and returns the input array unchanged.
+export function filterByTags<T extends { tags: string[] }>(items: T[], tagIds: readonly string[]): T[] {
+  if (tagIds.length === 0) return items
+  const wanted = new Set(tagIds)
+  return items.filter((it) => it.tags.some((t) => wanted.has(t)))
+}

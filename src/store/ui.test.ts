@@ -280,3 +280,13 @@ describe('draftNumber', () => {
     expect(draftNumber({ mode: 'edit', entityType: 'photo', entityId: 'p', draft: {} }, 'lng')).toBeNull()
   })
 })
+
+describe('tag filters', () => {
+  beforeEach(() => useUiStore.setState({ tagFilters: { routes: [], tracks: [], waypoints: [], photos: [] } }))
+  it('sets and clears per layer, independently', () => {
+    useUiStore.getState().setTagFilter('routes', ['t1'])
+    useUiStore.getState().setTagFilter('photos', ['t2'])
+    useUiStore.getState().clearTagFilter('routes')
+    expect(useUiStore.getState().tagFilters).toEqual({ routes: [], tracks: [], waypoints: [], photos: ['t2'] })
+  })
+})
