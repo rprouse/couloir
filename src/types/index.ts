@@ -261,3 +261,9 @@ export const MAP_DEFAULTS = {
 } as const
 
 export const APP_VERSION = '0.0.1'
+
+// Backup ZIP format (src/features/backup). Bump BUNDLE_VERSION only for
+// breaking changes to metadata.json; readers reject newer versions.
+export const BUNDLE_VERSION = 1
+export const BACKUP_MANIFEST_FILE = 'manifest.json'
+export const BACKUP_METADATA_FILE = 'metadata.json'

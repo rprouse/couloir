@@ -1647,7 +1647,7 @@ git commit -m "feat(search): global search with grouped results and fly-to"
 
 Ends with: Settings › Backup has "Export backup…" and "Restore from backup…". Export shows "Backup will be ~N MB. Continue?", then saves `couloir-backup-YYYY-MM-DD.zip` (streamed to disk in Chrome/Edge). Restore reads a ZIP, shows what's in it with the spec's confirmation text, then merges via `importAll`, regenerating any missing thumbnails, and reloads every slice. Importing the same ZIP twice changes nothing the second time.
 
-- [ ] **Step 6.4.1: Install and constants**
+- [x] **Step 6.4.1: Install and constants**
 
 ```bash
 npm install fflate@0.8.3
@@ -1665,7 +1665,7 @@ export const BACKUP_METADATA_FILE = 'metadata.json'
 
 Replace the literal `bundle_version: 1` in `opfs.ts` and `memory.ts` `exportAll` with `BUNDLE_VERSION`.
 
-- [ ] **Step 6.4.2: `formatBytes` and `makeThumbnail`**
+- [x] **Step 6.4.2: `formatBytes` and `makeThumbnail`**
 
 `format.test.ts`:
 
@@ -1702,7 +1702,7 @@ export async function makeThumbnail(blob: Blob): Promise<Blob> {
 }
 ```
 
-- [ ] **Step 6.4.3: Round-trip tests first — `src/features/backup/backup.test.ts`**
+- [x] **Step 6.4.3: Round-trip tests first — `src/features/backup/backup.test.ts`**
 
 These run fully in jsdom: fflate is pure JS, and the thumbnail generator is injected.
 
@@ -1828,7 +1828,7 @@ describe('backup', () => {
 
 Run → FAIL (modules missing).
 
-- [ ] **Step 6.4.4: `src/features/backup/writeBackup.ts`**
+- [x] **Step 6.4.4: `src/features/backup/writeBackup.ts`**
 
 ```ts
 import { Zip, ZipDeflate, ZipPassThrough, strToU8 } from 'fflate'
@@ -1936,7 +1936,7 @@ function junctionRows(type: EntityType, items: Array<{ id: string; tags: string[
 
 (TypeScript narrows `zipError` to `null` after the assignment in the callback. If it complains `'never'` at the `throw`, declare it `let zipError = null as Error | null`.)
 
-- [ ] **Step 6.4.5: `src/features/backup/readBackup.ts`**
+- [x] **Step 6.4.5: `src/features/backup/readBackup.ts`**
 
 ```ts
 import { Unzip, UnzipInflate, strFromU8 } from 'fflate'
@@ -2042,7 +2042,9 @@ export async function* fileChunks(file: Blob): AsyncIterable<Uint8Array> {
 
 The "not a Couloir backup" test expects the missing-manifest error, which the `readJson` path throws as a `BackupFormatError`.
 
-- [ ] **Step 6.4.6: `src/features/backup/prepareImport.ts`**
+> **Implemented differently:** the shipped `readBackup` collects the chunks and calls `unzipSync` (central directory) instead of the streaming `Unzip` above. `fflate.Zip` writes every entry with a data descriptor, and the streaming `Unzip` ends such an entry at the first `PK` / `PK` byte sequence it sees, so a JPEG containing those bytes was truncated or broke the read. `backup.test.ts` has a regression test ("round-trips photo bytes that contain ZIP signatures"). Same signature and errors; memory was already bounded by the backup size because `importAll` takes Maps.
+
+- [x] **Step 6.4.6: `src/features/backup/prepareImport.ts`**
 
 ```ts
 import type { ExportBundle } from '../../types'
@@ -2096,7 +2098,7 @@ export function summarizeBundle(b: ExportBundle): string {
 
 Run `backup.test.ts` → PASS.
 
-- [ ] **Step 6.4.7: Save target — `src/types/fileSystemAccess.d.ts` + `src/features/backup/saveTarget.ts`**
+- [x] **Step 6.4.7: Save target — `src/types/fileSystemAccess.d.ts` + `src/features/backup/saveTarget.ts`**
 
 `src/types/fileSystemAccess.d.ts` (TS 5.6's `lib.dom` lacks the picker):
 
@@ -2168,7 +2170,7 @@ export async function openSaveTarget(filename: string): Promise<BackupSink | nul
 }
 ```
 
-- [ ] **Step 6.4.8: `BackupSection` — test first**
+- [x] **Step 6.4.8: `BackupSection` — test first**
 
 `BackupSection.test.tsx` covers the confirmation flows. The real file I/O is covered by `backup.test.ts`.
 
@@ -2387,7 +2389,7 @@ Browser (Chrome):
 - Restore the same ZIP again and nothing duplicates.
 - Firefox (or Chrome with `delete window.showSaveFilePicker` in DevTools first): export falls back to a normal download.
 
-- [ ] **Step 6.4.10: Docs, ticks, commit**
+- [x] **Step 6.4.10: Docs, ticks, commit**
 
 `ARCHITECTURE.md` › Backup Format: replace the "fflate's streaming API…" paragraph with: export builds `metadata.json` from the entity getters, reads photos one at a time, and streams through `fflate.Zip` to either a File System Access writable (Chrome/Edge) or an in-memory Blob download (others). Import streams through `fflate.Unzip` and holds the extracted entries in memory, because `importAll` takes Maps. Note that `StorageProvider.exportAll` remains for the dev console but the UI doesn't use it.
 

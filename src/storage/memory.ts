@@ -8,7 +8,7 @@ import type {
   Track,
   Waypoint,
 } from '../types'
-import { APP_VERSION } from '../types'
+import { APP_VERSION, BUNDLE_VERSION } from '../types'
 import type { StorageProvider } from './interface'
 
 // In-memory reference implementation of StorageProvider. Used by every
@@ -213,7 +213,7 @@ export class InMemoryStorageProvider implements StorageProvider {
     })
 
     const bundle: ExportBundle = {
-      bundle_version: 1,
+      bundle_version: BUNDLE_VERSION,
       app_version: APP_VERSION,
       exported_at: new Date().toISOString(),
       routes,

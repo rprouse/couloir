@@ -424,7 +424,7 @@ async function ensureSchema(db) {
 
 ## Backup Format
 
-`exportAll()` produces a single ZIP archive written via `fflate`:
+A backup is a single ZIP archive written via `fflate` (`src/features/backup`):
 
 ```
 couloir-backup-2026-05-05.zip
@@ -434,7 +434,11 @@ couloir-backup-2026-05-05.zip
   photos/{id}_thumb.jpg  — one thumbnail per photo (regenerable on import if missing)
 ```
 
-`fflate`'s streaming API is used for both write (so we don't allocate the full archive in memory before download) and read (so we can restore very large bundles without OOM).
+**Export** builds `metadata.json` from the entity getters (`getRoutes()`, `getTags()`, …; the `entity_tags` rows are rebuilt from each entity's hydrated `tags`), then reads photos from storage one at a time and streams everything through `fflate.Zip`. JPEGs are stored, not deflated. The ZIP goes either to a File System Access writable (`showSaveFilePicker`, Chrome/Edge), so it streams straight to disk, or, in other browsers, into an in-memory `Blob` that downloads when the archive is complete.
+
+**Import** collects the picked file and reads it through the ZIP central directory with `fflate.unzipSync`, holding the extracted entries in memory because `importAll` takes `Map`s of every blob. It deliberately does not use the streaming `fflate.Unzip`: `fflate.Zip` writes every entry with a trailing data descriptor, and the streaming reader finds the end of such an entry by scanning for the descriptor's signature bytes, which can occur inside JPEG data and truncate a photo. Backups whose `bundle_version` is newer than `BUNDLE_VERSION` are rejected.
+
+`StorageProvider.exportAll()` remains (the dev console's `window.__couloir.exportAll` uses it), but the backup UI doesn't. Restore does go through `importAll()`.
 
 The Settings UI shows a pre-export size estimate ("Backup will be ~412 MB. Continue?") computed by summing photo `file_size_bytes` plus a small overhead.
 

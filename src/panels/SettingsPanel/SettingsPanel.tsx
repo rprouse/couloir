@@ -4,6 +4,7 @@ import { useSettingsStore } from '../../store/settings'
 import { useUiStore } from '../../store/ui'
 import { APP_VERSION } from '../../types'
 import { TagManager } from './TagManager'
+import { BackupSection } from './BackupSection'
 
 const MAPTILER_KEYS_URL = 'https://cloud.maptiler.com/account/keys/'
 
@@ -113,6 +114,12 @@ export function SettingsPanel() {
       <section className={styles.section}>
         <h3>Tags</h3>
         <TagManager />
+      </section>
+
+      <section className={styles.section}>
+        <h3>Backup</h3>
+        <BackupSection />
+        <p className={styles.subtle}>Backups are your only protection if the browser clears site storage.</p>
       </section>
 
       <section className={styles.section}>
