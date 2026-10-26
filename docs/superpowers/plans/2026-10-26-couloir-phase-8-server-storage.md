@@ -204,9 +204,9 @@ Pure refactor: no behaviour change in the running app.
 
 ## Task 8.4 — `HttpStorageProvider`
 
-**Files:** create `src/storage/http.ts`, `src/storage/http.test.ts` (`// @vitest-environment node`).
+**Files:** create `src/storage/http.ts`, `src/storage/http.test.ts` (client-only, scripted fetch), `server/httpProvider.test.ts` (end-to-end contract).
 
-- [ ] **Step 8.4.1:** `class HttpStorageProvider implements StorageProvider`, with `constructor(opts: { baseUrl?: string; fetchFn?: typeof fetch })`. Defaults are `''` (same origin) and the global `fetch`.
+- [x] **Step 8.4.1:** `class HttpStorageProvider implements StorageProvider`, with `constructor(opts: { baseUrl?: string; fetchFn?: typeof fetch })`. Defaults are `''` (same origin) and the global `fetch`.
   - **`init`:** `GET /api/health`. Throw `SchemaVersionError` if `schemaVersion > SCHEMA_VERSION` (the client is a stale PWA build, so the user should refresh). Throw a clear `Error('Couloir server unreachable: …')` on network failure.
   - **`close`:** no-op.
   - **`get*`:** 404 → `null`.
@@ -216,8 +216,14 @@ Pure refactor: no behaviour change in the running app.
   - **`getPhotoBlob`/`getPhotoThumb`:** `fetch(...).blob()`. The browser HTTP cache handles repeats, because the server sends `immutable`.
   - **`exportAll`:** build the bundle client-side from the list endpoints (`/api/routes`, `/tracks`, `/waypoints`, `/photos`, `/tags`). `entity_tags` is derived from each entity's hydrated `tags`, sorted like the SQL export (type, entity id, tag id). Then fetch each photo's full and thumb, with concurrency limited to 4. There's no export endpoint; see the 8.3 notes.
   - **`importAll`:** a single multipart `POST /api/import`.
-- [ ] **Step 8.4.2: Contract.** Run `storageContract('HttpStorageProvider', …)` with `fetchFn: (input, init) => app.fetch(new Request(new URL(input, 'http://test'), init))`, where `app = createApp({ storage: new SqlStorageProvider(new NodeSqlBackend(tmp)) })`. This is the end-to-end proof: browser provider → HTTP → SQL → disk.
-- [ ] **Step 8.4.3:** Http-specific tests: server down → clear error; `schemaVersion` ahead → `SchemaVersionError`; 500 → error carries the server's message.
+- [x] **Step 8.4.2: Contract.** Run `storageContract('HttpStorageProvider', …)` with `fetchFn: (input, init) => app.fetch(new Request(new URL(input, 'http://test'), init))`, where `app = createApp({ storage: new SqlStorageProvider(new NodeSqlBackend(tmp)) })`. This is the end-to-end proof: browser provider → HTTP → SQL → disk.
+- [x] **Step 8.4.3:** Http-specific tests: server down → clear error; `schemaVersion` ahead → `SchemaVersionError`; 500 → error carries the server's message.
+
+> **Notes (2026-10-26):**
+> - **The end-to-end contract lives in `server/httpProvider.test.ts`, not `src/storage/http.test.ts`.** It needs `server/app`, and importing that from `src/` would pull server code (and Node types) into the browser tsconfig. `src/storage/http.test.ts` holds the client-only tests: init and schema skew, unreachable server, base URL, encoding, 404 → null, error messages (JSON and non-JSON bodies), a 404 on a write still throws, `updatePhotoMetadata` 404, and the global-fetch default.
+> - **All 39 contract tests passed** through `HttpStorageProvider` → Hono (in-process via `app.fetch`) → `SqlStorageProvider` → `node:sqlite` and files. An extra test checks that the client-assembled export equals the server-side SQL `exportAll()` bundle field for field (except `exported_at`). A mutation check (sort disabled) showed this test guards the `entity_tags` ordering.
+> - **Errors are `HttpStorageError`,** which carries `status` and the server's `{ error }` text, falling back to the status text for non-JSON bodies such as a proxy error page. Network failures become `Couloir server unreachable (<path>): <reason>`, which 8.5.3's bootstrap message can rely on.
+> - **The default fetch is wrapped (`(i, init) => fetch(i, init)`)** to avoid "Illegal invocation" from a detached `window.fetch`. That also lets tests stub the global.
 
 ---
 
