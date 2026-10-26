@@ -87,4 +87,9 @@ describe('SettingsPanel', () => {
     })
     expect(useUiStore.getState().terrainExaggeration).toBe(2)
   })
+
+  it('says where the library is stored', () => {
+    render(<SettingsPanel />)
+    expect(screen.getByText(/stored on your couloir server/i)).toBeInTheDocument()
+  })
 })

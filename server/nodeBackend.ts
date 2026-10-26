@@ -13,11 +13,9 @@ function isErrnoCode(err: unknown, code: string): boolean {
 // SqlBackend over node:sqlite plus plain files, all under one data directory:
 //
 //   {dataDir}/couloir.db        SQLite database (WAL mode)
-//   {dataDir}/photos/{id}.jpg   photo blobs, at the same relative paths the
-//                               provider uses in the browser
+//   {dataDir}/photos/{id}.jpg   full-size photos, and {id}_thumb.jpg thumbnails
 //
-// node:sqlite is synchronous; the async signatures exist to satisfy the
-// interface the browser worker also implements.
+// node:sqlite is synchronous; the methods are async because SqlBackend is.
 export class NodeSqlBackend implements SqlBackend {
   private readonly root: string
   private db: DatabaseSync | null = null

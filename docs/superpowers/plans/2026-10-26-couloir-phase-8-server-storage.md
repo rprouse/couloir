@@ -268,15 +268,23 @@ Pure refactor: no behaviour change in the running app.
 
 ## Task 8.6 — Remove OPFS
 
-- [ ] **Step 8.6.1:** Before deleting anything, `git tag last-opfs <commit before 8.5>` and push the tag. That build can always export a ZIP from an old browser profile.
-- [ ] **Step 8.6.2:** Delete the OPFS files:
+- [x] **Step 8.6.1:** Before deleting anything, `git tag last-opfs <commit before 8.5>` and push the tag. That build can always export a ZIP from an old browser profile.
+- [x] **Step 8.6.2:** Delete the OPFS files:
   - `opfs.ts`, `workerHost.ts`, `workerClient.ts`, `workerClient.test.ts`, `workerProtocol.ts`, `wa-sqlite.d.ts`
   - `npm uninstall wa-sqlite`
   - from `vite.config.ts`: `optimizeDeps.exclude` and `worker.format`, plus `wasm` from the workbox `globPatterns`
 
   Lower `maximumFileSizeToCacheInBytes` if the wasm was the only reason it was raised.
-- [ ] **Step 8.6.3:** Settings panel: replace the "Storage requirements" copy (OPFS quotas and incognito caveats) with a short "Data is stored on your Couloir server" note showing the server's health status.
-- [ ] **Step 8.6.4:** `npm test`, `npm run typecheck`, `npm run build` all green. `grep -ri "opfs\|wa-sqlite" src` returns only intentional mentions.
+- [x] **Step 8.6.3:** Settings panel: replace the "Storage requirements" copy (OPFS quotas and incognito caveats) with a short "Data is stored on your Couloir server" note showing the server's health status.
+- [x] **Step 8.6.4:** `npm test`, `npm run typecheck`, `npm run build` all green. `grep -ri "opfs\|wa-sqlite" src` returns only intentional mentions.
+
+> **Notes (2026-10-26):**
+> - **`last-opfs` → `2f6f076` (Task 8.4),** the last commit whose `main.tsx` uses `OPFSStorageProvider`. The annotated tag is pushed to `origin`. To export from an old browser profile: `git switch --detach last-opfs`, run `npm i && npm run dev`, open the same origin the data was created on (`http://localhost:5173`, because OPFS is per-origin), then use Settings → Export.
+> - **Removed:** `opfs.ts`, `workerHost.ts`, `workerClient.ts` (+ test), `workerProtocol.ts`, `wa-sqlite.d.ts`, the `wa-sqlite` dependency, and from `vite.config.ts`: `worker.format`, `optimizeDeps.exclude`, and `wasm` in `globPatterns`. `SqlStorageProvider.closed` is now `private`.
+> - **The precache limit is 4 MB, not removed.** The main chunk is ~1.5 MB of mostly MapLibre, close to Workbox's 2 MB default, which drops oversized files from the precache silently. The precache stays at 1,595 KiB / 15 entries; wa-sqlite had already left the bundle in 8.5.
+> - **Settings (plan change): a plain note instead of a health indicator.** The note says "Your library is stored on your Couloir server. Export a backup to keep a copy somewhere else." A health indicator would always read "connected", because the app can't get past bootstrap without a reachable server.
+> - Comments that described OPFS now describe the server or SQL (`memory.ts`, `PhotosLayer.tsx`, `types/index.ts`, `sqlBackend.ts`, `nodeBackend.ts`). The docs (`ARCHITECTURE.md` etc.) are 8.10.
+> - Checks: typecheck (all three tsconfigs), 77 files / 621 tests, and the production build all pass. A dev-server boot in headless Edge creates and lists entities with no page errors.
 
 ---
 

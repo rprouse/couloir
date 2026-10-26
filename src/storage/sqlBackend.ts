@@ -1,6 +1,6 @@
 // The narrow surface SqlStorageProvider needs from a SQLite connection plus
-// blob storage. The browser worker client and the server's node:sqlite
-// backend both implement it, so the SQL lives in one place.
+// blob storage. server/nodeBackend.ts implements it over node:sqlite; keeping
+// the seam lets the SQL be tested against fakes and stay backend-agnostic.
 
 export type SqlValue = string | number | bigint | null | Uint8Array
 

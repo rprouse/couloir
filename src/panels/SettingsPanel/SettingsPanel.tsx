@@ -127,7 +127,9 @@ export function SettingsPanel() {
       <section className={styles.section}>
         <h3>Backup</h3>
         <BackupSection />
-        <p className={styles.subtle}>Backups are your only protection if the browser clears site storage.</p>
+        <p className={styles.subtle}>
+          Your library is stored on your Couloir server. Export a backup to keep a copy somewhere else.
+        </p>
       </section>
 
       <section className={styles.section}>

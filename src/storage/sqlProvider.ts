@@ -14,12 +14,11 @@ import { ensureSchema } from './schema'
 import type { SqlBackend, SqlOp, SqlRow, SqlValue } from './sqlBackend'
 
 // StorageProvider over any SqlBackend. All of Couloir's SQL lives here; the
-// browser (wa-sqlite in a worker) and the server (node:sqlite) only supply
-// the connection and blob I/O.
+// server's node:sqlite backend (server/nodeBackend.ts) only supplies the
+// connection and blob I/O.
 export class SqlStorageProvider implements StorageProvider {
-  // Once closed, a backend may not answer further calls (the browser worker
-  // is terminated). Track the state so close() is safely idempotent.
-  protected closed = false
+  // Track the state so close() is safely idempotent.
+  private closed = false
 
   constructor(protected db: SqlBackend) {}
 

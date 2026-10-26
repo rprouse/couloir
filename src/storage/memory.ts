@@ -12,8 +12,7 @@ import { APP_VERSION, BUNDLE_VERSION } from '../types'
 import type { StorageProvider } from './interface'
 
 // In-memory reference implementation of StorageProvider. Used by every
-// Vitest test (jsdom has no OPFS) and by any future automated environment
-// that doesn't have a browser. Never used in production.
+// Vitest test that doesn't need a real database. Never used in production.
 //
 // Storage maps are added incrementally as each task wires up its CRUD methods
 // (Task 2.2: routes, tracks, entityTags; Task 2.3: waypoints, photos, blobs,
@@ -160,7 +159,7 @@ export class InMemoryStorageProvider implements StorageProvider {
 
   async deleteTag(id: string): Promise<void> {
     this.tags.delete(id)
-    // Mirror the OPFS ON DELETE CASCADE: drop every junction row that
+    // Mirror the SQL ON DELETE CASCADE: drop every junction row that
     // referenced this tag. Match on the third tuple element (tag_id)
     // rather than `endsWith` so this stays correct if a future tag id
     // ever contains the separator character.
@@ -204,7 +203,7 @@ export class InMemoryStorageProvider implements StorageProvider {
       })
     }
     // Sort by codepoint (matches SQL `ORDER BY entity_type, entity_id, tag_id`
-    // — locale-aware comparators would diverge from the OPFS implementation
+    // — locale-aware comparators would diverge from the SQL implementation
     // for the same input).
     entity_tags.sort((a, b) => {
       const ka = `${a.entity_type}|${a.entity_id}|${a.tag_id}`
