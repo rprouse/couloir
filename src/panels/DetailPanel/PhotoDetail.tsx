@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import styles from './DetailPanel.module.css'
 import shared from './DetailPanel.shared.module.css'
 import { usePhotosStore } from '../../store/photos'
@@ -12,6 +12,7 @@ import { PhotoFields } from './PhotoFields'
 import { PhotoPositionFields } from './PhotoPositionFields'
 import { TagPills } from './TagPills'
 import { ConfirmDelete } from './ConfirmDelete'
+import { PhotoLightbox } from './PhotoLightbox'
 import { Metric } from './Metric'
 import { debug } from '../../utils/debug'
 
@@ -26,11 +27,12 @@ export function PhotoDetail({ photoId, mode }: Props): JSX.Element {
   return mode === 'view' ? <PhotoView photo={photo} /> : <PhotoEdit photo={photo} />
 }
 
-// Full image, fit to the panel width; click to toggle actual size, in which
-// case the frame scrolls.
+// Full image, fit to the panel width; click to open it in the full-window
+// lightbox.
 function PhotoImage({ photo }: { photo: Photo }): JSX.Element {
   const { url, status } = usePhotoBlobUrl(photo.id)
-  const [actualSize, setActualSize] = useState(false)
+  const [expanded, setExpanded] = useState(false)
+  const closeLightbox = useCallback(() => setExpanded(false), [])
 
   if (status === 'loading') {
     return (
@@ -51,10 +53,11 @@ function PhotoImage({ photo }: { photo: Photo }): JSX.Element {
       <img
         src={url}
         alt={photo.name}
-        className={actualSize ? shared.photoActual : shared.photoFit}
-        title={actualSize ? 'Click to fit' : 'Click for full size'}
-        onClick={() => setActualSize((v) => !v)}
+        className={shared.photoFit}
+        title="Click to view full window"
+        onClick={() => setExpanded(true)}
       />
+      {expanded && <PhotoLightbox url={url} alt={photo.name} onClose={closeLightbox} />}
     </div>
   )
 }

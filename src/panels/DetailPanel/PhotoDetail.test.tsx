@@ -1,6 +1,7 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { act } from 'react'
 import { PhotoDetail } from './PhotoDetail'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 import { useUiStore } from '../../store/ui'
 import { usePhotosStore } from '../../store/photos'
 import { InMemoryStorageProvider } from '../../storage/memory'
@@ -36,6 +37,32 @@ describe('PhotoDetail', () => {
     expect(screen.getByText('4096 × 3072')).toBeInTheDocument()
     expect(screen.getByText('49.46000, -115.08000')).toBeInTheDocument()
     expect(await screen.findByRole('img', { name: 'Lone Tree' })).toHaveAttribute('src', expect.stringMatching(/^blob:/))
+  })
+
+  it('opens the photo full-window and closes it with Escape without closing the panel', async () => {
+    function Harness() {
+      useEscapeKey()
+      return <PhotoDetail photoId={photo.id} mode="view" />
+    }
+    render(<Harness />)
+    fireEvent.click(await screen.findByRole('img', { name: 'Lone Tree' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Lone Tree' })
+    const full = within(dialog).getByRole('img', { name: 'Lone Tree' })
+    expect(full).toHaveAttribute('title', 'Click for actual size')
+    fireEvent.click(full)
+    expect(full).toHaveAttribute('title', 'Click to fit the window')
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(useUiStore.getState().panel.mode).toBe('view')
+  })
+
+  it('closes the full-window view from the close button', async () => {
+    render(<PhotoDetail photoId={photo.id} mode="view" />)
+    fireEvent.click(await screen.findByRole('img', { name: 'Lone Tree' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Close photo' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 
   it('Edit seeds the draft with the current position', async () => {

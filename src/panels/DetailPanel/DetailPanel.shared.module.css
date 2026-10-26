@@ -93,9 +93,3 @@
   height: auto;
   cursor: zoom-in;
 }
-
-.photoActual {
-  display: block;
-  max-width: none;
-  cursor: zoom-out;
-}
