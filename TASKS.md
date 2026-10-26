@@ -68,7 +68,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [6.5 PWA manifest and icons](#task-65---pwa-manifest-and-icons)
 - [x] [6.6 Mobile layout](#task-66---mobile-layout)
 - [x] [6.7 Empty states and onboarding](#task-67---empty-states-and-onboarding)
-- [ ] [6.8 Final QA pass](#task-68---final-qa-pass)
+- [x] [6.8 Final QA pass](#task-68---final-qa-pass)
 
 ---
 

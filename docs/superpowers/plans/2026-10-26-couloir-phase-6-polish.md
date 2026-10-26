@@ -911,7 +911,7 @@ Also replace the local `APP_VERSION` const and its TODO with `import { APP_VERSI
 
 Run the TagManager and SettingsPanel tests → PASS.
 
-- [ ] **Step 6.1.8: Verify**
+- [x] **Step 6.1.8: Verify**
 
 `npm run typecheck`, `npm test` → green.
 
@@ -1154,7 +1154,7 @@ Add to `LayerPanel.test.tsx`:
 
 Run → PASS.
 
-- [ ] **Step 6.2.6: Verify**
+- [x] **Step 6.2.6: Verify**
 
 `npm run typecheck`, `npm test` → green.
 
@@ -1618,7 +1618,7 @@ In `App.tsx`, add `search: <SearchPanel />` to the `Sidebar` `panels` map. If `A
 
 A search hit can be in a layer that's tag-filtered out. Opening it still works (the panel opens, the map frames it), but the entity won't render on the map. That's acceptable for the MVP and is noted in ARCHITECTURE.md (Step 6.3.5).
 
-- [ ] **Step 6.3.4: Verify**
+- [x] **Step 6.3.4: Verify**
 
 `npm run typecheck`, `npm test` → green. Browser: search a route name, click the result, and the map fits the route and the panel opens. Search a description word and the snippet shows. Type nonsense and the empty state shows.
 
@@ -2379,7 +2379,7 @@ Mount it in `SettingsPanel.tsx` as a "Backup" section after "Tags". Add a one-li
 
 Run all → PASS.
 
-- [ ] **Step 6.4.9: Verify**
+- [x] **Step 6.4.9: Verify**
 
 `npm run typecheck`, `npm test`, `npm run build` → green.
 
@@ -2536,7 +2536,7 @@ export default defineConfig({
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 ```
 
-- [ ] **Step 6.5.6: Verify**
+- [x] **Step 6.5.6: Verify**
 
 `npm run typecheck`, `npm test`, `npm run build` → green. The build log lists `sw.js` and a precache count. Confirm the `.wasm` file and the storage worker chunk are included: `dist/sw.js` contains their filenames.
 
@@ -2814,7 +2814,7 @@ Check `BasemapControl` (top-right) against MapLibre's NavigationControl (top-lef
 
 Placement on mobile works as is: tapping the map is a click. The photo cursor preview never shows because there is no mousemove, and that's fine.
 
-- [ ] **Step 6.6.6: Verify**
+- [x] **Step 6.6.6: Verify**
 
 `npm run typecheck`, `npm test` → green.
 
@@ -3040,7 +3040,7 @@ export function WelcomeScreen(): JSX.Element {
 
 Replace the `if (!maptilerKey) return (<div className={styles.empty}>…</div>)` block with `if (!maptilerKey) return <WelcomeScreen />`. Delete the now-unused `.empty` rule from `MapView.module.css`. Update `MapView.test.tsx`: the no-key test now asserts the "Welcome to Couloir" heading, and a new test asserts that setting the key (`act(() => useSettingsStore.getState().setMaptilerKey('k'))`) removes it.
 
-- [ ] **Step 6.7.4: Verify**
+- [x] **Step 6.7.4: Verify**
 
 `npm run typecheck`, `npm test` → green.
 
@@ -3059,7 +3059,7 @@ git commit -m "feat(onboarding): welcome screen and empty-layer hints"
 
 This task is run with the user (who has the Maptiler key and real data), and Playwright can be used where it helps. Each defect found gets its own test-first fix and commit. Nothing here is pre-written code.
 
-- [ ] **Step 6.8.1: Run the TASKS.md 6.8 script end to end** on a production build (`npm run build && npm run preview`) in a fresh browser profile. Record each step's result in a scratch checklist. Watch the console the whole time: any error or unhandled rejection is a defect.
+- [x] **Step 6.8.1: Run the TASKS.md 6.8 script end to end** on a production build (`npm run build && npm run preview`) in a fresh browser profile. Record each step's result in a scratch checklist. Watch the console the whole time: any error or unhandled rejection is a defect.
 
 1. Fresh install shows the welcome screen.
 2. Enter the API key and the map loads in 3D.
@@ -3078,9 +3078,9 @@ This task is run with the user (who has the Maptiler key and real data), and Pla
 
 Also run the outstanding Phase 5 checks: cluster counts with `__couloir.createDummyPhotos(120)` (dev build), and `inspectPhotoExif` returning `undefined`.
 
-- [ ] **Step 6.8.2: Fix defects.** One commit per fix, each with a regression test where the logic is testable.
-- [ ] **Step 6.8.3: Final gates.** `npm run typecheck`, `npm test` and `npm run build` are green, and there's no `console.log` in `src/` outside `debug.ts` (`grep -rn "console\.log" src --include=*.ts --include=*.tsx`).
-- [ ] **Step 6.8.4: Docs.** Tick 6.8 in TASKS.md. Update the "Current Phase" note in AGENTS.md if needed (the MVP is complete; next work comes from the Post-MVP Backlog).
+- [x] **Step 6.8.2: Fix defects.** One commit per fix, each with a regression test where the logic is testable.
+- [x] **Step 6.8.3: Final gates.** `npm run typecheck`, `npm test` and `npm run build` are green, and there's no `console.log` in `src/` outside `debug.ts` (`grep -rn "console\.log" src --include=*.ts --include=*.tsx`).
+- [x] **Step 6.8.4: Docs.** Tick 6.8 in TASKS.md. Update the "Current Phase" note in AGENTS.md if needed (the MVP is complete; next work comes from the Post-MVP Backlog).
 
 ```
 git commit -am "chore: phase 6 QA complete; MVP done"
