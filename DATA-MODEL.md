@@ -317,7 +317,7 @@ export const MOVING_SPEED_THRESHOLD_M_S = 0.14
 
 // Map settings defaults
 export const MAP_DEFAULTS = {
-  center: [-116.0, 49.5] as [number, number],  // Fernie, BC
+  center: [-115.063, 49.504] as [number, number],  // Fernie, BC
   zoom: 11,
   pitch: 45,
   bearing: 0,

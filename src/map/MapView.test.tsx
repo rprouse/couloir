@@ -40,7 +40,7 @@ describe('MapView', () => {
     expect(MapMock).toHaveBeenCalledTimes(1)
     const args = MapMock.mock.calls[0][0]
     expect(args.style).toBe('https://api.maptiler.com/maps/outdoor-v2/style.json?key=KEY')
-    expect(args.center).toEqual([-116.0, 49.5])
+    expect(args.center).toEqual([-115.063, 49.504]) // Fernie, BC
     expect(args.zoom).toBe(11)
     expect(args.pitch).toBe(45)
   })
