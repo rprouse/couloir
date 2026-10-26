@@ -59,16 +59,16 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [5.4 Photo viewer](#task-54---photo-viewer)
 - [x] [5.5 Photo count badge](#task-55---photo-count-badge)
 
-### Phase 6 — Polish and MVP Completion  ·  Plan: not yet written
+### Phase 6 — Polish and MVP Completion  ·  Plan: [`2026-10-26-couloir-phase-6-polish.md`](docs/superpowers/plans/2026-10-26-couloir-phase-6-polish.md)
 
-- [ ] [6.1 Tag management](#task-61---tag-management)
-- [ ] [6.2 Tag filtering](#task-62---tag-filtering)
-- [ ] [6.3 Global search](#task-63---global-search)
-- [ ] [6.4 Export and import (ZIP backup)](#task-64---export-and-import-zip-backup)
-- [ ] [6.5 PWA manifest and icons](#task-65---pwa-manifest-and-icons)
-- [ ] [6.6 Mobile layout](#task-66---mobile-layout)
-- [ ] [6.7 Empty states and onboarding](#task-67---empty-states-and-onboarding)
-- [ ] [6.8 Final QA pass](#task-68---final-qa-pass)
+- [x] [6.1 Tag management](#task-61---tag-management)
+- [x] [6.2 Tag filtering](#task-62---tag-filtering)
+- [x] [6.3 Global search](#task-63---global-search)
+- [x] [6.4 Export and import (ZIP backup)](#task-64---export-and-import-zip-backup)
+- [x] [6.5 PWA manifest and icons](#task-65---pwa-manifest-and-icons)
+- [x] [6.6 Mobile layout](#task-66---mobile-layout)
+- [x] [6.7 Empty states and onboarding](#task-67---empty-states-and-onboarding)
+- [x] [6.8 Final QA pass](#task-68---final-qa-pass)
 
 ---
 
@@ -551,7 +551,7 @@ Add a tag management section to the Settings panel: create tags (name + color), 
 
 Color input validates against `/^#[0-9a-fA-F]{6}$/` at the form boundary; invalid values are rejected before save.
 
-Deleting a tag automatically removes its rows from `entity_tags` via the `ON DELETE CASCADE` foreign key — no application-level cleanup is needed. Affected entities' `tags` arrays will reflect the deletion the next time they're loaded. Show a confirmation prompt when the tag is in use (e.g. "Tag 'Steep' is used by 7 entities. Delete?").
+Deleting a tag automatically removes its rows from `entity_tags` via the `ON DELETE CASCADE` foreign key — no application-level cleanup is needed. Affected entities' `tags` arrays will reflect the deletion the next time they're loaded. Show a confirmation prompt when the tag is in use (e.g. "Tag 'Steep' is used by 7 entities. Delete?"). Includes a `TagPicker` in every entity edit form and the waypoint/photo create forms (tag assignment; needed by QA step 7).
 
 **Acceptance criteria**:
 - Tags can be created, renamed, and deleted from Settings

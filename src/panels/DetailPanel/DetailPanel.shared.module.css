@@ -93,3 +93,9 @@
   height: auto;
   cursor: zoom-in;
 }
+
+.pillRow {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}

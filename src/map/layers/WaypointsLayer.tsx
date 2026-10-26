@@ -1,10 +1,11 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import type maplibregl from 'maplibre-gl'
 import type { GeoJSONSource } from 'maplibre-gl'
 import { useMap } from '../../hooks/useMap'
 import { useWaypointsStore } from '../../store/waypoints'
 import { useUiStore } from '../../store/ui'
 import { WAYPOINT_CATEGORIES, type WaypointCategory } from '../../types'
+import { filterByTags } from '../../utils/tags'
 import { buildWaypointsGeoJson } from './waypointsLayerData'
 import { buildCategoryIcon } from './wpIcons'
 import {
@@ -16,6 +17,8 @@ import { debug } from '../../utils/debug'
 export function WaypointsLayer(): null {
   const map = useMap()
   const waypoints = useWaypointsStore((s) => s.waypoints)
+  const tagFilter = useUiStore((s) => s.tagFilters.waypoints)
+  const shown = useMemo(() => filterByTags(waypoints, tagFilter), [waypoints, tagFilter])
   const visible = useUiStore((s) => s.layerVisibility.waypoints)
 
   // Drag state lives in a ref because mousemove handlers fire on every pixel
@@ -45,7 +48,10 @@ export function WaypointsLayer(): null {
         }
       }
 
-      const initialWaypoints = useWaypointsStore.getState().waypoints
+      const initialWaypoints = filterByTags(
+        useWaypointsStore.getState().waypoints,
+        useUiStore.getState().tagFilters.waypoints,
+      )
       const initialVisible = useUiStore.getState().layerVisibility.waypoints
       const visibility = initialVisible ? 'visible' : 'none'
 
@@ -106,7 +112,11 @@ export function WaypointsLayer(): null {
       // Live feedback: rebuild GeoJSON from the store + the in-flight point.
       const src = map.getSource(WAYPOINTS_SOURCE_ID)
       if (!src || src.type !== 'geojson') return
-      const wps = useWaypointsStore.getState().waypoints.map((w) =>
+      // Filtered so a drag doesn't briefly show waypoints hidden by the tag filter.
+      const wps = filterByTags(
+        useWaypointsStore.getState().waypoints,
+        useUiStore.getState().tagFilters.waypoints,
+      ).map((w) =>
         w.id === drag.current.id
           ? { ...w, lat: drag.current.lat, lng: drag.current.lng }
           : w,
@@ -167,14 +177,14 @@ export function WaypointsLayer(): null {
     }
   }, [map])
 
-  // Sync GeoJSON on waypoint changes. Guards on the source not yet existing
+  // Sync GeoJSON on waypoint or tag-filter changes. Guards on the source not yet existing
   // (style.load is async) — install() seeds the initial data via getState().
   useEffect(() => {
     if (!map) return
     const src = map.getSource(WAYPOINTS_SOURCE_ID)
     if (!src || src.type !== 'geojson') return
-    ;(src as GeoJSONSource).setData(buildWaypointsGeoJson(waypoints) as never)
-  }, [map, waypoints])
+    ;(src as GeoJSONSource).setData(buildWaypointsGeoJson(shown) as never)
+  }, [map, shown])
 
   // Toggle visibility from the Layer panel.
   useEffect(() => {

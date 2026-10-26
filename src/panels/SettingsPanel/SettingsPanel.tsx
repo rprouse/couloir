@@ -2,12 +2,11 @@ import { useState } from 'react'
 import styles from './SettingsPanel.module.css'
 import { useSettingsStore } from '../../store/settings'
 import { useUiStore } from '../../store/ui'
+import { APP_VERSION } from '../../types'
+import { TagManager } from './TagManager'
+import { BackupSection } from './BackupSection'
 
 const MAPTILER_KEYS_URL = 'https://cloud.maptiler.com/account/keys/'
-// TODO: read from package.json or import.meta.env once a single source of
-// truth is established. Hardcoded to avoid the build-config noise of injecting
-// version into the bundle for an unreleased app.
-const APP_VERSION = '0.0.1'
 
 export function SettingsPanel() {
   const maptilerKey = useSettingsStore((s) => s.maptilerKey)
@@ -110,6 +109,17 @@ export function SettingsPanel() {
           />
           <span className={styles.subtle}>{terrainExaggeration.toFixed(1)}×</span>
         </label>
+      </section>
+
+      <section className={styles.section}>
+        <h3>Tags</h3>
+        <TagManager />
+      </section>
+
+      <section className={styles.section}>
+        <h3>Backup</h3>
+        <BackupSection />
+        <p className={styles.subtle}>Backups are your only protection if the browser clears site storage.</p>
       </section>
 
       <section className={styles.section}>

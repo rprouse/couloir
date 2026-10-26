@@ -41,6 +41,16 @@ export async function encodePhoto(file: Blob): Promise<EncodedPhoto> {
   }
 }
 
+// Regenerates a thumbnail from a stored full-size JPEG (backup restore).
+export async function makeThumbnail(blob: Blob): Promise<Blob> {
+  const bitmap = await createImageBitmap(blob)
+  try {
+    return await drawToJpeg(bitmap, fitWithin(bitmap.width, bitmap.height, PHOTO_THUMB_EDGE_PX))
+  } finally {
+    bitmap.close()
+  }
+}
+
 async function drawToJpeg(source: CanvasImageSource, size: Size): Promise<Blob> {
   const canvas = document.createElement('canvas')
   canvas.width = size.width

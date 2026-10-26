@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import type maplibregl from 'maplibre-gl'
 import type { GeoJSONSource } from 'maplibre-gl'
 import { useMap } from '../../hooks/useMap'
@@ -20,6 +20,7 @@ import {
   PHOTOS_THUMBNAILS_LAYER_ID,
 } from './layerStyles'
 import { debug } from '../../utils/debug'
+import { filterByTags } from '../../utils/tags'
 
 const ICON_OPTS = { pixelRatio: PHOTO_ICON_PIXEL_RATIO }
 
@@ -36,6 +37,8 @@ function setPhotosData(map: maplibregl.Map, photos: Photo[]): void {
 export function PhotosLayer(): null {
   const map = useMap()
   const photos = usePhotosStore((s) => s.photos)
+  const tagFilter = useUiStore((s) => s.tagFilters.photos)
+  const shown = useMemo(() => filterByTags(photos, tagFilter), [photos, tagFilter])
   const visible = useUiStore((s) => s.layerVisibility.photos)
 
   // Framed thumbnail pixels by photo id. Survives style swaps (which wipe
@@ -56,7 +59,9 @@ export function PhotosLayer(): null {
 
       map.addSource(PHOTOS_SOURCE_ID, {
         type: 'geojson',
-        data: buildPhotosGeoJson(usePhotosStore.getState().photos) as never,
+        data: buildPhotosGeoJson(
+          filterByTags(usePhotosStore.getState().photos, useUiStore.getState().tagFilters.photos),
+        ) as never,
         cluster: true,
         clusterMaxZoom: PHOTO_CLUSTER.clusterMaxZoom,
         clusterRadius: PHOTO_CLUSTER.clusterRadius,
@@ -158,12 +163,18 @@ export function PhotosLayer(): null {
     }
   }, [map])
 
-  // Sync data, then decode any thumbnails not yet cached. Each icon is
+  // Sync data whenever the photos or the photos tag filter change.
+  useEffect(() => {
+    if (!map) return
+    setPhotosData(map, shown)
+  }, [map, shown])
+
+  // Decode any thumbnails not yet cached. Keyed off the unfiltered photos so
+  // clearing a tag filter shows thumbnails immediately. Each icon is
   // registered as it lands; a final setData forces symbol re-placement so the
   // coalesce expression picks up the new images.
   useEffect(() => {
     if (!map) return
-    setPhotosData(map, photos)
 
     const live = new Set(photos.map((p) => p.id))
     for (const id of [...icons.current.keys()]) {
@@ -186,7 +197,12 @@ export function PhotosLayer(): null {
       }),
     ).then((results) => {
       for (const r of results) if (r.status === 'rejected') debug('photo thumb load failed', r.reason)
-      if (!cancelled) setPhotosData(map, usePhotosStore.getState().photos)
+      if (!cancelled) {
+        setPhotosData(
+          map,
+          filterByTags(usePhotosStore.getState().photos, useUiStore.getState().tagFilters.photos),
+        )
+      }
     })
     return () => {
       cancelled = true

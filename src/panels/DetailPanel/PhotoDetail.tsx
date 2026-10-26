@@ -11,6 +11,7 @@ import { parsePhotoForm, valuesFromPhoto, type PhotoFormValues } from './photoFo
 import { PhotoFields } from './PhotoFields'
 import { PhotoPositionFields } from './PhotoPositionFields'
 import { TagPills } from './TagPills'
+import { TagPicker } from '../../components/TagPicker/TagPicker'
 import { ConfirmDelete } from './ConfirmDelete'
 import { PhotoLightbox } from './PhotoLightbox'
 import { Metric } from './Metric'
@@ -126,10 +127,14 @@ function PhotoEdit({ photo }: { photo: Photo }): JSX.Element {
   const lng = useUiStore((s) => draftNumber(s.panel, 'lng'))
 
   const [values, setValues] = useState<PhotoFormValues>(() => valuesFromPhoto(photo))
+  const [tags, setTags] = useState<string[]>(photo.tags)
   const [error, setError] = useState<string | null>(null)
 
   // Re-sync if the photo is replaced upstream (e.g. a future sync arrival).
-  useEffect(() => setValues(valuesFromPhoto(photo)), [photo.id, photo.updated_at])
+  useEffect(() => {
+    setValues(valuesFromPhoto(photo))
+    setTags(photo.tags)
+  }, [photo.id, photo.updated_at])
 
   // Edit entered without a seeded position (e.g. a direct editCurrent()):
   // seed it so the pin and inputs have something to show.
@@ -144,7 +149,7 @@ function PhotoEdit({ photo }: { photo: Photo }): JSX.Element {
     if (!parsed || lat === null || lng === null) return
     setError(null)
     try {
-      await update(photo.id, { ...parsed, lat, lng })
+      await update(photo.id, { ...parsed, lat, lng, tags })
       openEntity('photo', photo.id)
     } catch (err) {
       debug('photo save failed', err)
@@ -170,6 +175,11 @@ function PhotoEdit({ photo }: { photo: Photo }): JSX.Element {
         <h3>Location</h3>
         <p className={styles.subtle}>Drag the pin on the map or type coordinates.</p>
         <PhotoPositionFields />
+      </section>
+
+      <section className={shared.section}>
+        <h3>Tags</h3>
+        <TagPicker value={tags} onChange={setTags} />
       </section>
     </>
   )

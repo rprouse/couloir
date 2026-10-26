@@ -71,3 +71,15 @@ export function normalizeBearing(degrees: number): number {
 export function bearingFromVector(dx: number, dy: number): number {
   return normalizeBearing((Math.atan2(dx, -dy) * 180) / Math.PI)
 }
+
+// Bounding box of a line as [[minLng, minLat], [maxLng, maxLat]].
+export function lineBounds(line: LineStringZ): [[number, number], [number, number]] {
+  let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity
+  for (const [lng, lat] of line.coordinates) {
+    if (lng < minLng) minLng = lng
+    if (lng > maxLng) maxLng = lng
+    if (lat < minLat) minLat = lat
+    if (lat > maxLat) maxLat = lat
+  }
+  return [[minLng, minLat], [maxLng, maxLat]]
+}

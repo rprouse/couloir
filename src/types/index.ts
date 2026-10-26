@@ -194,6 +194,12 @@ export const DEFAULTS = {
   track: { color: '#2A7BE0' },
 } as const
 
+// Default colours offered for new tags, cycled in order.
+export const TAG_PALETTE = [
+  '#E05C2A', '#2A7BE0', '#22C55E', '#F59E0B',
+  '#A78BFA', '#EF4444', '#14B8A6', '#F472B6',
+] as const
+
 export const WAYPOINT_CATEGORIES: Record<WaypointCategory, {
   label: string
   color: string
@@ -255,3 +261,9 @@ export const MAP_DEFAULTS = {
 } as const
 
 export const APP_VERSION = '0.0.1'
+
+// Backup ZIP format (src/features/backup). Bump BUNDLE_VERSION only for
+// breaking changes to metadata.json; readers reject newer versions.
+export const BUNDLE_VERSION = 1
+export const BACKUP_MANIFEST_FILE = 'manifest.json'
+export const BACKUP_METADATA_FILE = 'metadata.json'

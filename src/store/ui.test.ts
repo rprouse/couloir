@@ -23,6 +23,11 @@ describe('ui store — sidebar tabs', () => {
     useUiStore.getState().toggleSidebar()
     expect(useUiStore.getState().sidebarCollapsed).toBe(false)
   })
+
+  it('sets the collapsed state explicitly', () => {
+    useUiStore.getState().setSidebarCollapsed(true)
+    expect(useUiStore.getState().sidebarCollapsed).toBe(true)
+  })
 })
 
 describe('ui store — terrain', () => {
@@ -278,5 +283,15 @@ describe('draftNumber', () => {
     expect(draftNumber({ mode: 'idle' }, 'lat')).toBeNull()
     expect(draftNumber({ mode: 'edit', entityType: 'photo', entityId: 'p', draft: { lat: 4 } }, 'lat')).toBe(4)
     expect(draftNumber({ mode: 'edit', entityType: 'photo', entityId: 'p', draft: {} }, 'lng')).toBeNull()
+  })
+})
+
+describe('tag filters', () => {
+  beforeEach(() => useUiStore.setState({ tagFilters: { routes: [], tracks: [], waypoints: [], photos: [] } }))
+  it('sets and clears per layer, independently', () => {
+    useUiStore.getState().setTagFilter('routes', ['t1'])
+    useUiStore.getState().setTagFilter('photos', ['t2'])
+    useUiStore.getState().clearTagFilter('routes')
+    expect(useUiStore.getState().tagFilters).toEqual({ routes: [], tracks: [], waypoints: [], photos: ['t2'] })
   })
 })

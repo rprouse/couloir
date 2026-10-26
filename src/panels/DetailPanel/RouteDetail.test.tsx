@@ -1,11 +1,12 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act } from 'react'
 import userEvent from '@testing-library/user-event'
 import { RouteDetail } from './RouteDetail'
 import { useRoutesStore } from '../../store/routes'
 import { useUiStore } from '../../store/ui'
 import { useTagsStore } from '../../store/tags'
 import { InMemoryStorageProvider } from '../../storage/memory'
-import { setStorage, clearStorage } from '../../storage/provider'
+import { setStorage, clearStorage, getStorage } from '../../storage/provider'
 import type { Route } from '../../types'
 
 // recharts' ResponsiveContainer uses ResizeObserver which jsdom doesn't provide.
@@ -125,5 +126,13 @@ describe('RouteDetail', () => {
     await user.click(screen.getByRole('button', { name: /^Confirm delete$/ }))
     expect(useRoutesStore.getState().routes).toHaveLength(0)
     expect(useUiStore.getState().panel.mode).toBe('idle')
+  })
+
+  it('edit assigns a tag and persists it', async () => {
+    act(() => useTagsStore.setState({ tags: [{ id: 'tag1', name: 'Steep', color: '#EF4444', created_at: '' }] }))
+    render(<RouteDetail routeId="r1" mode="edit" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Steep' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(async () => expect((await getStorage().getRoute('r1'))?.tags).toEqual(['tag1']))
   })
 })

@@ -34,8 +34,7 @@
 ```
 couloir/
 ├── public/
-│   ├── manifest.json          # PWA manifest
-│   └── icons/                 # App icons
+│   └── icons/                 # App icons (icon.svg source + rendered PNGs)
 ├── src/
 │   ├── main.tsx               # App entry point
 │   ├── App.tsx                # Root component, layout shell
@@ -267,6 +266,12 @@ All transitions go through explicit actions on the UI slice:
 
 The map subscribes only to `PlacementState` (cursor and click handling). The detail panel subscribes only to `PanelState`. They communicate via actions, never via shared mutable state.
 
+### Tag filters
+
+`ui.tagFilters` holds a list of tag IDs per layer (`routes`, `tracks`, `waypoints`, `photos`). An entity passes when it carries **any** of the selected tags (OR semantics); an empty list means no filter. Filtering runs in JS (`filterByTags`) before each layer builds its GeoJSON, not through MapLibre filter expressions. Deleting a tag prunes it from every filter.
+
+Global search ignores tag filters. Clicking a search result turns the entity's layer on if it is hidden, frames the entity on the map and opens its detail panel. A hit that is tag-filtered out still opens and is framed, but does not render on the map (accepted for the MVP).
+
 ### Global ESC key handler
 
 `useEscapeKey()` owns the ESC key with this precedence:
@@ -418,7 +423,7 @@ async function ensureSchema(db) {
 
 ## Backup Format
 
-`exportAll()` produces a single ZIP archive written via `fflate`:
+A backup is a single ZIP archive written via `fflate` (`src/features/backup`):
 
 ```
 couloir-backup-2026-05-05.zip
@@ -428,7 +433,11 @@ couloir-backup-2026-05-05.zip
   photos/{id}_thumb.jpg  — one thumbnail per photo (regenerable on import if missing)
 ```
 
-`fflate`'s streaming API is used for both write (so we don't allocate the full archive in memory before download) and read (so we can restore very large bundles without OOM).
+**Export** builds `metadata.json` from the entity getters (`getRoutes()`, `getTags()`, …; the `entity_tags` rows are rebuilt from each entity's hydrated `tags`), then reads photos from storage one at a time and streams everything through `fflate.Zip`. JPEGs are stored, not deflated. The ZIP goes either to a File System Access writable (`showSaveFilePicker`, Chrome/Edge), so it streams straight to disk, or, in other browsers, into an in-memory `Blob` that downloads when the archive is complete.
+
+**Import** collects the picked file and reads it through the ZIP central directory with `fflate.unzipSync`, holding the extracted entries in memory because `importAll` takes `Map`s of every blob. It deliberately does not use the streaming `fflate.Unzip`: `fflate.Zip` writes every entry with a trailing data descriptor, and the streaming reader finds the end of such an entry by scanning for the descriptor's signature bytes, which can occur inside JPEG data and truncate a photo. Backups whose `bundle_version` is newer than `BUNDLE_VERSION` are rejected.
+
+`StorageProvider.exportAll()` remains (the dev console's `window.__couloir.exportAll` uses it), but the backup UI doesn't. Restore does go through `importAll()`.
 
 The Settings UI shows a pre-export size estimate ("Backup will be ~412 MB. Continue?") computed by summing photo `file_size_bytes` plus a small overhead.
 
@@ -488,8 +497,10 @@ No feature code changes are required — only the storage implementation, the de
 
 ## PWA Configuration
 
-- Vite PWA plugin (`vite-plugin-pwa`) with Workbox.
-- App shell cached for offline use.
-- Maptiler tiles cached with a network-first strategy (tiles cache as visited).
+- `vite-plugin-pwa` (dev dependency) in `generateSW` mode, configured in `vite.config.ts`. `registerType: 'autoUpdate'`: a new build's service worker activates on the next visit.
+- Workbox precaches everything the build emits that matches `**/*.{js,css,html,wasm,svg,png,webmanifest}`: `index.html`, the main JS/CSS chunks, the storage worker chunk (`assets/workerHost-*.js`), the wa-sqlite `.wasm`, the icons and the manifest. `maximumFileSizeToCacheInBytes` is raised to 6 MB so the ~1.5 MB main chunk is not skipped. `navigateFallback: '/index.html'`.
+- Map tiles are **not** cached yet (post-MVP "offline tile caching"). Offline, the app opens with all its data but the basemap is blank.
 - OPFS data is inherently offline-capable.
-- `manifest.json` configured with name "Couloir", dark theme color, appropriate icons.
+- The service worker exists only in production builds: `devOptions.enabled` is false, and `src/main.tsx` registers it via a dynamic `import('virtual:pwa-register')` behind `import.meta.env.PROD`, so the dev server and Vitest never see it.
+- The plugin emits `manifest.webmanifest` (name/short_name "Couloir", `display: standalone`, theme and background `#0e1014`) and injects the `<link rel="manifest">` into `index.html`.
+- Icons live in `public/icons/`. `icon.svg` is the hand-written source (full-bleed so it doubles as maskable). `icon-192.png`, `icon-512.png` (also the maskable entry) and `apple-touch-icon.png` (180 px) are rendered once from it and committed; no icon tooling is in the repo.

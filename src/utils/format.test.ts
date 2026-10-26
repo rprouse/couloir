@@ -1,4 +1,4 @@
-import { formatDistanceKm, formatElevationM, formatDuration, isValidHex, formatBearing, formatDateTime } from './format'
+import { formatDistanceKm, formatElevationM, formatDuration, isValidHex, formatBearing, formatDateTime, formatBytes } from './format'
 
 describe('formatDistanceKm', () => {
   it('returns 0.0 km for 0 m', () => {
@@ -55,5 +55,11 @@ describe('formatBearing', () => {
 describe('formatDateTime', () => {
   it('renders a human date including the year', () => {
     expect(formatDateTime(new Date(2026, 1, 14, 9, 31).toISOString())).toMatch(/2026/)
+  })
+})
+
+describe('formatBytes', () => {
+  it.each([[512, '512 B'], [2048, '2 KB'], [5_400_000, '5.1 MB'], [3_221_225_472, '3.0 GB']])('%s → %s', (n, out) => {
+    expect(formatBytes(n)).toBe(out)
   })
 })

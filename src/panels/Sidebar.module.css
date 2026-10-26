@@ -80,3 +80,60 @@
   padding: var(--space-md);
   border-top: 1px solid var(--color-border);
 }
+
+@media (max-width: 640px) {
+  .sidebar,
+  .sidebar[data-collapsed='true'] {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    min-width: 0;
+    max-height: 65vh;
+    border-right: none;
+    border-top: 1px solid var(--color-border);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    z-index: 45;
+    /* DOM order is tabs, content, collapse button; reversed, the tab bar sits
+       at the bottom with the content above it like a sheet. */
+    flex-direction: column-reverse;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .tabs {
+    flex-direction: row;
+    justify-content: space-around;
+    height: var(--mobile-tabbar-h);
+    padding: var(--space-xs);
+  }
+
+  .tabButton {
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding: var(--space-xs);
+    font-size: 11px;
+  }
+
+  .sidebar[data-collapsed='true'] .tabLabel {
+    display: inline;
+  }
+
+  .content {
+    border-top: none;
+    border-bottom: 1px solid var(--color-border);
+    animation: sheet-up 160ms ease-out;
+  }
+
+  /* The desktop collapse chevron has no role in the sheet; tabs toggle it. */
+  .collapseButton {
+    display: none;
+  }
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}

@@ -8,7 +8,7 @@ import type {
   Track,
   Waypoint,
 } from '../types'
-import { APP_VERSION } from '../types'
+import { APP_VERSION, BUNDLE_VERSION } from '../types'
 import type { StorageProvider } from './interface'
 import { WorkerClient } from './workerClient'
 import StorageWorker from './workerHost?worker'
@@ -363,7 +363,7 @@ export class OPFSStorageProvider implements StorageProvider {
     }))
 
     const bundle: ExportBundle = {
-      bundle_version: 1,
+      bundle_version: BUNDLE_VERSION,
       app_version: APP_VERSION,
       exported_at: new Date().toISOString(),
       routes,

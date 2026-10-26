@@ -7,11 +7,24 @@
   align-items: center;
   gap: var(--space-md);
   padding: var(--space-sm) var(--space-md);
-  background: var(--color-surface);
+  background: var(--color-bg-2);
   color: var(--color-text);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   z-index: 5;
   pointer-events: auto;
+}
+
+@media (max-width: 640px) {
+  /* Centred, the banner would wrap into a narrow column over the basemap
+     switcher (top-right). Span the width instead, clear of MapLibre's
+     navigation control (top-left) and below the basemap switcher. */
+  .banner {
+    left: 52px;
+    right: var(--space-md);
+    top: calc(var(--space-md) + 44px);
+    transform: none;
+    justify-content: space-between;
+  }
 }

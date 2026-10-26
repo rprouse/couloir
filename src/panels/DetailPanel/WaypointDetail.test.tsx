@@ -2,7 +2,8 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { act } from 'react'
 import { useUiStore } from '../../store/ui'
 import { useWaypointsStore } from '../../store/waypoints'
-import { setStorage } from '../../storage/provider'
+import { useTagsStore } from '../../store/tags'
+import { setStorage, getStorage } from '../../storage/provider'
 import { InMemoryStorageProvider } from '../../storage/memory'
 import { WaypointDetail } from './WaypointDetail'
 import type { Waypoint } from '../../types'
@@ -28,6 +29,7 @@ function setup(wp: Waypoint = sample()) {
     setStorage(new InMemoryStorageProvider())
     useUiStore.setState({ panel: { mode: 'view', entityType: 'waypoint', entityId: wp.id } })
     useWaypointsStore.setState({ waypoints: [wp], loading: false, error: null })
+    useTagsStore.setState({ tags: [], loading: false, error: null })
   })
 }
 
@@ -110,6 +112,14 @@ describe('WaypointDetail (edit)', () => {
     const hexInput = screen.getByPlaceholderText(/leave blank/i)
     fireEvent.change(hexInput, { target: { value: '#gg0000' } })
     expect(screen.getByRole('button', { name: /save/i })).toBeDisabled()
+  })
+
+  it('edit assigns a tag and persists it', async () => {
+    act(() => useTagsStore.setState({ tags: [{ id: 'tag1', name: 'Steep', color: '#EF4444', created_at: '' }] }))
+    render(<WaypointDetail waypointId="w1" mode="edit" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Steep' }))
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+    await waitFor(async () => expect((await getStorage().getWaypoint('w1'))?.tags).toEqual(['tag1']))
   })
 })
 

@@ -7,15 +7,13 @@ import { useMap } from '../../hooks/useMap'
 import { queryElevation } from '../../map/terrain'
 import { WAYPOINT_CATEGORIES } from '../../types'
 import type { WaypointCategory } from '../../types'
-import { TagPills } from './TagPills'
+import { TagPicker } from '../../components/TagPicker/TagPicker'
 import { debug } from '../../utils/debug'
 
 // Waypoint creation form. Reads the seeded lat/lng from panel.draft (set by
 // completePlacement); owns name/description/category/elevation as local state.
 // Elevation is autofilled from queryTerrainElevation when the DEM is loaded;
 // otherwise the field is left blank for the user to enter (or leave null).
-// Tag *editing* lands in Phase 6.1 — for now we render an empty TagPills
-// placeholder so the section structure matches the view panel.
 export function WaypointCreate(): JSX.Element {
   const panel = useUiStore((s) => s.panel)
   const closePanel = useUiStore((s) => s.closePanel)
@@ -39,6 +37,7 @@ export function WaypointCreate(): JSX.Element {
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState<WaypointCategory>('poi')
   const [elevation, setElevation] = useState<string>('')
+  const [tags, setTags] = useState<string[]>([])
 
   // Autofill elevation from the DEM when the map is available. queryTerrain-
   // Elevation returns null when terrain isn't enabled or tiles haven't loaded;
@@ -72,7 +71,7 @@ export function WaypointCreate(): JSX.Element {
         elevation_m: elevNum,
         category,
         color: null,
-        tags: [],
+        tags,
       })
       openEntity('waypoint', wp.id)
     } catch (err) {
@@ -139,7 +138,7 @@ export function WaypointCreate(): JSX.Element {
 
       <section className={shared.section}>
         <h3>Tags</h3>
-        <TagPills tagIds={[]} />
+        <TagPicker value={tags} onChange={setTags} />
       </section>
     </>
   )

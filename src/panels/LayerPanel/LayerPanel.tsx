@@ -7,6 +7,8 @@ import { useRoutesStore } from '../../store/routes'
 import { useTracksStore } from '../../store/tracks'
 import { useWaypointsStore } from '../../store/waypoints'
 import { usePhotosStore } from '../../store/photos'
+import { filterByTags } from '../../utils/tags'
+import { TagFilterMenu } from './TagFilterMenu'
 
 interface RowDef {
   key: LayerKey
@@ -21,6 +23,13 @@ const ROWS: ReadonlyArray<RowDef> = [
   { key: 'photos',    label: 'Photos',    color: '#94A3B8' },
 ]
 
+const EMPTY_HINTS: Record<LayerKey, string> = {
+  routes: 'Import a GPX route to get started.',
+  tracks: 'Import a recorded GPX track.',
+  waypoints: 'Use Add Waypoint, then click the map.',
+  photos: 'Use Add Photo to pin a recon photo.',
+}
+
 interface Props {
   promptDuplicate: (args: DuplicatePromptArgs) => Promise<DuplicateDecision>
 }
@@ -29,16 +38,32 @@ export function LayerPanel({ promptDuplicate }: Props) {
   const visibility = useUiStore((s) => s.layerVisibility)
   const toggleLayer = useUiStore((s) => s.toggleLayer)
   const startWaypointPlacement = useUiStore((s) => s.startWaypointPlacement)
-  const routesCount    = useRoutesStore((s) => s.routes.length)
-  const tracksCount    = useTracksStore((s) => s.tracks.length)
-  const waypointsCount = useWaypointsStore((s) => s.waypoints.length)
-  const photosCount    = usePhotosStore((s) => s.photos.length)
+  const routes    = useRoutesStore((s) => s.routes)
+  const tracks    = useTracksStore((s) => s.tracks)
+  const waypoints = useWaypointsStore((s) => s.waypoints)
+  const photos    = usePhotosStore((s) => s.photos)
+  const routesFilter    = useUiStore((s) => s.tagFilters.routes)
+  const tracksFilter    = useUiStore((s) => s.tagFilters.tracks)
+  const waypointsFilter = useUiStore((s) => s.tagFilters.waypoints)
+  const photosFilter    = useUiStore((s) => s.tagFilters.photos)
 
   const counts: Record<LayerKey, number> = {
-    routes: routesCount,
-    tracks: tracksCount,
-    waypoints: waypointsCount,
-    photos: photosCount,
+    routes: routes.length,
+    tracks: tracks.length,
+    waypoints: waypoints.length,
+    photos: photos.length,
+  }
+  const filters: Record<LayerKey, string[]> = {
+    routes: routesFilter,
+    tracks: tracksFilter,
+    waypoints: waypointsFilter,
+    photos: photosFilter,
+  }
+  const shownCounts: Record<LayerKey, number> = {
+    routes: filterByTags(routes, routesFilter).length,
+    tracks: filterByTags(tracks, tracksFilter).length,
+    waypoints: filterByTags(waypoints, waypointsFilter).length,
+    photos: filterByTags(photos, photosFilter).length,
   }
 
   return (
@@ -64,9 +89,13 @@ export function LayerPanel({ promptDuplicate }: Props) {
               <label htmlFor={inputId} className={styles.label}>
                 {row.label}
               </label>
+              {/* data-count is always the total; the text reads "shown of total" while filtered. */}
               <span className={styles.count} data-count={counts[row.key]}>
-                {counts[row.key]}
+                {filters[row.key].length > 0
+                  ? `${shownCounts[row.key]} of ${counts[row.key]}`
+                  : counts[row.key]}
               </span>
+              <TagFilterMenu layer={row.key} label={row.label} />
               <input
                 id={inputId}
                 type="checkbox"
@@ -74,6 +103,9 @@ export function LayerPanel({ promptDuplicate }: Props) {
                 checked={visibility[row.key]}
                 onChange={() => toggleLayer(row.key)}
               />
+              {counts[row.key] === 0 && (
+                <span className={styles.hint}>{EMPTY_HINTS[row.key]}</span>
+              )}
             </li>
           )
         })}

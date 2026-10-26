@@ -40,6 +40,7 @@ export class MockMap {
   setStyle = vi.fn()
   resize = vi.fn()
   flyTo = vi.fn()
+  fitBounds = vi.fn()
   hasImage = vi.fn(() => false)
   addImage = vi.fn()
   getZoom = vi.fn(() => 11)

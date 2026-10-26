@@ -5,6 +5,7 @@ import {
   cumulativeDistanceMeters,
   normalizeBearing,
   bearingFromVector,
+  lineBounds,
   type ProfilePoint,
 } from './geo'
 import type { LineStringZ } from '../types'
@@ -134,5 +135,12 @@ describe('bearingFromVector', () => {
     [0, -1, 0], [1, 0, 90], [0, 1, 180], [-1, 0, 270], [1, -1, 45],
   ])('(%s, %s) → %s°', (dx, dy, expected) => {
     expect(bearingFromVector(dx, dy)).toBe(expected)
+  })
+})
+
+describe('lineBounds', () => {
+  it('returns [[minLng, minLat], [maxLng, maxLat]]', () => {
+    expect(lineBounds({ type: 'LineString', coordinates: [[-116, 49.5, 0], [-115.9, 49.4, 0], [-116.1, 49.6, 0]] }))
+      .toEqual([[-116.1, 49.4], [-115.9, 49.6]])
   })
 })
