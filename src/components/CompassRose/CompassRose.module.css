@@ -1,0 +1,7 @@
+.rose { display: block; flex: none; }
+.interactive { cursor: crosshair; }
+.ring { fill: var(--color-bg-2); stroke: var(--color-border); stroke-width: 2; }
+.tick { stroke: var(--color-text-dim); stroke-width: 2; }
+.north { fill: var(--color-text-dim); font-size: 12px; text-anchor: middle; dominant-baseline: middle; }
+.needle { fill: var(--color-accent); }
+.tail { fill: var(--color-text-dim); }

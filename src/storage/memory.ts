@@ -128,6 +128,11 @@ export class InMemoryStorageProvider implements StorageProvider {
     this.blobs.set(photo.id, blob)
     this.thumbs.set(photo.id, thumb)
   }
+  async updatePhotoMetadata(photo: Photo): Promise<void> {
+    if (!this.photos.has(photo.id)) throw new Error(`photo ${photo.id} not found`)
+    this.photos.set(photo.id, JSON.parse(JSON.stringify(photo)) as Photo)
+    this.replaceEntityTags('photo', photo.id, photo.tags)
+  }
   async getPhotoBlob(id: string): Promise<Blob | null> {
     return this.blobs.get(id) ?? null
   }

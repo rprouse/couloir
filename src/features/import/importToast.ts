@@ -12,6 +12,16 @@ export function subscribeToast(fn: ToastListener): () => void {
   }
 }
 
+export function showToast(message: string, durationMs = 4000): void {
+  if (!listener) return
+  listener(message)
+  if (timer !== null) clearTimeout(timer)
+  timer = setTimeout(() => {
+    if (listener) listener(null)
+    timer = null
+  }, durationMs)
+}
+
 export function showImportSummaryToast(
   summary: ImportSummary,
   durationMs = 4000,
@@ -32,11 +42,5 @@ export function showImportSummaryToast(
     parts.push(`${summary.errors.length} error${summary.errors.length === 1 ? '' : 's'}`)
 
   const message = parts.length > 0 ? parts.join(', ') + '.' : 'Nothing to import.'
-  listener(message)
-
-  if (timer !== null) clearTimeout(timer)
-  timer = setTimeout(() => {
-    if (listener) listener(null)
-    timer = null
-  }, durationMs)
+  showToast(message, durationMs)
 }

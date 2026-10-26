@@ -143,7 +143,9 @@ async function ensureSchema(): Promise<void> {
   )
   let current = 0
   if (meta) {
-    const row = await one(`SELECT version FROM schema_version LIMIT 1`)
+    // MAX, not LIMIT 1: builds before the single-row fix below appended a row
+    // per migration, so a DB can hold both 1 and 2. The highest is current.
+    const row = await one(`SELECT MAX(version) AS version FROM schema_version`)
     if (row && typeof row.version === 'number') current = row.version
   }
 
@@ -173,8 +175,11 @@ async function ensureSchema(): Promise<void> {
       // with "memory access out of bounds". Iterating via statements() steps
       // each statement to completion under the async VFS contract.
       await run(m.sql)
+      // `version` is the primary key, so INSERT OR REPLACE with a new version
+      // appends rather than replaces. Clear first to keep the table single-row.
+      await run(`DELETE FROM schema_version`)
       await run(
-        `INSERT OR REPLACE INTO schema_version (version, applied_at) VALUES (?, ?)`,
+        `INSERT INTO schema_version (version, applied_at) VALUES (?, ?)`,
         [m.version, new Date().toISOString()],
       )
       await exec('COMMIT')

@@ -1,6 +1,6 @@
 import { usePhotosStore } from './photos'
 import { InMemoryStorageProvider } from '../storage/memory'
-import { setStorage, clearStorage } from '../storage/provider'
+import { setStorage, clearStorage, getStorage } from '../storage/provider'
 import type { Photo } from '../types'
 
 const baseInput = {
@@ -10,9 +10,6 @@ const baseInput = {
   lat: 49.5,
   lng: -116.0,
   elevation_m: 1500,
-  camera_lat: 49.499,
-  camera_lng: -116.001,
-  camera_elevation_m: 1495,
   bearing: 90,
   width: 1024,
   height: 768,
@@ -55,6 +52,17 @@ describe('photos store', () => {
     expect(updated.updated_at).toBe('2026-05-06T13:00:00.000Z')
 
     vi.useRealTimers()
+  })
+
+  it('update() writes metadata only — blobs are not re-read or re-written', async () => {
+    const p = await usePhotosStore.getState().add(baseInput, new Blob(['x']), new Blob(['y']))
+    const storage = getStorage()
+    const saveSpy = vi.spyOn(storage, 'savePhoto')
+    const blobSpy = vi.spyOn(storage, 'getPhotoBlob')
+    await usePhotosStore.getState().update(p.id, { lat: 49.7, bearing: 200 })
+    expect(saveSpy).not.toHaveBeenCalled()
+    expect(blobSpy).not.toHaveBeenCalled()
+    expect((await storage.getPhoto(p.id))?.lat).toBe(49.7)
   })
 
   it('remove() drops the photo and its blobs', async () => {

@@ -38,8 +38,6 @@ export function usePlacementMapBinding(): void {
   useEffect(() => {
     if (!map) return
     if (placementMode === 'idle') return
-    // Photo placement (Phase 5) will need a different click payload; for now
-    // we route both branches through completePlacement(lat, lng).
     const onComplete = (lat: number, lng: number) => {
       useUiStore.getState().completePlacement(lat, lng)
     }

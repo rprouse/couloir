@@ -25,6 +25,8 @@ npm run build      # Production build (TS + Vite)
 
 If `npm test` hangs or errors with a Vitest "esbuild service" issue on Windows, run with `npx vitest run --pool=forks --poolOptions.forks.singleFork=true`. Do not change `package.json` — the workaround is per-invocation.
 
+On Node 25+, Node's built-in `localStorage` shadows jsdom's and breaks every test that touches it. `vitest.config.ts` passes `--no-experimental-webstorage` to the test workers (only when the running Node knows the flag), so no `NODE_OPTIONS` is needed. Don't remove it.
+
 ## Key Conventions
 
 - All data access goes through the `StorageProvider` interface in `src/storage/interface.ts`. Never call SQLite directly from feature code.
@@ -32,6 +34,7 @@ If `npm test` hangs or errors with a Vitest "esbuild service" issue on Windows, 
 - Tags are stored in the `entity_tags` junction table; each entity's `tags: string[]` is hydrated from that table by the storage layer on read.
 - GeoJSON LineStrings include Z coordinate (elevation) for routes and tracks.
 - Photo blobs stored in OPFS at `photos/{id}.jpg`, thumbnails at `photos/{id}_thumb.jpg`.
+- Photo metadata edits go through `StorageProvider.updatePhotoMetadata` (row + tags only); `savePhoto` is for new photos and writes the blobs.
 - Maptiler API key stored in `localStorage` under key `couloir_maptiler_key`.
 - Dark theme throughout. CSS custom properties for all colors.
 - CSS Modules for component styles.

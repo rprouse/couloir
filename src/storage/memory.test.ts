@@ -225,9 +225,6 @@ function buildPhoto(overrides: Partial<Photo> = {}): Photo {
     lat: 49.5,
     lng: -116.0,
     elevation_m: 1500,
-    camera_lat: 49.499,
-    camera_lng: -116.001,
-    camera_elevation_m: 1495,
     bearing: 90,
     blob_ref: 'photos/photo-1.jpg',
     width: 1024,
@@ -303,22 +300,37 @@ describe('InMemoryStorageProvider — photos', () => {
     expect(await storage.getPhotoThumb('nope')).toBeNull()
   })
 
-  it('preserves all camera_* fields including null values', async () => {
+  it('preserves null elevation_m and bearing', async () => {
     await storage.savePhoto(
-      buildPhoto({
-        camera_lat: null,
-        camera_lng: null,
-        camera_elevation_m: null,
-        bearing: null,
-      }),
-      new Blob(),
-      new Blob(),
+      buildPhoto({ elevation_m: null, bearing: null }),
+      new Blob(['x']), new Blob(['y']),
     )
     const fetched = await storage.getPhoto('photo-1')
-    expect(fetched?.camera_lat).toBeNull()
-    expect(fetched?.camera_lng).toBeNull()
-    expect(fetched?.camera_elevation_m).toBeNull()
+    expect(fetched?.elevation_m).toBeNull()
     expect(fetched?.bearing).toBeNull()
+  })
+
+  describe('updatePhotoMetadata', () => {
+    it('rewrites the row and tags but keeps the stored blobs', async () => {
+      const photo = buildPhoto()
+      const blob = new Blob(['full'])
+      const thumb = new Blob(['thumb'])
+      await storage.savePhoto(photo, blob, thumb)
+      await storage.saveTag(buildTag({ id: 't1', name: 'Recon' }))
+
+      await storage.updatePhotoMetadata({ ...photo, name: 'Renamed', lat: 49.6, tags: ['t1'] })
+
+      const fetched = await storage.getPhoto(photo.id)
+      expect(fetched?.name).toBe('Renamed')
+      expect(fetched?.lat).toBe(49.6)
+      expect(fetched?.tags).toEqual(['t1'])
+      expect(await storage.getPhotoBlob(photo.id)).toBe(blob)
+      expect(await storage.getPhotoThumb(photo.id)).toBe(thumb)
+    })
+
+    it('throws when the photo does not exist', async () => {
+      await expect(storage.updatePhotoMetadata(buildPhoto())).rejects.toThrow(/not found/)
+    })
   })
 
   it('deletes both blobs along with the metadata', async () => {

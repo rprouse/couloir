@@ -12,7 +12,10 @@ import { setMap } from '../hooks/useMap'
 import { RoutesLayer } from './layers/RoutesLayer'
 import { TracksLayer } from './layers/TracksLayer'
 import { WaypointsLayer } from './layers/WaypointsLayer'
+import { PhotosLayer } from './layers/PhotosLayer'
 import { usePlacementMapBinding } from './placement/usePlacementMapBinding'
+import { usePhotoCursorPreview } from './placement/photoCursorPreview'
+import { PhotoPositionMarker } from './placement/PhotoPositionMarker'
 import { MAP_DEFAULTS } from '../types'
 import { debug } from '../utils/debug'
 
@@ -21,6 +24,7 @@ export function MapView() {
   const mapRef = useRef<maplibregl.Map | null>(null)
   const monitorRef = useRef<TileErrorMonitor | null>(null)
   usePlacementMapBinding()
+  usePhotoCursorPreview()
 
   const maptilerKey = useSettingsStore((s) => s.maptilerKey)
   const setActiveTab = useUiStore((s) => s.setActiveTab)
@@ -167,6 +171,8 @@ export function MapView() {
       <RoutesLayer />
       <TracksLayer />
       <WaypointsLayer />
+      <PhotosLayer />
+      <PhotoPositionMarker />
       {styleError && (
         <div role="alert" className={styles.banner}>
           <span>{styleError}</span>

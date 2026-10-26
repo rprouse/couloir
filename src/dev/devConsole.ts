@@ -1,3 +1,4 @@
+import exifr from 'exifr'
 import type { StorageProvider } from '../storage/interface'
 import { newId } from '../utils/id'
 import type { Photo, Route, Track, Waypoint } from '../types'
@@ -105,9 +106,6 @@ export function installDevConsole(storage: StorageProvider): void {
         lat: 49.5,
         lng: -116.0,
         elevation_m: 1500,
-        camera_lat: 49.499,
-        camera_lng: -116.001,
-        camera_elevation_m: 1495,
         bearing: 90,
         blob_ref: `photos/${id}.jpg`,
         width: 1,
@@ -120,6 +118,25 @@ export function installDevConsole(storage: StorageProvider): void {
       }
       await storage.savePhoto(photo, blob, thumb)
       return photo
+    },
+
+    // Scatters `count` dummy photos within ~±0.15° of `center` (default
+    // Fernie). Reload the page afterwards: this writes through storage, not
+    // the Zustand slices.
+    async createDummyPhotos(count = 120, center: [number, number] = [-115.06, 49.5]): Promise<number> {
+      for (let i = 0; i < count; i++) {
+        const p = await helper.createDummyPhoto(`Dummy Photo ${i + 1}`)
+        await storage.savePhoto(
+          {
+            ...p,
+            lng: center[0] + (Math.random() - 0.5) * 0.3,
+            lat: center[1] + (Math.random() - 0.5) * 0.3,
+          },
+          (await storage.getPhotoBlob(p.id))!,
+          (await storage.getPhotoThumb(p.id))!,
+        )
+      }
+      return count
     },
 
     async listAll(): Promise<{
@@ -135,6 +152,13 @@ export function installDevConsole(storage: StorageProvider): void {
         storage.getPhotos(),
       ])
       return { routes, tracks, waypoints, photos }
+    },
+
+    // Expected to resolve undefined: stored JPEGs are re-encoded without EXIF.
+    async inspectPhotoExif(id: string): Promise<unknown> {
+      const blob = await storage.getPhotoBlob(id)
+      if (!blob) throw new Error(`no blob for ${id}`)
+      return exifr.parse(blob, true)
     },
 
     async renameRoute(id: string, name: string): Promise<Route> {

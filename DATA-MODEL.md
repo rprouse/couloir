@@ -91,30 +91,30 @@ export interface Photo {
   name: string
   description: string
 
-  // Subject location — what the photo is OF, placed by the user (draggable).
-  // Defaults to camera_lat/camera_lng on import when EXIF GPS is present.
+  // Where the photo was taken. Seeded from EXIF GPS when present, otherwise
+  // placed by the user; draggable while the photo is being created or edited.
   lat: number
   lng: number
-  elevation_m: number | null
+  elevation_m: number | null            // EXIF GPSAltitude, else terrain lookup
+  bearing: number | null                // 0-359, compass direction the camera faced
 
-  // Camera (capture) metadata — preserved from EXIF when present, rarely edited.
-  camera_lat: number | null
-  camera_lng: number | null
-  camera_elevation_m: number | null     // from EXIF GPSAltitude
-  bearing: number | null                // 0-359, from EXIF GPSImgDirection or user-supplied
-
-  // File metadata
-  blob_ref: string                      // OPFS path: 'photos/{id}.jpg'
-                                        // future: S3 URL when cloud sync is added
-  width: number                         // pixels
-  height: number                        // pixels
+  blob_ref: string                      // 'photos/{id}.jpg'
+  width: number
+  height: number
   file_size_bytes: number
-  taken_at: string | null               // ISO 8601, from EXIF DateTimeOriginal or user-supplied
+  taken_at: string | null
 
   tags: string[]
   created_at: string
   updated_at: string
 }
+
+// Fields a photo edit may change. File metadata (blob_ref, dimensions, size)
+// is fixed at import.
+export type PhotoMetadataPatch = Partial<Pick<
+  Photo,
+  'name' | 'description' | 'lat' | 'lng' | 'elevation_m' | 'bearing' | 'taken_at' | 'tags'
+>>
 
 // Backup bundle — written as `metadata.json` inside the ZIP archive
 export interface ExportBundle {
@@ -229,15 +229,10 @@ CREATE TABLE photos (
   name                TEXT NOT NULL,
   description         TEXT NOT NULL DEFAULT '',
 
-  -- Subject location (user-placed pin)
+  -- Where the photo was taken
   lat                 REAL NOT NULL,
   lng                 REAL NOT NULL,
   elevation_m         REAL,
-
-  -- Camera (capture) metadata
-  camera_lat          REAL,
-  camera_lng          REAL,
-  camera_elevation_m  REAL,
   bearing             REAL,                   -- 0-359 degrees
 
   blob_ref            TEXT NOT NULL,          -- OPFS path or future S3 URL
@@ -337,6 +332,12 @@ export const PHOTO_CLUSTER = {
   clusterMaxZoom: 13,
   clusterRadius: 50,
 }
+
+// Photo re-encoding (src/utils/image.ts). The full-size cap keeps a 24 MP
+// phone photo around 2-3 MB in OPFS while leaving plenty of zoom detail.
+export const PHOTO_MAX_EDGE_PX = 4096
+export const PHOTO_THUMB_EDGE_PX = 128
+export const PHOTO_JPEG_QUALITY = 0.9
 ```
 
 ---
@@ -359,7 +360,7 @@ The elevation profile is derived from the Z coordinates at render time — no se
 
 **Multi-segment GPX tracks**: trackpoints from all `<trkseg>` elements are concatenated into a single `LineString` for storage and rendering. `duration_s` and `moving_time_s` are computed across all trackpoints.
 
-Waypoints and photos are rendered from individual coordinate fields (`lat`, `lng`) rather than GeoJSON, assembled into a GeoJSON `FeatureCollection` by the layer components at render time. Photo subjects are clustered (see `PHOTO_CLUSTER` constants).
+Waypoints and photos are rendered from individual coordinate fields (`lat`, `lng`) rather than GeoJSON, assembled into a GeoJSON `FeatureCollection` by the layer components at render time. Photos are clustered at their position (see `PHOTO_CLUSTER` constants).
 
 ---
 
@@ -393,6 +394,8 @@ Single-row table. The OPFS storage implementation reads the current version on s
 If the DB version is **greater** than the app's `SCHEMA_VERSION`, the implementation throws `SchemaVersionError` rather than continuing — an older build must not silently operate on a newer database.
 
 Initial schema is migration `1.sql`. Future schema changes are numbered sequentially.
+
+Migration `2.sql` (Phase 5) collapses the photo subject/camera split into a single position: rows with `camera_lat`/`camera_lng` adopt them as `lat`/`lng` (and `camera_elevation_m` as `elevation_m`), then the three `camera_*` columns are dropped.
 
 ---
 

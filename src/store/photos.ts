@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Photo } from '../types'
+import type { Photo, PhotoMetadataPatch } from '../types'
 import { getStorage } from '../storage/provider'
 import { newId } from '../utils/id'
 import { now } from '../utils/time'
@@ -13,7 +13,7 @@ interface PhotosState {
 
   load: () => Promise<void>
   add: (input: NewPhotoInput, blob: Blob, thumb: Blob) => Promise<Photo>
-  update: (id: string, patch: Partial<Omit<Photo, 'id' | 'created_at' | 'blob_ref'>>) => Promise<Photo>
+  update: (id: string, patch: PhotoMetadataPatch) => Promise<Photo>
   remove: (id: string) => Promise<void>
 }
 
@@ -51,14 +51,7 @@ export const usePhotosStore = create<PhotosState>((set, get) => ({
     const existing = get().photos.find((p) => p.id === id)
     if (!existing) throw new Error(`photo ${id} not found`)
     const updated: Photo = { ...existing, ...patch, updated_at: now() }
-    // Re-save with the same blob (blob_ref is unchanged). The existing OPFS
-    // file is untouched. We re-write the blob to keep savePhoto's contract
-    // simple — if this turns out to be a perf issue we'll add an
-    // updatePhotoMetadata path, but for the MVP it's fine.
-    const blob = await getStorage().getPhotoBlob(id)
-    const thumb = await getStorage().getPhotoThumb(id)
-    if (!blob || !thumb) throw new Error(`photo blobs missing for ${id}`)
-    await getStorage().savePhoto(updated, blob, thumb)
+    await getStorage().updatePhotoMetadata(updated)
     set((s) => ({ photos: s.photos.map((p) => (p.id === id ? updated : p)) }))
     return updated
   },

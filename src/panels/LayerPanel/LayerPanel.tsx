@@ -1,6 +1,7 @@
 import styles from './LayerPanel.module.css'
 import { useUiStore, type LayerKey } from '../../store/ui'
 import { ImportButton } from '../../features/import/ImportButton'
+import { AddPhotoButton } from '../../features/photos/AddPhotoButton'
 import type { DuplicateDecision, DuplicatePromptArgs } from '../../features/import/gpxImport'
 import { useRoutesStore } from '../../store/routes'
 import { useTracksStore } from '../../store/tracks'
@@ -48,6 +49,7 @@ export function LayerPanel({ promptDuplicate }: Props) {
         <button type="button" onClick={startWaypointPlacement}>
           Add Waypoint
         </button>
+        <AddPhotoButton />
       </div>
       <ul className={styles.rows}>
         {ROWS.map((row) => {
