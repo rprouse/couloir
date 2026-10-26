@@ -80,6 +80,20 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [7.5 Slope controls and legend](#task-75---slope-controls-and-legend)
 - [ ] [7.6 Docs and browser QA](#task-76---docs-and-browser-qa)
 
+### Phase 8 — Server Storage  ·  Plan: [`2026-10-26-couloir-phase-8-server-storage.md`](docs/superpowers/plans/2026-10-26-couloir-phase-8-server-storage.md)
+
+- [ ] [8.0 Spike: toolchain compatibility](#task-80---spike-toolchain-compatibility)
+- [ ] [8.1 Extract SqlStorageProvider and the contract suite](#task-81---extract-sqlstorageprovider-and-the-contract-suite)
+- [ ] [8.2 Node backend](#task-82---node-backend)
+- [ ] [8.3 HTTP API](#task-83---http-api)
+- [ ] [8.4 HttpStorageProvider](#task-84---httpstorageprovider)
+- [ ] [8.5 Wire the app to the server](#task-85---wire-the-app-to-the-server)
+- [ ] [8.6 Remove OPFS](#task-86---remove-opfs)
+- [ ] [8.7 Server backups](#task-87---server-backups)
+- [ ] [8.8 Docker, CI and Unraid](#task-88---docker-ci-and-unraid)
+- [ ] [8.9 Data migration and end-to-end QA](#task-89---data-migration-and-end-to-end-qa)
+- [ ] [8.10 Docs](#task-810---docs)
+
 ---
 
 ## Phase 1 - Project Shell
@@ -722,6 +736,92 @@ Update `ARCHITECTURE.md` and `SPEC.md`. Run the browser QA checklist in the plan
 **Acceptance criteria**:
 - All QA steps pass with no console errors
 - Docs describe the slope pipeline and layer
+
+---
+
+## Phase 8 - Server Storage
+
+**Goal**: Move data out of browser OPFS onto a self-hosted server: one Docker container on Unraid serving the SPA and a JSON/blob API, backed by SQLite and photo files on a volume, so Couloir works from any computer and a lost browser profile can't lose data. Server-authoritative and online-only; offline is deferred. New deps: `hono`, `@hono/node-server`, `@types/node` (approved). `wa-sqlite` is removed.
+
+### Task 8.0 - Spike: toolchain compatibility
+
+Prove `node:sqlite` under Vitest and the Vite SSR build, the bundled server starting, and the Hono app mounted as Vite dev middleware.
+
+**Acceptance criteria**:
+- Findings recorded in the plan; fallbacks chosen if any seam fails
+
+### Task 8.1 - Extract SqlStorageProvider and the contract suite
+
+Lift the SQL logic out of `OPFSStorageProvider` into `SqlStorageProvider` over a `SqlBackend` interface, lift `ensureSchema` into a shared module, and turn the memory tests into a reusable `storageContract` suite.
+
+**Acceptance criteria**:
+- No behaviour change; OPFS app still works
+- Contract suite passes against `InMemoryStorageProvider`
+
+### Task 8.2 - Node backend
+
+`NodeSqlBackend` over `node:sqlite` (WAL, foreign keys) and the filesystem (atomic writes, path containment), running the shared migrations.
+
+**Acceptance criteria**:
+- Contract suite passes against `SqlStorageProvider` on the node backend
+
+### Task 8.3 - HTTP API
+
+Hono app exposing every `StorageProvider` method under `/api`, plus health, config, export bundle and multipart import. IDs validated before any filesystem access.
+
+**Acceptance criteria**:
+- Round-trip, 400/404, traversal, header and multipart tests pass
+
+### Task 8.4 - HttpStorageProvider
+
+Browser `StorageProvider` over `fetch`, with an injectable fetch function.
+
+**Acceptance criteria**:
+- Contract suite passes end-to-end: HttpStorageProvider → in-process Hono app → SQL → disk
+- Server-down and schema-ahead errors are clear
+
+### Task 8.5 - Wire the app to the server
+
+Production server entry (static + SPA fallback + graceful shutdown), dev middleware plugin, `main.tsx` switch, `newId()` insecure-context fallback, server-provided Maptiler key, PWA API denylist, build/start scripts.
+
+**Acceptance criteria**:
+- `npm run dev` and `npm run build && npm start` both serve a working app backed by `./data`
+- Two tabs work at once
+
+### Task 8.6 - Remove OPFS
+
+Tag `last-opfs`, delete the OPFS provider, worker and wa-sqlite, and update the Settings storage copy.
+
+**Acceptance criteria**:
+- Tests, typecheck and build green; no OPFS/wa-sqlite code left
+
+### Task 8.7 - Server backups
+
+Daily and on-startup `VACUUM INTO` snapshots with retention, plus a DB snapshot download endpoint.
+
+**Acceptance criteria**:
+- Snapshot and prune tests pass
+
+### Task 8.8 - Docker, CI and Unraid
+
+Multi-stage Dockerfile, GHCR publish workflow, Unraid template, and `docs/DEPLOY.md` covering migration and HTTPS options.
+
+**Acceptance criteria**:
+- Image runs on Unraid; data survives a container restart; backups appear on the volume
+
+### Task 8.9 - Data migration and end-to-end QA
+
+Move existing data via ZIP export/import and run the full browser QA checklist against the server, including plain-HTTP LAN access.
+
+**Acceptance criteria**:
+- Existing library fully present on the server; QA checklist passes with no console errors
+
+### Task 8.10 - Docs
+
+Update `ARCHITECTURE.md`, `DATA-MODEL.md`, `AGENTS.md`, `SPEC.md` and the backlog for the server architecture.
+
+**Acceptance criteria**:
+- Docs describe the server, API, storage layout, backups and deployment; no stale OPFS guidance
 
 ---
 
