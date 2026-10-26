@@ -70,6 +70,16 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [6.7 Empty states and onboarding](#task-67---empty-states-and-onboarding)
 - [x] [6.8 Final QA pass](#task-68---final-qa-pass)
 
+### Phase 7 — Slope Angle Overlay  ·  Plan: [`2026-10-26-couloir-phase-7-slope-overlay.md`](docs/superpowers/plans/2026-10-26-couloir-phase-7-slope-overlay.md)
+
+- [ ] [7.0 Confirm DEM tile facts](#task-70---confirm-dem-tile-facts)
+- [x] [7.1 Slope maths and colour bands](#task-71---slope-maths-and-colour-bands)
+- [x] [7.2 Slope tile protocol](#task-72---slope-tile-protocol)
+- [x] [7.3 Slope UI state](#task-73---slope-ui-state)
+- [x] [7.4 Slope layer](#task-74---slope-layer)
+- [x] [7.5 Slope controls and legend](#task-75---slope-controls-and-legend)
+- [ ] [7.6 Docs and browser QA](#task-76---docs-and-browser-qa)
+
 ---
 
 ## Phase 1 - Project Shell
@@ -655,12 +665,72 @@ Run through the full workflow end to end:
 
 ---
 
+## Phase 7 - Slope Angle Overlay
+
+**Goal**: A toggleable overlay that shades terrain by slope angle in the standard avalanche bands, computed in the browser from the Maptiler terrain-rgb tiles already used for 3D terrain. No new dependencies.
+
+### Task 7.0 - Confirm DEM tile facts
+
+Fetch the Maptiler terrain-rgb-v2 `tiles.json` and one tile with a real key. Confirm the tile URL template, pixel size, max zoom and elevation encoding.
+
+**Acceptance criteria**:
+- Tile size, max zoom and encoding recorded in the plan; constants adjusted if they differ from expectations
+
+### Task 7.1 - Slope maths and colour bands
+
+Pure functions: decode terrain-rgb to elevations, ground metres per pixel for a tile, slope in degrees (Horn's method with extrapolated edges), and colouring into bands 12–24°, 25–29°, 30–34°, 35–39°, 40–44°, 45°+.
+
+**Acceptance criteria**:
+- A tilted plane yields the exact slope at every pixel including edges and corners
+- Slopes below 27° are transparent; each band maps to its colour
+
+### Task 7.2 - Slope tile protocol
+
+Register a `slope://` MapLibre protocol that fetches the matching DEM tile, computes slope, and returns a coloured PNG. Uses the `tiles.json` template (fetched once per key), passes the abort signal through, and returns a transparent tile for missing DEM tiles.
+
+**Acceptance criteria**:
+- Unit tests cover URL parsing, template caching and retry, 404 vs other errors, and the colours it produces
+- Tiles render in the browser
+
+### Task 7.3 - Slope UI state
+
+Add a slope on/off setting (default off) and an opacity setting (0.2–1, default 0.6) to the UI store, both saved in `localStorage`.
+
+**Acceptance criteria**:
+- Defaults, clamping, persistence and restoring on load are covered by tests
+
+### Task 7.4 - Slope layer
+
+A `SlopeLayer` component adds the raster source and layer under basemap labels and under all Couloir layers, re-adds them after basemap switches, and reacts to the on/off and opacity settings. Hidden below zoom 10.
+
+**Acceptance criteria**:
+- Overlay sits under labels and routes/tracks/waypoints/photos on every basemap
+- Toggling and opacity changes apply live without re-adding the layer
+
+### Task 7.5 - Slope controls and legend
+
+Extend `TerrainControl` with a "Slope angle" switch, an opacity slider, a band legend with an accuracy caveat, and a "Zoom in to see slope" hint below zoom 10.
+
+**Acceptance criteria**:
+- Controls and legend work and fit at 375 px width
+- Legend colours match the overlay
+
+### Task 7.6 - Docs and browser QA
+
+Update `ARCHITECTURE.md` and `SPEC.md`. Run the browser QA checklist in the plan: placement in the layer stack, seams, 3D drape, basemap switching, zoom limits, persistence, per-tile timing, ocean tiles, mobile.
+
+**Acceptance criteria**:
+- All QA steps pass with no console errors
+- Docs describe the slope pipeline and layer
+
+---
+
 ## Post-MVP Backlog
 
 These are confirmed future features, not part of the MVP:
 
 - Bearing cone / FOV footprint visualization for photo pins
-- Slope angle shading overlay (derived from Maptiler DEM)
+- ~~Slope angle shading overlay (derived from Maptiler DEM)~~ → Phase 7
 - Aspect shading layer
 - Offline tile caching for field use (Workbox tile cache strategy)
 - Cloud sync via PowerSync or ElectricSQL

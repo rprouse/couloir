@@ -39,6 +39,7 @@ A geolocated photograph for recon photography: photos taken from across the vall
 - MapLibre GL JS as the map renderer
 - Maptiler as the tile and terrain provider (API key stored in settings)
 - 3D terrain with adjustable exaggeration
+- Slope angle overlay: avalanche angle bands (12–24°, 25–29°, 30–34°, 35–39°, 40–44°, 45°+) computed in the browser from the Maptiler terrain tiles, with adjustable opacity and a legend
 - Basemap switcher: Satellite, Outdoor/Topo, Winter
 - Compass and zoom controls
 - Current location indicator (when available)
@@ -123,7 +124,7 @@ The following are explicitly out of scope for the MVP but should not be architec
 - Multi-user access or sharing
 - Collaborative editing
 - Avalanche forecast integration
-- Slope angle or aspect shading overlays
+- Aspect shading overlays
 - Weather integration
 - Real-time GPS tracking in the app
 - Turn-by-turn navigation
@@ -146,7 +147,6 @@ The following are explicitly out of scope for the MVP but should not be architec
 - PowerSync or ElectricSQL for local SQLite → Postgres cloud sync
 - S3-compatible object storage (MinIO on Unraid, or AWS S3) for photo blobs
 - Multi-user with per-user route libraries and optional sharing
-- Slope angle shading derived from Maptiler terrain tiles
 - Aspect shading layer
 - Direction arrow / bearing cone on photo pins (from the stored `bearing`)
 - PWA with offline tile caching for field use
