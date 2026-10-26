@@ -13,6 +13,7 @@ import { RoutesLayer } from './layers/RoutesLayer'
 import { TracksLayer } from './layers/TracksLayer'
 import { WaypointsLayer } from './layers/WaypointsLayer'
 import { usePlacementMapBinding } from './placement/usePlacementMapBinding'
+import { usePhotoCursorPreview } from './placement/photoCursorPreview'
 import { MAP_DEFAULTS } from '../types'
 import { debug } from '../utils/debug'
 
@@ -21,6 +22,7 @@ export function MapView() {
   const mapRef = useRef<maplibregl.Map | null>(null)
   const monitorRef = useRef<TileErrorMonitor | null>(null)
   usePlacementMapBinding()
+  usePhotoCursorPreview()
 
   const maptilerKey = useSettingsStore((s) => s.maptilerKey)
   const setActiveTab = useUiStore((s) => s.setActiveTab)

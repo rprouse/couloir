@@ -3,6 +3,7 @@ import {
   lineDistanceMeters,
   elevationGainLoss,
   cumulativeDistanceMeters,
+  normalizeBearing,
   type ProfilePoint,
 } from './geo'
 import type { LineStringZ } from '../types'
@@ -116,5 +117,13 @@ describe('cumulativeDistanceMeters', () => {
       { distance_m: 0, elevation_m: 1500 },
       { distance_m: distances[1], elevation_m: 1510 },
     ])
+  })
+})
+
+describe('normalizeBearing', () => {
+  it.each([
+    [0, 0], [90, 90], [359.4, 359], [359.6, 0], [360, 0], [725, 5], [-90, 270],
+  ])('%s → %s', (input, expected) => {
+    expect(normalizeBearing(input)).toBe(expected)
   })
 })

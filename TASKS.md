@@ -53,7 +53,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 ### Phase 5 — Photos  ·  Plan: [`2026-10-26-couloir-phase-5-photos.md`](docs/superpowers/plans/2026-10-26-couloir-phase-5-photos.md)
 
 - [x] [5.0 Photo model simplification and storage prep](#task-50---photo-model-simplification-and-storage-prep)
-- [ ] [5.1 Photo placement mode and EXIF processing](#task-51---photo-placement-mode-and-exif-processing)
+- [x] [5.1 Photo placement mode and EXIF processing](#task-51---photo-placement-mode-and-exif-processing)
 - [ ] [5.2 Photo creation form](#task-52---photo-creation-form)
 - [ ] [5.3 Photos layer with clustering](#task-53---photos-layer-with-clustering)
 - [ ] [5.4 Photo viewer](#task-54---photo-viewer)

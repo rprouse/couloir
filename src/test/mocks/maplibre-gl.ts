@@ -42,6 +42,10 @@ export class MockMap {
   flyTo = vi.fn()
   hasImage = vi.fn(() => false)
   addImage = vi.fn()
+  getZoom = vi.fn(() => 11)
+  easeTo = vi.fn()
+  removeImage = vi.fn()
+  queryTerrainElevation = vi.fn((): number | null => null)
   once = vi.fn((event: string, handler: (...args: unknown[]) => void) => {
     const wrapped = (...args: unknown[]) => {
       this.off(event, wrapped)
@@ -56,9 +60,34 @@ export class MockMap {
   }
 }
 
+type LngLatLike = [number, number] | { lng: number; lat: number }
+
+export class MockMarker {
+  private listeners = new EventMap<string, Set<(...args: unknown[]) => void>>()
+  private lngLat: { lng: number; lat: number } | null = null
+  constructor(public options: Record<string, unknown> = {}) {}
+  setLngLat = vi.fn((ll: LngLatLike) => {
+    this.lngLat = Array.isArray(ll) ? { lng: ll[0], lat: ll[1] } : { lng: ll.lng, lat: ll.lat }
+    return this
+  })
+  getLngLat = vi.fn(() => this.lngLat)
+  addTo = vi.fn(() => this)
+  remove = vi.fn(() => this)
+  on = vi.fn((event: string, handler: (...args: unknown[]) => void) => {
+    if (!this.listeners.has(event)) this.listeners.set(event, new Set())
+    this.listeners.get(event)!.add(handler)
+    return this
+  })
+  emit(event: string, payload?: unknown) {
+    this.listeners.get(event)?.forEach((h) => h(payload))
+  }
+}
+
+export const Marker = vi.fn().mockImplementation((opts?: Record<string, unknown>) => new MockMarker(opts))
+
 export const NavigationControl = vi.fn().mockImplementation(() => ({}))
-export const __mocks__ = { MockMap }
+export const __mocks__ = { MockMap, MockMarker }
 
 export const Map = vi.fn().mockImplementation(() => new MockMap())
 
-export default { Map, NavigationControl }
+export default { Map, NavigationControl, Marker }

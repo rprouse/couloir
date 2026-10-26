@@ -60,3 +60,8 @@ export interface ProfilePoint {
   distance_m: number
   elevation_m: number
 }
+
+// Wraps any finite angle into the integer compass range 0-359.
+export function normalizeBearing(degrees: number): number {
+  return ((Math.round(degrees) % 360) + 360) % 360
+}

@@ -60,6 +60,11 @@ describe('LayerPanel', () => {
     usePhotosStore.setState({ photos: [], loading: false, error: null })
   })
 
+  it('renders an Add Photo button', () => {
+    render(<LayerPanel promptDuplicate={stubPrompt} />)
+    expect(screen.getByRole('button', { name: /add photo/i })).toBeInTheDocument()
+  })
+
   it('shows zero counts for an empty store', () => {
     render(<LayerPanel promptDuplicate={stubPrompt} />)
     for (const label of ['Routes', 'Tracks', 'Waypoints', 'Photos']) {

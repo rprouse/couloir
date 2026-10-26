@@ -16,12 +16,13 @@ function subscribe(fn: () => void): () => void {
   }
 }
 
-function getSnapshot(): maplibregl.Map | null {
+// Non-hook accessor for imperative callers (e.g. the photo import flow).
+export function getMap(): maplibregl.Map | null {
   return current
 }
 
 // Hook returns the live map instance, or null while the map is being
 // initialized / has been torn down. Layer components must guard against null.
 export function useMap(): maplibregl.Map | null {
-  return useSyncExternalStore(subscribe, getSnapshot, () => null)
+  return useSyncExternalStore(subscribe, getMap, () => null)
 }

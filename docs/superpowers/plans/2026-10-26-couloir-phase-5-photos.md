@@ -508,7 +508,7 @@ Tick 5.0 in `TASKS.md` Progress and commit: `chore(tasks): tick 5.0`.
 
 This task ends with: an "Add Photo" button in the Layer panel. HEIC files are rejected with the guidance toast. A JPEG with GPS flies the map there and opens the panel in `create` mode (still the placeholder body until 5.2). A JPEG without GPS shows the photo banner and a thumbnail that follows the cursor until the user clicks. ESC cancels and revokes the preview URL.
 
-- [ ] **Step 5.1.1: Add photo types and constants to `src/types/index.ts`**
+- [x] **Step 5.1.1: Add photo types and constants to `src/types/index.ts`**
 
 After `PhotoMetadataPatch`:
 
@@ -546,7 +546,7 @@ export const PHOTO_THUMB_EDGE_PX = 128
 export const PHOTO_JPEG_QUALITY = 0.9
 ```
 
-- [ ] **Step 5.1.2: `normalizeBearing` — test first in `src/utils/geo.test.ts`**
+- [x] **Step 5.1.2: `normalizeBearing` — test first in `src/utils/geo.test.ts`**
 
 ```ts
 describe('normalizeBearing', () => {
@@ -569,7 +569,7 @@ export function normalizeBearing(degrees: number): number {
 
 Run again. Expected: PASS.
 
-- [ ] **Step 5.1.3: EXIF normalisation — test first, `src/utils/exif.test.ts`**
+- [x] **Step 5.1.3: EXIF normalisation — test first, `src/utils/exif.test.ts`**
 
 ```ts
 import { normalizeExif } from './exif'
@@ -626,7 +626,7 @@ describe('normalizeExif', () => {
 
 Run. Expected: FAIL (module missing).
 
-- [ ] **Step 5.1.4: Implement `src/utils/exif.ts`**
+- [x] **Step 5.1.4: Implement `src/utils/exif.ts`**
 
 ```ts
 import exifr from 'exifr'
@@ -708,7 +708,7 @@ function toIso(v: unknown): string | null {
 
 Run the exif tests. Expected: PASS. If `tsc` complains that `exifr` lacks types: it ships `index.d.ts`, so the error means the import path is wrong. Use `import exifr from 'exifr'` exactly.
 
-- [ ] **Step 5.1.5: Image re-encoding — test the pure size math, `src/utils/image.test.ts`**
+- [x] **Step 5.1.5: Image re-encoding — test the pure size math, `src/utils/image.test.ts`**
 
 ```ts
 import { fitWithin } from './image'
@@ -798,7 +798,7 @@ async function drawToJpeg(source: CanvasImageSource, size: Size): Promise<Blob> 
 
 Run: `npm test -- src/utils/image.test.ts`. Expected: PASS.
 
-- [ ] **Step 5.1.6: UI store — pending photo + preview ownership. Tests first in `src/store/ui.test.ts`**
+- [x] **Step 5.1.6: UI store — pending photo + preview ownership. Tests first in `src/store/ui.test.ts`**
 
 Replace the existing `'startPhotoPlacement carries blob/exif/preview through to create draft'` test and add the revocation tests:
 
@@ -891,7 +891,7 @@ if (typeof URL.revokeObjectURL !== 'function') {
 
 Run: `npm test -- src/store/ui.test.ts`. Expected: FAIL (type and behaviour).
 
-- [ ] **Step 5.1.7: Implement in `src/store/ui.ts`**
+- [x] **Step 5.1.7: Implement in `src/store/ui.ts`**
 
 1. Imports: `import type { Basemap, EntityDraft, EntityType, PendingPhoto } from '../types'`.
 2. Replace the panel/placement types. Delete `PhotoPlacementContext`:
@@ -972,7 +972,7 @@ Delete the `FIXME(phase 5)` comment. `editCurrent` and `updateDraft` keep using 
 
 Run the ui tests, `npm run typecheck`. Expected: PASS / clean. (`DetailPanel.tsx`'s create-branch narrowing still compiles: `panel.entityType` is `'waypoint' | 'photo'`.)
 
-- [ ] **Step 5.1.8: `getMap()` and `showToast()`**
+- [x] **Step 5.1.8: `getMap()` and `showToast()`**
 
 `src/hooks/useMap.ts`: rename `getSnapshot` to an exported `getMap` and use it in `useSyncExternalStore`:
 
@@ -1001,7 +1001,7 @@ export function showToast(message: string, durationMs = 4000): void {
 
 `showImportSummaryToast` keeps building `message` and ends with `showToast(message, durationMs)`. Existing `importToast.test.tsx` must still pass unchanged.
 
-- [ ] **Step 5.1.9: Import orchestrator — test first, `src/features/photos/photoImport.test.ts`**
+- [x] **Step 5.1.9: Import orchestrator — test first, `src/features/photos/photoImport.test.ts`**
 
 ```ts
 import { classifyPhotoFile, importPhotoFile, HEIC_MESSAGE, type PhotoImportDeps } from './photoImport'
@@ -1076,7 +1076,7 @@ describe('importPhotoFile', () => {
 
 Run. Expected: FAIL.
 
-- [ ] **Step 5.1.10: Implement `src/features/photos/photoImport.ts`**
+- [x] **Step 5.1.10: Implement `src/features/photos/photoImport.ts`**
 
 ```ts
 import type { PendingPhoto, PhotoExif } from '../../types'
@@ -1154,7 +1154,7 @@ export async function importPhotoFile(
 
 Run. Expected: PASS.
 
-- [ ] **Step 5.1.11: `src/features/photos/AddPhotoButton.tsx`**
+- [x] **Step 5.1.11: `src/features/photos/AddPhotoButton.tsx`**
 
 ```tsx
 import { useRef } from 'react'
@@ -1211,7 +1211,7 @@ export function runPhotoImport(file: File): Promise<PhotoImportOutcome> {
 }
 ```
 
-- [ ] **Step 5.1.12: Layer panel button — test first**
+- [x] **Step 5.1.12: Layer panel button — test first**
 
 In `src/panels/LayerPanel/LayerPanel.test.tsx` add:
 
@@ -1224,7 +1224,7 @@ In `src/panels/LayerPanel/LayerPanel.test.tsx` add:
 
 Then in `LayerPanel.tsx`, import `AddPhotoButton` from `'../../features/photos/AddPhotoButton'` and render `<AddPhotoButton />` after the Add Waypoint button inside `.actions`. Run the test. Expected: PASS.
 
-- [ ] **Step 5.1.13: Placement banner photo branch — test first**
+- [x] **Step 5.1.13: Placement banner photo branch — test first**
 
 In `PlacementBanner.test.tsx`:
 
@@ -1274,7 +1274,7 @@ export function PlacementBanner(): JSX.Element | null {
 
 Run. Expected: PASS (existing waypoint tests too).
 
-- [ ] **Step 5.1.14: Extend the MapLibre mock — `src/test/mocks/maplibre-gl.ts`**
+- [x] **Step 5.1.14: Extend the MapLibre mock — `src/test/mocks/maplibre-gl.ts`**
 
 Add to `MockMap`:
 
@@ -1316,7 +1316,7 @@ export const Marker = vi.fn().mockImplementation((opts?: Record<string, unknown>
 
 Update the exports: `export const __mocks__ = { MockMap, MockMarker }` and `export default { Map, NavigationControl, Marker }`.
 
-- [ ] **Step 5.1.15: Cursor-follow thumbnail — test first, `src/map/placement/photoCursorPreview.test.ts`**
+- [x] **Step 5.1.15: Cursor-follow thumbnail — test first, `src/map/placement/photoCursorPreview.test.ts`**
 
 ```ts
 import maplibregl from 'maplibre-gl'
@@ -1420,7 +1420,7 @@ export function usePhotoCursorPreview(): void {
 
 Run. Expected: PASS. In `MapView.tsx`, call `usePhotoCursorPreview()` directly under `usePlacementMapBinding()`. In `usePlacementMapBinding.ts`, delete the stale "Photo placement (Phase 5) will need a different click payload" comment: both modes complete with `(lat, lng)`.
 
-- [ ] **Step 5.1.16: Verify**
+- [x] **Step 5.1.16: Verify**
 
 `npm run typecheck` → clean. `npm test` → all pass.
 
@@ -1431,7 +1431,7 @@ Browser (`npm run dev`):
 - Repeat the no-GPS case and press ESC → banner and cursor thumbnail disappear.
 - Portrait iPhone JPEG (EXIF Orientation 6) without GPS: the cursor thumbnail is upright. (The full preview is checked in 5.2.)
 
-- [ ] **Step 5.1.17: Commit and tick**
+- [x] **Step 5.1.17: Commit and tick**
 
 ```bash
 git add src TASKS.md

@@ -120,6 +120,28 @@ export type PhotoMetadataPatch = Partial<Pick<
   'name' | 'description' | 'lat' | 'lng' | 'elevation_m' | 'bearing' | 'taken_at' | 'tags'
 >>
 
+// EXIF fields Couloir reads at import (src/utils/exif.ts). Any of them can be
+// absent from a file, so every field is nullable.
+export interface PhotoExif {
+  lat: number | null
+  lng: number | null
+  altitude_m: number | null
+  bearing: number | null     // GPSImgDirection, normalised to 0-359
+  taken_at: string | null    // DateTimeOriginal as ISO 8601
+}
+
+// A photo that has been read and re-encoded but not yet saved. Lives in the
+// UI store from startPhotoPlacement until the create form saves or cancels.
+export interface PendingPhoto {
+  blob: Blob            // full-size JPEG, EXIF stripped
+  thumb: Blob           // thumbnail JPEG
+  preview: string       // object URL of `thumb`; owned and revoked by the UI store
+  width: number
+  height: number
+  filename: string      // original file name, seeds the Name field
+  exif: PhotoExif
+}
+
 // ============================================================================
 // Backup bundle — written as `metadata.json` inside the ZIP archive (Phase 6).
 // The Phase 2 storage layer returns this in-memory shape from `exportAll()`.
@@ -209,6 +231,12 @@ export const PHOTO_CLUSTER = {
   clusterMaxZoom: 13,
   clusterRadius: 50,
 } as const
+
+// Photo re-encoding (src/utils/image.ts). The full-size cap keeps a 24 MP
+// phone photo around 2-3 MB in OPFS while leaving plenty of zoom detail.
+export const PHOTO_MAX_EDGE_PX = 4096
+export const PHOTO_THUMB_EDGE_PX = 128
+export const PHOTO_JPEG_QUALITY = 0.9
 
 // ============================================================================
 // Map types/constants — preserved from Phase 1

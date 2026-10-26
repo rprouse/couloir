@@ -37,3 +37,13 @@ if (typeof Blob !== 'undefined') {
     }
   }
 }
+
+// jsdom doesn't implement object URLs. Inert stand-ins let code that mints
+// and revokes previews run under test; tests spy on them where it matters.
+if (typeof URL.createObjectURL !== 'function') {
+  let n = 0
+  URL.createObjectURL = () => `blob:test/${++n}`
+}
+if (typeof URL.revokeObjectURL !== 'function') {
+  URL.revokeObjectURL = () => {}
+}

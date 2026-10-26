@@ -1,4 +1,5 @@
-import { useUiStore } from './ui'
+import { draftNumber, useUiStore } from './ui'
+import type { PendingPhoto } from '../types'
 
 describe('ui store — sidebar tabs', () => {
   beforeEach(() => {
@@ -207,22 +208,75 @@ describe('ui store — placement state machine', () => {
     expect(state.placement).toEqual({ mode: 'idle' })
     expect(state.panel.mode).toBe('view')
   })
+})
 
-  it('startPhotoPlacement carries blob/exif/preview through to create draft', () => {
-    const blob = new Blob(['x'])
-    useUiStore.getState().startPhotoPlacement({
-      blob,
-      preview: 'blob:http://localhost/abc',
-      exif: { Orientation: 1 },
-    })
-    expect(useUiStore.getState().placement).toEqual({
-      mode: 'photo',
-      ctx: { blob, preview: 'blob:http://localhost/abc', exif: { Orientation: 1 } },
-    })
+const pendingPhoto = (preview = 'blob:test/p1'): PendingPhoto => ({
+  blob: new Blob(['full']),
+  thumb: new Blob(['thumb']),
+  preview,
+  width: 4000,
+  height: 3000,
+  filename: 'IMG_0001.jpg',
+  exif: { lat: null, lng: null, altitude_m: null, bearing: null, taken_at: null },
+})
+
+describe('photo placement', () => {
+  let revoke: ReturnType<typeof vi.spyOn>
+  beforeEach(() => {
+    useUiStore.setState({ panel: { mode: 'idle' }, placement: { mode: 'idle' } })
+    revoke = vi.spyOn(URL, 'revokeObjectURL')
+  })
+  afterEach(() => revoke.mockRestore())
+
+  it('carries the pending photo from placement onto the create panel', () => {
+    const pending = pendingPhoto()
+    useUiStore.getState().startPhotoPlacement(pending)
+    expect(useUiStore.getState().placement).toEqual({ mode: 'photo', pending })
     useUiStore.getState().completePlacement(49.5, -116.0)
     const panel = useUiStore.getState().panel
-    if (panel.mode !== 'create') throw new Error('expected create mode')
-    expect(panel.entityType).toBe('photo')
-    expect(panel.draft).toMatchObject({ lat: 49.5, lng: -116.0 })
+    if (panel.mode !== 'create' || panel.entityType !== 'photo') throw new Error('expected photo create')
+    expect(panel.pending).toBe(pending)
+    expect(panel.draft).toEqual({ lat: 49.5, lng: -116.0 })
+    expect(useUiStore.getState().placement.mode).toBe('idle')
+    expect(revoke).not.toHaveBeenCalled()
+  })
+
+  it('revokes the preview when placement is cancelled', () => {
+    useUiStore.getState().startPhotoPlacement(pendingPhoto('blob:test/a'))
+    useUiStore.getState().cancelPlacement()
+    expect(revoke).toHaveBeenCalledWith('blob:test/a')
+  })
+
+  it('revokes the preview when the create panel closes', () => {
+    useUiStore.getState().startPhotoPlacement(pendingPhoto('blob:test/b'))
+    useUiStore.getState().completePlacement(1, 2)
+    useUiStore.getState().closePanel()
+    expect(revoke).toHaveBeenCalledWith('blob:test/b')
+  })
+
+  it('revokes the preview when save transitions to view', () => {
+    useUiStore.getState().startPhotoPlacement(pendingPhoto('blob:test/c'))
+    useUiStore.getState().completePlacement(1, 2)
+    useUiStore.getState().openEntity('photo', 'p1')
+    expect(revoke).toHaveBeenCalledWith('blob:test/c')
+  })
+
+  it('updateDraft keeps the pending photo', () => {
+    const pending = pendingPhoto()
+    useUiStore.getState().startPhotoPlacement(pending)
+    useUiStore.getState().completePlacement(1, 2)
+    useUiStore.getState().updateDraft({ lat: 3 })
+    const panel = useUiStore.getState().panel
+    if (panel.mode !== 'create' || panel.entityType !== 'photo') throw new Error('expected photo create')
+    expect(panel.pending).toBe(pending)
+    expect(panel.draft).toEqual({ lat: 3, lng: 2 })
+  })
+})
+
+describe('draftNumber', () => {
+  it('reads numeric draft fields from create/edit panels only', () => {
+    expect(draftNumber({ mode: 'idle' }, 'lat')).toBeNull()
+    expect(draftNumber({ mode: 'edit', entityType: 'photo', entityId: 'p', draft: { lat: 4 } }, 'lat')).toBe(4)
+    expect(draftNumber({ mode: 'edit', entityType: 'photo', entityId: 'p', draft: {} }, 'lng')).toBeNull()
   })
 })
