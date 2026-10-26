@@ -2430,7 +2430,9 @@ Full-bleed dark square, so it also works as a maskable icon. The glyph stays ins
 </svg>
 ```
 
-- [ ] **Step 6.5.3: Render the PNGs once through Playwright**
+- [x] **Step 6.5.3: Render the PNGs once through Playwright**
+
+> Done differently: Playwright's Chrome isn't installed on this machine, so the coordinator rasterised the SVG's geometry (one polygon, one round-capped polyline) with a throwaway Node script using only `node:zlib` (4×4 supersampling). Nothing was added to the repo besides the PNGs. To regenerate after changing `icon.svg`, any SVG→PNG tool works.
 
 This uses the Playwright MCP tools (`mcp__playwright__browser_navigate`, `mcp__playwright__browser_evaluate`). **If you don't have those tools, stop after Step 6.5.2 and report.** The coordinator will render the PNGs.
 
