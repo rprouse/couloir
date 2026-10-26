@@ -59,7 +59,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [5.4 Photo viewer](#task-54---photo-viewer)
 - [x] [5.5 Photo count badge](#task-55---photo-count-badge)
 
-### Phase 6 — Polish and MVP Completion  ·  Plan: not yet written
+### Phase 6 — Polish and MVP Completion  ·  Plan: [`2026-10-26-couloir-phase-6-polish.md`](docs/superpowers/plans/2026-10-26-couloir-phase-6-polish.md)
 
 - [ ] [6.1 Tag management](#task-61---tag-management)
 - [ ] [6.2 Tag filtering](#task-62---tag-filtering)
