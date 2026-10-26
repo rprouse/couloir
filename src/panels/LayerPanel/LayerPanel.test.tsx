@@ -211,6 +211,22 @@ describe('LayerPanel', () => {
     expect(useUiStore.getState().tagFilters.routes).toEqual([])
   })
 
+  it('shows a hint under empty layers', () => {
+    act(() => {
+      useRoutesStore.setState({ routes: [] })
+      useWaypointsStore.setState({ waypoints: [] })
+    })
+    render(<LayerPanel promptDuplicate={stubPrompt} />)
+    expect(screen.getByText('Import a GPX route to get started.')).toBeInTheDocument()
+    expect(screen.getByText('Use Add Waypoint, then click the map.')).toBeInTheDocument()
+  })
+
+  it('hides the hint once the layer has data', () => {
+    act(() => useRoutesStore.setState({ routes: [fakeRoute('r1')] }))
+    render(<LayerPanel promptDuplicate={stubPrompt} />)
+    expect(screen.queryByText('Import a GPX route to get started.')).toBeNull()
+  })
+
   it('keeps filters independent per layer', () => {
     act(() => useTagsStore.setState({ tags: [{ id: 't1', name: 'Steep', color: '#EF4444', created_at: '' }] }))
     render(<LayerPanel promptDuplicate={stubPrompt} />)

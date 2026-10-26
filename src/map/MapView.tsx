@@ -17,6 +17,7 @@ import { usePlacementMapBinding } from './placement/usePlacementMapBinding'
 import { usePhotoCursorPreview } from './placement/photoCursorPreview'
 import { PhotoPositionMarker } from './placement/PhotoPositionMarker'
 import { MAP_DEFAULTS } from '../types'
+import { WelcomeScreen } from '../panels/Welcome/WelcomeScreen'
 import { debug } from '../utils/debug'
 
 export function MapView() {
@@ -143,25 +144,7 @@ export function MapView() {
     }
   }, [])
 
-  if (!maptilerKey) {
-    return (
-      <div className={styles.empty}>
-        <div>
-          <p>A Maptiler API key is required to load the map.</p>
-          <p>Open Settings to enter your key.</p>
-          <p style={{ marginTop: 'var(--space-md)' }}>
-            <a
-              href="https://cloud.maptiler.com/account/keys/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Get a free Maptiler key →
-            </a>
-          </p>
-        </div>
-      </div>
-    )
-  }
+  if (!maptilerKey) return <WelcomeScreen />
 
   return (
     <div className={styles.container}>

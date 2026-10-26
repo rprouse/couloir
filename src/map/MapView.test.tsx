@@ -15,10 +15,23 @@ describe('MapView', () => {
     localStorage.clear()
   })
 
+  afterEach(() => {
+    // Several tests set the key through the store action, which also writes
+    // localStorage; reset both so nothing leaks into other files.
+    useSettingsStore.getState().setMaptilerKey(null)
+  })
+
   it('does not initialize the map when no key is set', () => {
     render(<MapView />)
     expect(MapMock).not.toHaveBeenCalled()
-    expect(screen.getByText(/maptiler api key/i)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Welcome to Couloir' })).toBeInTheDocument()
+  })
+
+  it('removes the welcome screen once a key is set', () => {
+    render(<MapView />)
+    expect(screen.getByRole('heading', { name: 'Welcome to Couloir' })).toBeInTheDocument()
+    act(() => useSettingsStore.getState().setMaptilerKey('k'))
+    expect(screen.queryByRole('heading', { name: 'Welcome to Couloir' })).toBeNull()
   })
 
   it('initializes the map with the outdoor style when a key is set', () => {

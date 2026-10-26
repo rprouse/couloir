@@ -31,13 +31,3 @@
   cursor: pointer;
   font-size: 18px;
 }
-
-.empty {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: var(--color-text-dim);
-  text-align: center;
-  padding: var(--space-xl);
-}

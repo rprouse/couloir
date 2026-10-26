@@ -2845,7 +2845,7 @@ git commit -m "feat(mobile): bottom-sheet sidebar and detail panel on narrow scr
 
 Ends with: each layer row with a count of 0 shows a one-line hint. A first launch without an API key shows a welcome overlay with two numbered steps: an inline key form and a link to sign up, then "import your first GPX". Saving the key dismisses it, and the map loads.
 
-- [ ] **Step 6.7.1: Layer empty hints — test first**
+- [x] **Step 6.7.1: Layer empty hints — test first**
 
 ```tsx
   it('shows a hint under empty layers', () => {
@@ -2888,7 +2888,7 @@ CSS:
 }
 ```
 
-- [ ] **Step 6.7.2: `WelcomeScreen` — test first**
+- [x] **Step 6.7.2: `WelcomeScreen` — test first**
 
 ```tsx
 import { fireEvent, render, screen } from '@testing-library/react'
@@ -3036,7 +3036,7 @@ export function WelcomeScreen(): JSX.Element {
 }
 ```
 
-- [ ] **Step 6.7.3: Use it in `MapView`**
+- [x] **Step 6.7.3: Use it in `MapView`**
 
 Replace the `if (!maptilerKey) return (<div className={styles.empty}>…</div>)` block with `if (!maptilerKey) return <WelcomeScreen />`. Delete the now-unused `.empty` rule from `MapView.module.css`. Update `MapView.test.tsx`: the no-key test now asserts the "Welcome to Couloir" heading, and a new test asserts that setting the key (`act(() => useSettingsStore.getState().setMaptilerKey('k'))`) removes it.
 
@@ -3046,7 +3046,7 @@ Replace the `if (!maptilerKey) return (<div className={styles.empty}>…</div>)`
 
 Browser: in DevTools run `localStorage.removeItem('couloir_maptiler_key')` and reload. The welcome screen shows. Paste the key and save: the map loads in 3D, and the welcome screen is gone after a reload. With an empty database (or a fresh profile), each layer row shows its hint.
 
-- [ ] **Step 6.7.5: Ticks, commit**
+- [x] **Step 6.7.5: Ticks, commit**
 
 ```
 git add -A

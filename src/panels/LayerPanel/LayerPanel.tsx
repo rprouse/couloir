@@ -23,6 +23,13 @@ const ROWS: ReadonlyArray<RowDef> = [
   { key: 'photos',    label: 'Photos',    color: '#94A3B8' },
 ]
 
+const EMPTY_HINTS: Record<LayerKey, string> = {
+  routes: 'Import a GPX route to get started.',
+  tracks: 'Import a recorded GPX track.',
+  waypoints: 'Use Add Waypoint, then click the map.',
+  photos: 'Use Add Photo to pin a recon photo.',
+}
+
 interface Props {
   promptDuplicate: (args: DuplicatePromptArgs) => Promise<DuplicateDecision>
 }
@@ -96,6 +103,9 @@ export function LayerPanel({ promptDuplicate }: Props) {
                 checked={visibility[row.key]}
                 onChange={() => toggleLayer(row.key)}
               />
+              {counts[row.key] === 0 && (
+                <span className={styles.hint}>{EMPTY_HINTS[row.key]}</span>
+              )}
             </li>
           )
         })}
