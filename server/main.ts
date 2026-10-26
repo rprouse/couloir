@@ -1,8 +1,9 @@
 import { serve } from '@hono/node-server'
-import { dirname, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { SqlStorageProvider } from '../src/storage/sqlProvider'
 import { createApp } from './app'
+import { scheduleBackups, snapshotBytes } from './backups'
 import { logError } from './log'
 import { NodeSqlBackend } from './nodeBackend'
 
@@ -13,6 +14,7 @@ import { NodeSqlBackend } from './nodeBackend'
 //   DATA_DIR      couloir.db + photos/ (./data)
 //   STATIC_DIR    built SPA (../dist relative to this file)
 //   MAPTILER_KEY  optional key served to browsers that have none
+//   BACKUP_KEEP   daily database snapshots to keep in DATA_DIR/backups (14)
 
 // How long in-flight requests get to finish on shutdown before the database
 // is closed anyway. Docker's default stop grace period is 10 s.
@@ -23,15 +25,24 @@ const port = Number(process.env.PORT ?? 8080)
 const dataDir = resolve(process.env.DATA_DIR ?? './data')
 const staticDir = resolve(process.env.STATIC_DIR ?? resolve(here, '../dist'))
 const maptilerKey = process.env.MAPTILER_KEY || null
+const backupKeep = Math.max(1, Number(process.env.BACKUP_KEEP ?? 14) || 14)
+const backupDir = join(dataDir, 'backups')
 
-const storage = new SqlStorageProvider(new NodeSqlBackend(dataDir))
+const backend = new NodeSqlBackend(dataDir)
+const storage = new SqlStorageProvider(backend)
 await storage.init()
 
-const app = createApp({ storage, config: { maptilerKey }, staticDir })
+const stopBackups = scheduleBackups({ db: backend, dir: backupDir, keep: backupKeep })
+const app = createApp({
+  storage,
+  config: { maptilerKey },
+  staticDir,
+  databaseSnapshot: () => snapshotBytes(backend, backupDir),
+})
 const server = serve({ fetch: app.fetch, port }, () => {
   process.stdout.write(
     `couloir listening on :${port} (data ${dataDir}, ` +
-    `maptiler key ${maptilerKey ? 'from env' : 'not set'})\n`,
+    `maptiler key ${maptilerKey ? 'from env' : 'not set'}, keeping ${backupKeep} daily backups)\n`,
   )
 })
 
@@ -46,7 +57,8 @@ function shutdown(signal: string): void {
   const finish = () => {
     if (finished) return
     finished = true
-    storage.close().then(
+    // Let a snapshot in progress finish before the database goes away.
+    stopBackups().then(() => storage.close()).then(
       () => process.exit(0),
       (err: unknown) => {
         logError('closing the database', err)

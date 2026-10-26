@@ -92,6 +92,23 @@ describe('NodeSqlBackend', () => {
     expect(await db.all(`SELECT id FROM tags`)).toEqual([])
   })
 
+  it('keeps a transaction to itself while other calls arrive mid-flight', async () => {
+    const db = await backend()
+    await new SqlStorageProvider(db).init()
+    const insertTag = (id: string) => ({
+      sql: `INSERT INTO tags (id, name, color, created_at) VALUES (?, ?, ?, ?)`,
+      params: [id, id, '#fff', 'now'],
+    })
+    // Start a transaction that will fail on its second op, and issue an
+    // unrelated write before it settles. The unrelated write must not be
+    // swept into (and rolled back with) the failing transaction.
+    const failing = db.tx([insertTag('in-tx'), { sql: `INSERT INTO no_such_table VALUES (1)` }])
+    const independent = db.run(insertTag('outside').sql, insertTag('outside').params)
+    await expect(failing).rejects.toThrow()
+    await independent
+    expect(await db.all(`SELECT id FROM tags ORDER BY id`)).toEqual([{ id: 'outside' }])
+  })
+
   it('writes blobs atomically and reads them back', async () => {
     const db = await backend()
     await db.init()

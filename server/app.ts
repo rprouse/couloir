@@ -114,11 +114,13 @@ function mountStaticSite(app: Hono, staticDir: string): void {
  * plus the built SPA when `staticDir` is given. Takes a provider rather than a
  * backend so routes stay thin and tests can run against the in-memory provider.
  */
-export function createApp({ storage, config, staticDir }: {
+export function createApp({ storage, config, staticDir, databaseSnapshot }: {
   storage: StorageProvider
   config: AppConfig
   /** Directory holding the built SPA (dist/). Omitted in dev, where Vite serves it. */
   staticDir?: string
+  /** A fresh, consistent copy of the SQLite file, for GET /api/backup/db. Omitted where there's no database file. */
+  databaseSnapshot?: () => Promise<Uint8Array>
 }): Hono {
   const app = new Hono()
 
@@ -223,6 +225,18 @@ export function createApp({ storage, config, staticDir }: {
   })
 
   // --- Backup ---------------------------------------------------------------
+
+  // The database alone (no photos) as a download: a quick off-box copy. The
+  // ZIP export in Settings is the complete backup.
+  app.get('/api/backup/db', async (c) => {
+    if (!databaseSnapshot) notFound('database snapshot')
+    const stamp = new Date().toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '-')
+    return c.body(new Uint8Array(await databaseSnapshot()), 200, {
+      'Content-Type': 'application/vnd.sqlite3',
+      'Content-Disposition': `attachment; filename="couloir-${stamp}.db"`,
+      'Cache-Control': 'no-store',
+    })
+  })
 
   // Restore from a backup: multipart with `bundle` (ExportBundle JSON) and a
   // `full:{id}` / `thumb:{id}` file per photo. Export has no endpoint: the

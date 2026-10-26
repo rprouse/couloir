@@ -284,6 +284,23 @@ describe('import', () => {
   })
 })
 
+describe('database snapshot download', () => {
+  it('serves the snapshot as an attachment that is never cached', async () => {
+    const bytes = new TextEncoder().encode('SQLite format 3 (stand-in bytes)')
+    const withSnapshot = createApp({ storage, config: { maptilerKey: null }, databaseSnapshot: async () => bytes })
+    const res = await withSnapshot.request('/api/backup/db')
+    expect(res.status).toBe(200)
+    expect(res.headers.get('Content-Type')).toBe('application/vnd.sqlite3')
+    expect(res.headers.get('Content-Disposition')).toMatch(/^attachment; filename="couloir-\d{8}-\d{4}\.db"$/)
+    expect(res.headers.get('Cache-Control')).toBe('no-store')
+    expect(new Uint8Array(await res.arrayBuffer())).toEqual(bytes)
+  })
+
+  it('404s where no database snapshot is available', async () => {
+    expect((await app.request('/api/backup/db')).status).toBe(404)
+  })
+})
+
 describe('static site', () => {
   let dist: string
   let site: ReturnType<typeof createApp>

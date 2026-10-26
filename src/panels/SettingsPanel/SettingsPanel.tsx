@@ -128,8 +128,12 @@ export function SettingsPanel() {
         <h3>Backup</h3>
         <BackupSection />
         <p className={styles.subtle}>
-          Your library is stored on your Couloir server. Export a backup to keep a copy somewhere else.
+          Your library is stored on your Couloir server, which also keeps daily database snapshots.
+          Export a backup to keep a copy somewhere else.
         </p>
+        <a className={styles.subtle} href="/api/backup/db" download>
+          Download the database only (no photos) →
+        </a>
       </section>
 
       <section className={styles.section}>

@@ -53,22 +53,31 @@ export class NodeSqlBackend implements SqlBackend {
   }
 
   async run(sql: string, params: SqlValue[] = []): Promise<void> {
-    // exec handles multi-statement SQL (migration files) but can't bind
-    // parameters; prepare binds parameters but runs only one statement.
-    if (params.length === 0) this.connection().exec(sql)
-    else this.connection().prepare(sql).run(...params)
+    this.runSync(sql, params)
   }
 
   async tx(ops: SqlOp[]): Promise<void> {
+    // Fully synchronous from BEGIN to COMMIT. One connection serves every
+    // request, so an await in here would let another request's statements
+    // run inside this transaction (and be rolled back with it).
     const db = this.connection()
     db.exec('BEGIN')
     try {
-      for (const op of ops) await this.run(op.sql, op.params ?? [])
+      for (const op of ops) this.runSync(op.sql, op.params ?? [])
       db.exec('COMMIT')
     } catch (err) {
       try { db.exec('ROLLBACK') } catch { /* swallow — preserve original */ }
       throw err
     }
+  }
+
+  /**
+   * Write a consistent, compacted copy of the database to `targetPath`, which
+   * must not exist yet. Safe while the app is running: tx() never yields
+   * mid-transaction, so this can't land inside one.
+   */
+  async snapshotTo(targetPath: string): Promise<void> {
+    this.connection().prepare('VACUUM INTO ?').run(targetPath)
   }
 
   async writeBlob(path: string, data: ArrayBuffer): Promise<void> {
@@ -93,6 +102,13 @@ export class NodeSqlBackend implements SqlBackend {
 
   async deleteBlob(path: string): Promise<void> {
     await rm(this.blobPath(path), { force: true })
+  }
+
+  private runSync(sql: string, params: SqlValue[]): void {
+    // exec handles multi-statement SQL (migration files) but can't bind
+    // parameters; prepare binds parameters but runs only one statement.
+    if (params.length === 0) this.connection().exec(sql)
+    else this.connection().prepare(sql).run(...params)
   }
 
   private connection(): DatabaseSync {

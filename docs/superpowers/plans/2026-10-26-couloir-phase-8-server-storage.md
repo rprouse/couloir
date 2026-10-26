@@ -292,12 +292,21 @@ Pure refactor: no behaviour change in the running app.
 
 **Files:** create `server/backups.ts`, `server/backups.test.ts`. Modify `server/main.ts`.
 
-- [ ] **Step 8.7.1:**
+- [x] **Step 8.7.1:**
   - `snapshot(db, dir, now)` runs `VACUUM INTO '{dir}/couloir-{YYYYMMDD}.db'`. If today's file already exists, it overwrites it via a temp file and rename.
   - `prune(dir, keep)` deletes the oldest `couloir-*.db` files beyond `keep`.
   - `scheduleBackups()` runs once at startup, then every 24 h (`setInterval(...).unref()`). Errors are logged, never fatal.
-- [ ] **Step 8.7.2:** Tests in a temp dir: the snapshot opens and has the rows; prune keeps the newest N; an existing same-day file is replaced.
-- [ ] **Step 8.7.3:** Add `GET /api/backup/db`, which streams a fresh `VACUUM INTO` snapshot as a download. It's an "off-box copy now" button for Settings, alongside the existing ZIP export, which still works and includes photos.
+- [x] **Step 8.7.2:** Tests in a temp dir: the snapshot opens and has the rows; prune keeps the newest N; an existing same-day file is replaced.
+- [x] **Step 8.7.3:** Add `GET /api/backup/db`, which streams a fresh `VACUUM INTO` snapshot as a download. It's an "off-box copy now" button for Settings, alongside the existing ZIP export, which still works and includes photos.
+
+> **Notes (2026-10-26):**
+> - **Bug fixed in `NodeSqlBackend.tx` (from 8.2).** It awaited `run()` between statements. Every request shares one connection, so another request's queued continuation could run in that gap, landing its writes inside this transaction and rolling them back if it failed. `VACUUM INTO` could also hit "cannot VACUUM from within a transaction". `tx` is now synchronous from `BEGIN` to `COMMIT`. A new test (a failing tx, with an unrelated write issued mid-flight) reproduced the bug before the fix and passes after it.
+> - **`NodeSqlBackend.snapshotTo(path)` is `VACUUM INTO ?`,** with the path bound as a parameter. The file must not exist, so `snapshot()` writes `*.tmp` and renames it, replacing the day's file without ever clobbering it with a failed copy.
+> - **Snapshot names use the UTC date:** `couloir-YYYYMMDD.db`, so the name doesn't depend on the container's time zone. `prune` keeps at least 1 whatever `BACKUP_KEEP` says, and ignores other files in the directory.
+> - **Runs never overlap, and `stop()` waits for an in-flight snapshot.** `scheduleBackups` chains its runs, and the stop function it returns resolves once the current run finishes. Shutdown awaits it before closing the DB. (The first test run showed an in-flight snapshot hitting a closed DB.)
+> - **`GET /api/backup/db`** returns a fresh snapshot (`application/vnd.sqlite3`, attachment `couloir-YYYYMMDD-HHMM.db`, `no-store`). It's wired through an optional `createApp({ databaseSnapshot })`, so it returns 404 where there's no database file. The dev server provides it too. Settings links to it as "Download the database only (no photos)", and the note mentions the server's daily snapshots.
+> - **Live check (`npm start`, `BACKUP_KEEP=3`):** the startup log reports the setting, and today's snapshot is written at startup. The download opened in `node:sqlite` and held the route PUT just before it.
+> - **Photos aren't in the snapshots.** They're immutable files on the volume. `docs/DEPLOY.md` (8.8) must say the volume itself needs backing up, and that the ZIP export is the all-in-one copy.
 
 ---
 

@@ -92,4 +92,11 @@ describe('SettingsPanel', () => {
     render(<SettingsPanel />)
     expect(screen.getByText(/stored on your couloir server/i)).toBeInTheDocument()
   })
+
+  it('links to the database snapshot download', () => {
+    render(<SettingsPanel />)
+    const link = screen.getByRole('link', { name: /download the database only/i })
+    expect(link).toHaveAttribute('href', '/api/backup/db')
+    expect(link).toHaveAttribute('download')
+  })
 })

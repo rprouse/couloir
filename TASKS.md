@@ -89,7 +89,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [8.4 HttpStorageProvider](#task-84---httpstorageprovider)
 - [x] [8.5 Wire the app to the server](#task-85---wire-the-app-to-the-server)
 - [x] [8.6 Remove OPFS](#task-86---remove-opfs)
-- [ ] [8.7 Server backups](#task-87---server-backups)
+- [x] [8.7 Server backups](#task-87---server-backups)
 - [ ] [8.8 Docker, CI and Unraid](#task-88---docker-ci-and-unraid)
 - [ ] [8.9 Data migration and end-to-end QA](#task-89---data-migration-and-end-to-end-qa)
 - [ ] [8.10 Docs](#task-810---docs)
