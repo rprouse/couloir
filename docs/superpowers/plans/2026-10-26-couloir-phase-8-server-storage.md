@@ -128,20 +128,26 @@ Pure refactor: no behaviour change in the running app.
 
 **Files:** create `server/nodeBackend.ts`, `server/nodeBackend.test.ts`.
 
-- [ ] **Step 8.2.1: `NodeSqlBackend implements SqlBackend`**, with `constructor(dataDir: string)`.
+- [x] **Step 8.2.1: `NodeSqlBackend implements SqlBackend`**, with `constructor(dataDir: string)`.
   - **`init`:** `mkdir -p {dataDir}/photos`, open `{dataDir}/couloir.db` with `DatabaseSync`, then set `PRAGMA journal_mode = WAL`, `foreign_keys = ON` and `busy_timeout = 5000`. Don't migrate here: `SqlStorageProvider.init()` runs `ensureSchema` (see the 8.1 notes).
   - **`all`/`one`/`run`:** `prepare(sql)` with `.all/.get/.run(...params)`. Multi-statement SQL (only migrations use it) goes through `db.exec(sql)` when `params` is empty and the SQL contains more than one statement. Simplest rule: `run` without params uses `exec`.
   - **`tx`:** wrap in `BEGIN`/`COMMIT`/`ROLLBACK`.
   - **Blobs:** `fs/promises` under `{dataDir}/{path}`. `readBlob` returns `null` on `ENOENT`, and `deleteBlob` ignores `ENOENT`. Write to `{file}.tmp` and then `rename`, so a crash never leaves a half-written photo.
   - **Paths:** resolve the path and assert it stays inside `dataDir` (defence in depth behind Decision 13).
   - **Types:** `node:sqlite` returns `bigint` only when asked, and numbers otherwise. Confirm `INTEGER` columns come back as `number` to match the wa-sqlite rows `SqlStorageProvider` expects.
-- [ ] **Step 8.2.2: Contract.** In `nodeBackend.test.ts`, run `storageContract('SqlStorageProvider/node', …)`. Each test gets a fresh `mkdtemp` directory, removed in `afterEach`.
-- [ ] **Step 8.2.3: Backend-specific tests.**
+- [x] **Step 8.2.2: Contract.** In `nodeBackend.test.ts`, run `storageContract('SqlStorageProvider/node', …)`. Each test gets a fresh `mkdtemp` directory, removed in `afterEach`.
+- [x] **Step 8.2.3: Backend-specific tests.**
   - Reopening the same dir sees the data.
   - Schema version is recorded.
   - A `../` path is rejected.
   - WAL is on.
   - A DB at a higher version throws `SchemaVersionError`.
+
+> **Notes (2026-10-26):**
+> - **All 39 contract tests passed unchanged** against `SqlStorageProvider` on `NodeSqlBackend`. This is the same SQL as the browser, and integer columns come back as `number`, so no `Number()` coercion changes were needed. There are 8 backend tests on top: reopen persistence, schema version and directory layout, WAL plus foreign keys, newer-DB refusal, transaction rollback, atomic blob write (no `.tmp` left behind), missing-blob behaviour, and path escapes (`../`, nested `..`, absolute paths).
+> - **`run()` without params uses `exec`, which allows multiple statements (migrations); with params it uses `prepare().run`.** `node:sqlite`'s `exec` can't bind and `prepare` runs a single statement, so no call needs both.
+> - **`node:sqlite` turns foreign keys on by default** (`enableForeignKeyConstraints: true`). The explicit PRAGMA documents the requirement. A mutation check with the constructor option set to `false` failed both the PRAGMA test and the contract's tag-delete cascade test, so the suite does guard it.
+> - The contract factory makes a fresh `mkdtemp` directory per `create()`. They're all removed in `cleanup`, after the providers close (Windows can't delete an open DB file). No temp dirs are left after a run.
 
 ---
 
