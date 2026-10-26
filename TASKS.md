@@ -77,7 +77,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [7.2 Slope tile protocol](#task-72---slope-tile-protocol)
 - [x] [7.3 Slope UI state](#task-73---slope-ui-state)
 - [x] [7.4 Slope layer](#task-74---slope-layer)
-- [ ] [7.5 Slope controls and legend](#task-75---slope-controls-and-legend)
+- [x] [7.5 Slope controls and legend](#task-75---slope-controls-and-legend)
 - [ ] [7.6 Docs and browser QA](#task-76---docs-and-browser-qa)
 
 ---

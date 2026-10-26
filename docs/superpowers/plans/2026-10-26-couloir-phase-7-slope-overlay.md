@@ -445,17 +445,17 @@ export const DEM_MAX_ZOOM = 14
 - Modify: `src/map/controls/TerrainControl.tsx`, `TerrainControl.test.tsx`, `TerrainControl.module.css`
 - Create: `src/map/controls/SlopeLegend.tsx`
 
-- [ ] **Step 7.5.1: Tests first** (extend `TerrainControl.test.tsx`):
+- [x] **Step 7.5.1: Tests first** (extend `TerrainControl.test.tsx`):
   - It renders a `switch` named "Slope angle", unchecked by default. Clicking it toggles `slopeEnabled`.
   - The "Slope opacity" slider is disabled while slope is off and updates `slopeOpacity` when changed.
   - The legend (`role="list"`, name "Slope angle legend") appears only while slope is on, has one item per `SLOPE_BANDS` entry, and shows the caveat text.
   - When `map.getZoom()` is below `SLOPE_MIN_ZOOM`, the hint "Zoom in to see slope" appears. It updates on `zoomend`.
 
-- [ ] **Step 7.5.2: Implement.** Add a second section to `TerrainControl`, separated by a divider: the switch, the opacity slider (shown as a percentage) and `<SlopeLegend />`. The legend shows a swatch and label for each band, using inline `style={{ background: band.color }}` (the swatch for the near-black band needs a `--color-border` outline). The caveat line reads: "Approximate. Computed from ~30 m elevation data; short steep features read low. Not a substitute for field assessment." Style it with the existing `--color-text-dim` and spacing variables.
+- [x] **Step 7.5.2: Implement.** *(Opacity slider label is "Opacity", accessible name "Slope opacity".)* Add a second section to `TerrainControl`, separated by a divider: the switch, the opacity slider (shown as a percentage) and `<SlopeLegend />`. The legend shows a swatch and label for each band, using inline `style={{ background: band.color }}` (the swatch for the near-black band needs a `--color-border` outline). The caveat line reads: "Approximate. Computed from ~30 m elevation data; short steep features read low. Not a substitute for field assessment." Style it with the existing `--color-text-dim` and spacing variables.
 
-- [ ] **Step 7.5.3: Mobile.** Check that the larger control still clears the mobile tab bar at 375 px. If the legend makes it too tall, collapse the legend behind a "Legend" disclosure on narrow screens with `useMediaQuery`.
+- [ ] **Step 7.5.3: Mobile.** *(As built: the legend is one horizontal row of five swatches, about 30 px tall, with no disclosure. It still needs checking in a browser at 375 px.)* Check that the larger control still clears the mobile tab bar at 375 px. If the legend makes it too tall, collapse the legend behind a "Legend" disclosure on narrow screens with `useMediaQuery`.
 
-- [ ] **Step 7.5.4:** Tests and typecheck pass. Commit `feat(map): slope overlay toggle, opacity, and legend`.
+- [x] **Step 7.5.4:** Tests and typecheck pass. Commit `feat(map): slope overlay toggle, opacity, and legend`.
 
 ---
 
