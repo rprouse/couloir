@@ -2409,7 +2409,7 @@ git commit -m "feat(backup): streaming ZIP export and restore with thumbnail reg
 
 Ends with: `npm run build && npm run preview` serves an installable app (Chrome shows the install icon, and the Lighthouse/DevTools manifest pane shows no errors). After one online visit, a reload with the network offline still opens the app and its data.
 
-- [ ] **Step 6.5.1: Install**
+- [x] **Step 6.5.1: Install**
 
 ```bash
 npm install -D vite-plugin-pwa@1.3.0
@@ -2417,7 +2417,7 @@ npm install -D vite-plugin-pwa@1.3.0
 
 If npm reports a peer conflict with Vite 5, stop and report. Don't force it.
 
-- [ ] **Step 6.5.2: Icon source — `public/icons/icon.svg`**
+- [x] **Step 6.5.2: Icon source — `public/icons/icon.svg`**
 
 Full-bleed dark square, so it also works as a maskable icon. The glyph stays inside the central 80 % safe zone.
 
@@ -2462,7 +2462,7 @@ node -e "const o=require(process.argv[1]);const fs=require('fs');fs.writeFileSyn
 
 4. Open one PNG with the Read tool to eyeball it.
 
-- [ ] **Step 6.5.4: `vite.config.ts`**
+- [x] **Step 6.5.4: `vite.config.ts`**
 
 ```ts
 import { defineConfig } from 'vite'
@@ -2510,7 +2510,7 @@ export default defineConfig({
 })
 ```
 
-- [ ] **Step 6.5.5: Register the service worker and add head tags**
+- [x] **Step 6.5.5: Register the service worker and add head tags**
 
 `src/vite-env.d.ts`: add `/// <reference types="vite-plugin-pwa/client" />`.
 
@@ -2543,7 +2543,7 @@ Browser: `npm run preview`.
 - The install icon appears in the address bar. Install it, and the app opens in its own window with the Couloir icon.
 - Application › Service Workers shows it activated. Network › Offline, then reload: the app loads and the layer counts show your data. The map tiles are blank (expected).
 
-- [ ] **Step 6.5.7: Docs, ticks, commit**
+- [x] **Step 6.5.7: Docs, ticks, commit**
 
 `ARCHITECTURE.md` › PWA Configuration: replace the bullets with the actual setup (plugin `generateSW`, precache list including wasm and worker, no tile caching yet, SW only in production builds, icons from `public/icons/icon.svg`). Delete `public/manifest.json` from the Project Structure tree (the plugin emits `manifest.webmanifest`).
 

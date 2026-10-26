@@ -39,6 +39,11 @@ async function bootstrap(): Promise<void> {
       <App />
     </React.StrictMode>,
   )
+
+  if (import.meta.env.PROD) {
+    const { registerSW } = await import('virtual:pwa-register')
+    registerSW({ immediate: true })
+  }
 }
 
 bootstrap().catch((err) => {

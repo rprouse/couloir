@@ -34,8 +34,7 @@
 ```
 couloir/
 ├── public/
-│   ├── manifest.json          # PWA manifest
-│   └── icons/                 # App icons
+│   └── icons/                 # App icons (icon.svg source + rendered PNGs)
 ├── src/
 │   ├── main.tsx               # App entry point
 │   ├── App.tsx                # Root component, layout shell
@@ -498,8 +497,10 @@ No feature code changes are required — only the storage implementation, the de
 
 ## PWA Configuration
 
-- Vite PWA plugin (`vite-plugin-pwa`) with Workbox.
-- App shell cached for offline use.
-- Maptiler tiles cached with a network-first strategy (tiles cache as visited).
+- `vite-plugin-pwa` (dev dependency) in `generateSW` mode, configured in `vite.config.ts`. `registerType: 'autoUpdate'`: a new build's service worker activates on the next visit.
+- Workbox precaches everything the build emits that matches `**/*.{js,css,html,wasm,svg,png,webmanifest}`: `index.html`, the main JS/CSS chunks, the storage worker chunk (`assets/workerHost-*.js`), the wa-sqlite `.wasm`, the icons and the manifest. `maximumFileSizeToCacheInBytes` is raised to 6 MB so the ~1.5 MB main chunk is not skipped. `navigateFallback: '/index.html'`.
+- Map tiles are **not** cached yet (post-MVP "offline tile caching"). Offline, the app opens with all its data but the basemap is blank.
 - OPFS data is inherently offline-capable.
-- `manifest.json` configured with name "Couloir", dark theme color, appropriate icons.
+- The service worker exists only in production builds: `devOptions.enabled` is false, and `src/main.tsx` registers it via a dynamic `import('virtual:pwa-register')` behind `import.meta.env.PROD`, so the dev server and Vitest never see it.
+- The plugin emits `manifest.webmanifest` (name/short_name "Couloir", `display: standalone`, theme and background `#0e1014`) and injects the `<link rel="manifest">` into `index.html`.
+- Icons live in `public/icons/`. `icon.svg` is the hand-written source (full-bleed so it doubles as maskable). `icon-192.png`, `icon-512.png` (also the maskable entry) and `apple-touch-icon.png` (180 px) are rendered once from it and committed; no icon tooling is in the repo.
