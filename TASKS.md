@@ -61,7 +61,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 
 ### Phase 6 — Polish and MVP Completion  ·  Plan: [`2026-10-26-couloir-phase-6-polish.md`](docs/superpowers/plans/2026-10-26-couloir-phase-6-polish.md)
 
-- [ ] [6.1 Tag management](#task-61---tag-management)
+- [x] [6.1 Tag management](#task-61---tag-management)
 - [ ] [6.2 Tag filtering](#task-62---tag-filtering)
 - [ ] [6.3 Global search](#task-63---global-search)
 - [ ] [6.4 Export and import (ZIP backup)](#task-64---export-and-import-zip-backup)
@@ -551,7 +551,7 @@ Add a tag management section to the Settings panel: create tags (name + color), 
 
 Color input validates against `/^#[0-9a-fA-F]{6}$/` at the form boundary; invalid values are rejected before save.
 
-Deleting a tag automatically removes its rows from `entity_tags` via the `ON DELETE CASCADE` foreign key — no application-level cleanup is needed. Affected entities' `tags` arrays will reflect the deletion the next time they're loaded. Show a confirmation prompt when the tag is in use (e.g. "Tag 'Steep' is used by 7 entities. Delete?").
+Deleting a tag automatically removes its rows from `entity_tags` via the `ON DELETE CASCADE` foreign key — no application-level cleanup is needed. Affected entities' `tags` arrays will reflect the deletion the next time they're loaded. Show a confirmation prompt when the tag is in use (e.g. "Tag 'Steep' is used by 7 entities. Delete?"). Includes a `TagPicker` in every entity edit form and the waypoint/photo create forms (tag assignment; needed by QA step 7).
 
 **Acceptance criteria**:
 - Tags can be created, renamed, and deleted from Settings

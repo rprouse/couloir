@@ -11,7 +11,7 @@ import { isoToLocalInput } from '../../utils/time'
 import { parsePhotoForm, type PhotoFormValues } from './photoForm'
 import { PhotoFields } from './PhotoFields'
 import { PhotoPositionFields } from './PhotoPositionFields'
-import { TagPills } from './TagPills'
+import { TagPicker } from '../../components/TagPicker/TagPicker'
 import { debug } from '../../utils/debug'
 
 function initialValues(pending: PendingPhoto | null): PhotoFormValues {
@@ -40,6 +40,7 @@ export function PhotoCreate(): JSX.Element {
   const map = useMap()
 
   const [values, setValues] = useState<PhotoFormValues>(() => initialValues(pending))
+  const [tags, setTags] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const previewUrl = useObjectUrl(pending?.blob ?? null)
@@ -73,7 +74,7 @@ export function PhotoCreate(): JSX.Element {
           width: pending.width,
           height: pending.height,
           file_size_bytes: pending.blob.size,
-          tags: [],
+          tags,
         },
         pending.blob,
         pending.thumb,
@@ -113,7 +114,7 @@ export function PhotoCreate(): JSX.Element {
 
       <section className={shared.section}>
         <h3>Tags</h3>
-        <TagPills tagIds={[]} />
+        <TagPicker value={tags} onChange={setTags} />
       </section>
     </>
   )

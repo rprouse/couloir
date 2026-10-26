@@ -194,6 +194,12 @@ export const DEFAULTS = {
   track: { color: '#2A7BE0' },
 } as const
 
+// Default colours offered for new tags, cycled in order.
+export const TAG_PALETTE = [
+  '#E05C2A', '#2A7BE0', '#22C55E', '#F59E0B',
+  '#A78BFA', '#EF4444', '#14B8A6', '#F472B6',
+] as const
+
 export const WAYPOINT_CATEGORIES: Record<WaypointCategory, {
   label: string
   color: string

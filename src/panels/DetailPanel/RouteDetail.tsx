@@ -9,6 +9,7 @@ import { formatDistanceKm, formatElevationM, isValidHex } from '../../utils/form
 import { debug } from '../../utils/debug'
 import { ElevationProfile } from '../../components/ElevationProfile/ElevationProfile'
 import { TagPills } from './TagPills'
+import { TagPicker } from '../../components/TagPicker/TagPicker'
 import { ConfirmDelete } from './ConfirmDelete'
 import { Metric } from './Metric'
 
@@ -103,6 +104,7 @@ function RouteEdit({ route }: { route: Route }): JSX.Element {
   const [color, setColor] = useState(route.color)
   const [ates, setAtes] = useState<ATES | ''>(route.ates ?? '')
   const [tech, setTech] = useState<TechnicalDifficulty | ''>(route.technical_difficulty ?? '')
+  const [tags, setTags] = useState<string[]>(route.tags)
 
   // Reload local state if the underlying route is replaced (e.g. duplicate
   // import re-applied). Keying on id+updated_at makes this exact.
@@ -112,6 +114,7 @@ function RouteEdit({ route }: { route: Route }): JSX.Element {
     setColor(route.color)
     setAtes(route.ates ?? '')
     setTech(route.technical_difficulty ?? '')
+    setTags(route.tags)
   }, [route.id, route.updated_at])
 
   const colorOk = isValidHex(color)
@@ -126,6 +129,7 @@ function RouteEdit({ route }: { route: Route }): JSX.Element {
         color,
         ates: ates === '' ? null : ates,
         technical_difficulty: tech === '' ? null : tech,
+        tags,
       })
       openEntity('route', route.id)
     } catch (err) {
@@ -198,6 +202,11 @@ function RouteEdit({ route }: { route: Route }): JSX.Element {
             ))}
           </select>
         </label>
+      </section>
+
+      <section className={shared.section}>
+        <h3>Tags</h3>
+        <TagPicker value={tags} onChange={setTags} />
       </section>
     </>
   )

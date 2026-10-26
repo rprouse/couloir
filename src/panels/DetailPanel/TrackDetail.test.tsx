@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act } from 'react'
 import userEvent from '@testing-library/user-event'
 import { TrackDetail } from './TrackDetail'
 
@@ -12,7 +13,7 @@ import { useTracksStore } from '../../store/tracks'
 import { useTagsStore } from '../../store/tags'
 import { useUiStore } from '../../store/ui'
 import { InMemoryStorageProvider } from '../../storage/memory'
-import { setStorage, clearStorage } from '../../storage/provider'
+import { setStorage, clearStorage, getStorage } from '../../storage/provider'
 import type { Track } from '../../types'
 
 const baseTrack: Track = {
@@ -116,5 +117,13 @@ describe('TrackDetail', () => {
     await user.clear(colorTextInput)
     await user.type(colorTextInput, 'not-a-color')
     expect(screen.getByRole('button', { name: /^Save$/ })).toBeDisabled()
+  })
+
+  it('edit assigns a tag and persists it', async () => {
+    act(() => useTagsStore.setState({ tags: [{ id: 'tag1', name: 'Steep', color: '#EF4444', created_at: '' }] }))
+    render(<TrackDetail trackId="t1" mode="edit" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Steep' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(async () => expect((await getStorage().getTrack('t1'))?.tags).toEqual(['tag1']))
   })
 })

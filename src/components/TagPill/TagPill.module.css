@@ -1,0 +1,23 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  line-height: 1.4;
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  background: var(--tag-color);
+  color: var(--tag-text);
+  font-family: inherit;
+}
+
+/* Unselected pill inside a picker: outline only. */
+.outline {
+  background: transparent;
+  border-color: var(--tag-color);
+  color: var(--color-text);
+}
+
+button.pill {
+  cursor: pointer;
+}

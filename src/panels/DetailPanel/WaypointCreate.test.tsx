@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { act } from 'react'
 import { useUiStore } from '../../store/ui'
 import { useWaypointsStore } from '../../store/waypoints'
+import { useTagsStore } from '../../store/tags'
 import { setStorage } from '../../storage/provider'
 import { InMemoryStorageProvider } from '../../storage/memory'
 import { WaypointCreate } from './WaypointCreate'
@@ -14,6 +15,7 @@ function reset() {
       placement: { mode: 'idle' },
     })
     useWaypointsStore.setState({ waypoints: [], loading: false, error: null })
+    useTagsStore.setState({ tags: [], loading: false, error: null })
   })
 }
 
@@ -55,5 +57,15 @@ describe('WaypointCreate', () => {
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
     expect(useWaypointsStore.getState().waypoints).toHaveLength(0)
     expect(useUiStore.getState().panel.mode).toBe('idle')
+  })
+
+  it('saves the picked tags with the new waypoint', async () => {
+    act(() => useTagsStore.setState({ tags: [{ id: 'tag1', name: 'Steep', color: '#EF4444', created_at: '' }] }))
+    render(<WaypointCreate />)
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Summit Hut' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Steep' }))
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+    await waitFor(() => expect(useWaypointsStore.getState().waypoints).toHaveLength(1))
+    expect(useWaypointsStore.getState().waypoints[0].tags).toEqual(['tag1'])
   })
 })

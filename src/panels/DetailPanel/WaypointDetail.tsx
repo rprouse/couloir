@@ -7,6 +7,7 @@ import { WAYPOINT_CATEGORIES } from '../../types'
 import type { Waypoint, WaypointCategory } from '../../types'
 import { formatElevationM, isValidHex } from '../../utils/format'
 import { TagPills } from './TagPills'
+import { TagPicker } from '../../components/TagPicker/TagPicker'
 import { ConfirmDelete } from './ConfirmDelete'
 import { Metric } from './Metric'
 import { debug } from '../../utils/debug'
@@ -84,6 +85,7 @@ function WaypointEdit({ wp }: { wp: Waypoint }): JSX.Element {
     wp.elevation_m === null ? '' : String(wp.elevation_m),
   )
   const [color, setColor] = useState<string>(wp.color ?? '')
+  const [tags, setTags] = useState<string[]>(wp.tags)
 
   // Re-sync local state if the underlying waypoint is replaced upstream
   // (e.g. drag commit, or a sync arrival in the future).
@@ -93,6 +95,7 @@ function WaypointEdit({ wp }: { wp: Waypoint }): JSX.Element {
     setCategory(wp.category)
     setElevation(wp.elevation_m === null ? '' : String(wp.elevation_m))
     setColor(wp.color ?? '')
+    setTags(wp.tags)
   }, [wp.id, wp.updated_at])
 
   const elevNum = elevation.trim() === '' ? null : Number(elevation)
@@ -109,6 +112,7 @@ function WaypointEdit({ wp }: { wp: Waypoint }): JSX.Element {
         category,
         elevation_m: elevNum,
         color: color === '' ? null : color,
+        tags,
       })
       openEntity('waypoint', wp.id)
     } catch (err) {
@@ -179,6 +183,11 @@ function WaypointEdit({ wp }: { wp: Waypoint }): JSX.Element {
           </div>
           {!colorOk && <span className={styles.subtle}>Use #RRGGBB hex.</span>}
         </label>
+      </section>
+
+      <section className={shared.section}>
+        <h3>Tags</h3>
+        <TagPicker value={tags} onChange={setTags} />
       </section>
     </>
   )

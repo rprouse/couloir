@@ -50,6 +50,12 @@ interface UiState {
   completePlacement: (lat: number, lng: number) => void
   cancelPlacement: () => void
   updateDraft: (patch: EntityDraft) => void
+
+  // Phase 6 — per-layer tag filters (OR semantics; empty = no filter)
+  tagFilters: Record<LayerKey, string[]>
+  setTagFilter: (layer: LayerKey, tagIds: string[]) => void
+  clearTagFilter: (layer: LayerKey) => void
+  pruneTagFromFilters: (tagId: string) => void
 }
 
 const clamp = (n: number) => Math.max(MIN, Math.min(MAX, n))
@@ -171,5 +177,21 @@ export const useUiStore = create<UiState>((set, get) => {
         set({ panel: { ...cur, draft: { ...cur.draft, ...patch } } })
       }
     },
+
+    // ----- Phase 6 fields: tag filters -----
+    tagFilters: { routes: [], tracks: [], waypoints: [], photos: [] },
+    setTagFilter: (layer, tagIds) =>
+      set((s) => ({ tagFilters: { ...s.tagFilters, [layer]: tagIds } })),
+    clearTagFilter: (layer) =>
+      set((s) => ({ tagFilters: { ...s.tagFilters, [layer]: [] } })),
+    pruneTagFromFilters: (tagId) =>
+      set((s) => ({
+        tagFilters: {
+          routes: s.tagFilters.routes.filter((t) => t !== tagId),
+          tracks: s.tagFilters.tracks.filter((t) => t !== tagId),
+          waypoints: s.tagFilters.waypoints.filter((t) => t !== tagId),
+          photos: s.tagFilters.photos.filter((t) => t !== tagId),
+        },
+      })),
   }
 })

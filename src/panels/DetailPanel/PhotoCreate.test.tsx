@@ -3,6 +3,7 @@ import { act } from 'react'
 import { PhotoCreate } from './PhotoCreate'
 import { useUiStore } from '../../store/ui'
 import { usePhotosStore } from '../../store/photos'
+import { useTagsStore } from '../../store/tags'
 import { InMemoryStorageProvider } from '../../storage/memory'
 import { setStorage, clearStorage, getStorage } from '../../storage/provider'
 import type { PendingPhoto } from '../../types'
@@ -30,6 +31,7 @@ describe('PhotoCreate', () => {
     await storage.init()
     setStorage(storage)
     usePhotosStore.setState({ photos: [], loading: false, error: null })
+    useTagsStore.setState({ tags: [], loading: false, error: null })
     useUiStore.setState({ panel: { mode: 'idle' }, placement: { mode: 'idle' } })
   })
   afterEach(() => clearStorage())
@@ -94,5 +96,17 @@ describe('PhotoCreate', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(await screen.findByRole('alert')).toHaveTextContent(/saving the photo failed/i)
     expect(useUiStore.getState().panel.mode).toBe('create')
+  })
+
+  it('saves the picked tags with the new photo', async () => {
+    act(() => useTagsStore.setState({ tags: [{ id: 'tag1', name: 'Steep', color: '#EF4444', created_at: '' }] }))
+    openCreate()
+    render(<PhotoCreate />)
+    fireEvent.click(screen.getByRole('button', { name: 'Steep' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(usePhotosStore.getState().photos).toHaveLength(1))
+    const saved = usePhotosStore.getState().photos[0]
+    expect(saved.tags).toEqual(['tag1'])
+    expect((await getStorage().getPhoto(saved.id))?.tags).toEqual(['tag1'])
   })
 })

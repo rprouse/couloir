@@ -10,6 +10,7 @@ import {
   formatElevationM,
   isValidHex,
 } from '../../utils/format'
+import { TagPicker } from '../../components/TagPicker/TagPicker'
 import { ElevationProfile } from '../../components/ElevationProfile/ElevationProfile'
 import { TagPills } from './TagPills'
 import { ConfirmDelete } from './ConfirmDelete'
@@ -103,6 +104,7 @@ function TrackEdit({ track }: { track: Track }): JSX.Element {
   const [name, setName] = useState(track.name)
   const [description, setDescription] = useState(track.description)
   const [color, setColor] = useState(track.color)
+  const [tags, setTags] = useState<string[]>(track.tags)
 
   // Reload local state if the underlying track is replaced (duplicate import
   // re-applied). Keying on id+updated_at re-syncs only on identity change,
@@ -111,6 +113,7 @@ function TrackEdit({ track }: { track: Track }): JSX.Element {
     setName(track.name)
     setDescription(track.description)
     setColor(track.color)
+    setTags(track.tags)
   }, [track.id, track.updated_at])
 
   const colorOk = isValidHex(color)
@@ -119,7 +122,7 @@ function TrackEdit({ track }: { track: Track }): JSX.Element {
   const onSave = async () => {
     if (!canSave) return
     try {
-      await update(track.id, { name: name.trim(), description, color })
+      await update(track.id, { name: name.trim(), description, color, tags })
       openEntity('track', track.id)
     } catch (err) {
       debug('track save failed', err)
@@ -166,6 +169,11 @@ function TrackEdit({ track }: { track: Track }): JSX.Element {
           </div>
           {!colorOk && <span className={styles.subtle}>Use #RRGGBB hex.</span>}
         </label>
+      </section>
+
+      <section className={shared.section}>
+        <h3>Tags</h3>
+        <TagPicker value={tags} onChange={setTags} />
       </section>
     </>
   )

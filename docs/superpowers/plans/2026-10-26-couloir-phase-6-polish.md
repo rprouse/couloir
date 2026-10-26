@@ -94,7 +94,7 @@ couloir/
 
 Ends with: a Tags section in Settings to create, rename, recolour and delete tags. Each tag shows how many entities use it, and deleting a tag that's in use asks for confirmation first. Every edit form and the two create forms have a tag picker, and pills everywhere use the tag colour with readable text.
 
-- [ ] **Step 6.1.1: Constants in `src/types/index.ts`**
+- [x] **Step 6.1.1: Constants in `src/types/index.ts`**
 
 Next to `DEFAULTS`:
 
@@ -106,7 +106,7 @@ export const TAG_PALETTE = [
 ] as const
 ```
 
-- [ ] **Step 6.1.2: Tag helpers — test first, `src/utils/tags.test.ts`**
+- [x] **Step 6.1.2: Tag helpers — test first, `src/utils/tags.test.ts`**
 
 ```ts
 import { countTagUsage, nextTagColor, readableTextColor, validateTagInput } from './tags'
@@ -217,7 +217,7 @@ export function nextTagColor(existing: readonly Tag[]): string {
 
 Check `isValidHex` in `src/utils/format.ts` matches `/^#[0-9a-fA-F]{6}$/`, as TASKS.md 6.1 requires. If it accepts `#RGB`, tighten it there and add a test. Run → PASS.
 
-- [ ] **Step 6.1.3: `TagPill` — the one pill used everywhere**
+- [x] **Step 6.1.3: `TagPill` — the one pill used everywhere**
 
 `src/components/TagPill/TagPill.module.css`:
 
@@ -310,7 +310,7 @@ Add to `DetailPanel.shared.module.css`:
 
 Existing detail-panel tests that look for "No tags" must still pass. If one asserted the old inline colour style, update it.
 
-- [ ] **Step 6.1.4: `TagPicker` — test first, `src/components/TagPicker/TagPicker.test.tsx`**
+- [x] **Step 6.1.4: `TagPicker` — test first, `src/components/TagPicker/TagPicker.test.tsx`**
 
 ```tsx
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -493,7 +493,7 @@ export function TagPicker({ value, onChange }: Props): JSX.Element {
 
 Run the picker tests → PASS.
 
-- [ ] **Step 6.1.5: Put the picker in every form**
+- [x] **Step 6.1.5: Put the picker in every form**
 
 For each form below, add `const [tags, setTags] = useState<string[]>(…)`. Add `setTags(entity.tags)` to the existing re-sync effect where there is one. Include `tags` in the save payload, and render this section at the end of the form (replacing any read-only Tags section in that form):
 
@@ -529,7 +529,7 @@ Add one test per entity type to the existing detail test files, following this r
 
 Add one more to `PhotoCreate.test.tsx` and `WaypointCreate.test.tsx` asserting the saved entity carries the picked tag.
 
-- [ ] **Step 6.1.6: Deleting a tag — test first, `src/features/tags/deleteTag.test.ts`**
+- [x] **Step 6.1.6: Deleting a tag — test first, `src/features/tags/deleteTag.test.ts`**
 
 `ON DELETE CASCADE` cleans `entity_tags` in storage, but every loaded entity still has the id in its `tags` array until the slices reload. `deleteTag` mirrors the cascade in memory.
 
@@ -632,7 +632,7 @@ export async function deleteTag(tagId: string): Promise<void> {
 
 Run → PASS.
 
-- [ ] **Step 6.1.7: `TagManager` in Settings — test first, `src/panels/SettingsPanel/TagManager.test.tsx`**
+- [x] **Step 6.1.7: `TagManager` in Settings — test first, `src/panels/SettingsPanel/TagManager.test.tsx`**
 
 ```tsx
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
@@ -921,7 +921,7 @@ Browser:
 - Create a waypoint and type a new tag name in the picker. The tag is created and selected.
 - Delete "Steep" from Settings. You're asked to confirm (it's in use). Afterwards the pills disappear without a reload, and reloading confirms the tag is gone from the entities.
 
-- [ ] **Step 6.1.9: Docs, ticks, commit**
+- [x] **Step 6.1.9: Docs, ticks, commit**
 
 `TASKS.md` Task 6.1: append "Includes a `TagPicker` in every entity edit form and the waypoint/photo create forms (tag assignment; needed by QA step 7)." Tick 6.1 in Progress.
 

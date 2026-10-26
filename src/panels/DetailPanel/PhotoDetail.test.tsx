@@ -4,6 +4,7 @@ import { PhotoDetail } from './PhotoDetail'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 import { useUiStore } from '../../store/ui'
 import { usePhotosStore } from '../../store/photos'
+import { useTagsStore } from '../../store/tags'
 import { InMemoryStorageProvider } from '../../storage/memory'
 import { setStorage, clearStorage, getStorage } from '../../storage/provider'
 import type { Photo } from '../../types'
@@ -23,6 +24,7 @@ describe('PhotoDetail', () => {
     await storage.init()
     setStorage(storage)
     usePhotosStore.setState({ photos: [], loading: false, error: null })
+    useTagsStore.setState({ tags: [], loading: false, error: null })
     photo = await usePhotosStore.getState().add(input, new Blob(['full']), new Blob(['t']))
     useUiStore.setState({ panel: { mode: 'view', entityType: 'photo', entityId: photo.id }, placement: { mode: 'idle' } })
   })
@@ -96,5 +98,14 @@ describe('PhotoDetail', () => {
     expect(await getStorage().getPhoto(photo.id)).toBeNull()
     expect(await getStorage().getPhotoBlob(photo.id)).toBeNull()
     expect(await getStorage().getPhotoThumb(photo.id)).toBeNull()
+  })
+
+  it('edit assigns a tag and persists it', async () => {
+    act(() => useTagsStore.setState({ tags: [{ id: 'tag1', name: 'Steep', color: '#EF4444', created_at: '' }] }))
+    act(() => useUiStore.getState().editCurrent({ lat: 49.46, lng: -115.08 }))
+    render(<PhotoDetail photoId={photo.id} mode="edit" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Steep' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(async () => expect((await getStorage().getPhoto(photo.id))?.tags).toEqual(['tag1']))
   })
 })
