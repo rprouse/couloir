@@ -7,7 +7,7 @@ import { useRoutesStore } from '../../store/routes'
 import { useTracksStore } from '../../store/tracks'
 import { useWaypointsStore } from '../../store/waypoints'
 import { usePhotosStore } from '../../store/photos'
-import type { Route, Track } from '../../types'
+import type { Photo, Route, Track } from '../../types'
 
 const stubPrompt = async () =>
   ({ choice: 'skip' as const, applyToAll: false })
@@ -180,5 +180,16 @@ describe('LayerPanel', () => {
       useWaypointsStore.setState({ waypoints: [] })
     })
     expect(screen.getByText('Waypoints').parentElement?.querySelector('[data-count]')?.getAttribute('data-count')).toBe('0')
+  })
+
+  it('tracks the live photo count on add and delete', () => {
+    render(<LayerPanel promptDuplicate={stubPrompt} />)
+    const count = () =>
+      screen.getByText('Photos').parentElement?.querySelector('[data-count]')?.getAttribute('data-count')
+    expect(count()).toBe('0')
+    act(() => usePhotosStore.setState({ photos: [{ id: 'p1' } as Photo] }))
+    expect(count()).toBe('1')
+    act(() => usePhotosStore.setState({ photos: [] }))
+    expect(count()).toBe('0')
   })
 })

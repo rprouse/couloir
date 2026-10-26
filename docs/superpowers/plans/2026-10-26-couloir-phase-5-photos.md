@@ -3278,7 +3278,7 @@ Tick 5.4 → `chore(tasks): tick 5.4`.
 
 The count is already wired (`usePhotosStore((s) => s.photos.length)` in `LayerPanel.tsx`). This task verifies it.
 
-- [ ] **Step 5.5.1: Cover add and delete in the LayerPanel test**
+- [x] **Step 5.5.1: Cover add and delete in the LayerPanel test**
 
 Read the current test. If no photo-count assertion exists, add:
 
@@ -3301,7 +3301,7 @@ Read the current test. If no photo-count assertion exists, add:
 
 Note the Photos count. Add a photo and save → +1 immediately. Delete it → −1 immediately.
 
-- [ ] **Step 5.5.3: Commit and tick**
+- [x] **Step 5.5.3: Commit and tick**
 
 ```bash
 git add src/panels/LayerPanel/LayerPanel.test.tsx TASKS.md
