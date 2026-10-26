@@ -410,7 +410,7 @@ Not unit-tested, because jsdom has no `OffscreenCanvas`. It's covered in 7.6.
 - Create: `src/map/layers/SlopeLayer.tsx`, `SlopeLayer.test.tsx`
 - Modify: `src/map/MapView.tsx`, `src/test/mocks/maplibre-gl.ts`
 
-- [ ] **Step 7.4.1: Constants in `layerStyles.ts`** (values confirmed in 7.0):
+- [x] **Step 7.4.1: Constants in `layerStyles.ts`** (values confirmed in 7.0):
 
 ```ts
 export const SLOPE_SOURCE_ID = 'slope-source'
@@ -422,20 +422,20 @@ export const DEM_TILE_SIZE = 512
 export const DEM_MAX_ZOOM = 14
 ```
 
-- [ ] **Step 7.4.2: Mock additions.** Add `setPaintProperty = vi.fn()` and `getStyle = vi.fn(() => ({ layers: [] as { id: string; type: string }[] }))` to `MockMap`.
+- [x] **Step 7.4.2: Mock additions.** Add `setPaintProperty = vi.fn()` and `getStyle = vi.fn(() => ({ layers: [] as { id: string; type: string }[] }))` to `MockMap`.
 
-- [ ] **Step 7.4.3: Tests first — `SlopeLayer.test.tsx`.** Follow the existing layer tests (map set through `setMap`, `MockMap`):
+- [x] **Step 7.4.3: Tests first — `SlopeLayer.test.tsx`.** Follow the existing layer tests (map set through `setMap`, `MockMap`):
   - On install it adds a `raster` source with `tiles: [SLOPE_TILE_URL]`, `tileSize: DEM_TILE_SIZE`, `minzoom: SLOPE_MIN_ZOOM`, `maxzoom: DEM_MAX_ZOOM`, and a `raster` layer with `minzoom: SLOPE_MIN_ZOOM`, `raster-opacity` from the store, `raster-fade-duration: 0`, and `visibility` from `slopeEnabled`.
   - `beforeId` is the first `symbol` layer in `getStyle().layers`. If there is none, it is the first Couloir layer present (`ROUTES_GLOW_LAYER_ID`, `TRACKS_LINE_LAYER_ID`, …). Otherwise it is `undefined`.
   - Toggling `slopeEnabled` calls `setLayoutProperty(SLOPE_LAYER_ID, 'visibility', …)`. Changing the opacity calls `setPaintProperty(SLOPE_LAYER_ID, 'raster-opacity', …)`.
   - It installs again on `style.load` (basemap switch) and doesn't add the source twice.
-  - Unmount removes the layer and source if present.
+  - ~~Unmount removes the layer and source if present.~~ Dropped: no other layer component does this, and MapView removes the whole map on unmount.
 
-- [ ] **Step 7.4.4: Implement `SlopeLayer.tsx`.** Follow the `RoutesLayer` pattern: install on `style.load` (and straight away if the style is already loaded), read fresh state through `getState()`, and keep separate effects for visibility and opacity. The layer is **always** installed, and toggling only changes visibility. That keeps its position in the layer stack fixed and doesn't throw away tiles already computed.
+- [x] **Step 7.4.4: Implement `SlopeLayer.tsx`.** *(As built: `beforeId` is a single rule, "the first layer that is either a `symbol` layer or a Couloir layer". That's because `waypoints-symbols` and `photos-cluster-count` are symbol layers themselves, so "first symbol layer" alone could choose one of ours and put the overlay above routes.)* Follow the `RoutesLayer` pattern: install on `style.load` (and straight away if the style is already loaded), read fresh state through `getState()`, and keep separate effects for visibility and opacity. The layer is **always** installed, and toggling only changes visibility. That keeps its position in the layer stack fixed and doesn't throw away tiles already computed.
 
-- [ ] **Step 7.4.5:** Render `<SlopeLayer />` in `MapView.tsx` **before** `<RoutesLayer />` (for readability; `beforeId` is what actually guarantees the order).
+- [x] **Step 7.4.5:** Render `<SlopeLayer />` in `MapView.tsx` **before** `<RoutesLayer />` (for readability; `beforeId` is what actually guarantees the order).
 
-- [ ] **Step 7.4.6:** Tests and typecheck pass. Commit `feat(map): slope angle raster layer`.
+- [x] **Step 7.4.6:** Tests and typecheck pass. Commit `feat(map): slope angle raster layer`.
 
 ---
 

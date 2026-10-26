@@ -50,3 +50,21 @@ export const PHOTO_CLUSTER_STEPS = {
 }
 // Maptiler styles serve this glyph stack; the count label needs a font.
 export const PHOTO_CLUSTER_FONT = ['Noto Sans Bold']
+
+export const SLOPE_SOURCE_ID = 'slope-source'
+export const SLOPE_LAYER_ID = 'slope-raster'
+// Below this a DEM pixel covers ≥ ~50 m and slope values are meaningless.
+export const SLOPE_MIN_ZOOM = 10
+// Maptiler terrain-rgb-v2: pixel size of one tile and deepest zoom served.
+export const DEM_TILE_SIZE = 512
+export const DEM_MAX_ZOOM = 14
+
+// Every layer Couloir draws on top of the basemap. The slope overlay is
+// inserted beneath all of these.
+export const COULOIR_OVERLAY_LAYER_IDS: readonly string[] = [
+  ROUTES_GLOW_LAYER_ID,
+  ROUTES_LINE_LAYER_ID,
+  TRACKS_LINE_LAYER_ID,
+  WAYPOINTS_SYMBOLS_LAYER_ID,
+  ...PHOTOS_LAYER_IDS,
+]
