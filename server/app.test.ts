@@ -1,4 +1,7 @@
 // @vitest-environment node
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { InMemoryStorageProvider } from '../src/storage/memory'
 import {
   buildPhoto, buildRoute, buildTag, buildTrack, buildWaypoint,
@@ -278,5 +281,68 @@ describe('import', () => {
     const res = await app.request('/api/import', { method: 'POST', body: form })
     expect(res.status).toBe(400)
     expect(await errorOf(res)).toMatch(/invalid id/)
+  })
+})
+
+describe('static site', () => {
+  let dist: string
+  let site: ReturnType<typeof createApp>
+
+  beforeEach(async () => {
+    dist = await mkdtemp(join(tmpdir(), 'couloir-dist-'))
+    await mkdir(join(dist, 'assets'))
+    await writeFile(join(dist, 'index.html'), '<!doctype html><title>Couloir</title>')
+    await writeFile(join(dist, 'assets', 'index-abc123.js'), 'console.log(1)')
+    await writeFile(join(dist, 'sw.js'), 'self.skipWaiting()')
+    site = createApp({ storage, config: { maptilerKey: null }, staticDir: dist })
+  })
+
+  afterEach(async () => {
+    await rm(dist, { recursive: true, force: true })
+  })
+
+  it('serves index.html at the root, revalidated on every load', async () => {
+    const res = await site.request('/')
+    expect(res.status).toBe(200)
+    expect(res.headers.get('Content-Type')).toMatch(/text\/html/)
+    expect(res.headers.get('Cache-Control')).toBe('no-cache')
+    expect(await res.text()).toContain('<title>Couloir</title>')
+  })
+
+  it('caches hashed bundles forever but revalidates the service worker', async () => {
+    const bundle = await site.request('/assets/index-abc123.js')
+    expect(bundle.status).toBe(200)
+    expect(bundle.headers.get('Cache-Control')).toBe('public, max-age=31536000, immutable')
+    expect((await site.request('/sw.js')).headers.get('Cache-Control')).toBe('no-cache')
+  })
+
+  it('falls back to index.html for client-side paths', async () => {
+    const res = await site.request('/routes/some-route')
+    expect(res.status).toBe(200)
+    expect(await res.text()).toContain('<title>Couloir</title>')
+  })
+
+  it('404s a missing file instead of handing back index.html', async () => {
+    expect((await site.request('/assets/missing-999.js')).status).toBe(404)
+  })
+
+  it('keeps /api answers and errors as JSON', async () => {
+    expect(await (await site.request('/api/health')).json()).toMatchObject({ ok: true })
+    const missing = await site.request('/api/nope')
+    expect(missing.status).toBe(404)
+    expect(await missing.json()).toEqual({ error: 'not found' })
+  })
+
+  it('refuses to serve files outside the site directory', async () => {
+    await writeFile(join(dist, '..', 'couloir-secret.txt'), 'secret')
+    try {
+      for (const path of ['/../couloir-secret.txt', '/%2e%2e/couloir-secret.txt', '/assets/..%2f..%2fcouloir-secret.txt']) {
+        const res = await site.request(path)
+        expect(res.status).toBe(404)
+        expect(await res.text()).not.toContain('secret')
+      }
+    } finally {
+      await rm(join(dist, '..', 'couloir-secret.txt'), { force: true })
+    }
   })
 })

@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { HTTPException } from 'hono/http-exception'
+import { serveStatic } from '@hono/node-server/serve-static'
 import type { StorageProvider } from '../src/storage/interface'
 import { SCHEMA_VERSION } from '../src/storage/migrations'
 import type { EntityType, ExportBundle, Photo, Route, Tag, Track, Waypoint } from '../src/types'
@@ -19,10 +20,14 @@ const ENTITY_TYPES: readonly EntityType[] = ['route', 'track', 'waypoint', 'phot
 
 // Photos are immutable per id: edits go through PATCH and never touch the
 // bytes, so browsers can cache them forever.
+const IMMUTABLE = 'public, max-age=31536000, immutable'
 const BLOB_HEADERS = {
   'Content-Type': 'image/jpeg',
-  'Cache-Control': 'public, max-age=31536000, immutable',
+  'Cache-Control': IMMUTABLE,
 }
+
+const API_PATH = /^\/api(\/|$)/
+const HAS_EXTENSION = /\.[^/]+$/
 
 function badRequest(message: string): never {
   throw new HTTPException(400, { message })
@@ -77,12 +82,44 @@ async function blobResponse(c: Context, blob: Blob | null, what: string): Promis
   return c.body(new Uint8Array(await blob.arrayBuffer()), 200, BLOB_HEADERS)
 }
 
+// Serves the built SPA from `staticDir` for everything outside /api.
+// Vite's hashed bundles under assets/ never change, so they're cached forever;
+// index.html, sw.js and the manifest must be revalidated so a deploy shows up.
+// Extension-less paths that aren't files fall back to index.html (client-side
+// navigation); a missing file with an extension stays a 404.
+function mountStaticSite(app: Hono, staticDir: string): void {
+  const files = serveStatic({ root: staticDir })
+  const indexHtml = serveStatic({ root: staticDir, path: 'index.html' })
+  // Set on the returned response: serveStatic's onFound hook runs after the
+  // response is built, so headers added there are lost.
+  // When the file is missing serveStatic hands back whatever next() resolved
+  // to (Hono's context, not a Response), so only touch a real response.
+  const withCaching = <T>(res: T, path: string): T => {
+    if (res instanceof Response) {
+      res.headers.set('Cache-Control', path.startsWith('/assets/') ? IMMUTABLE : 'no-cache')
+    }
+    return res
+  }
+
+  app.get('*', async (c, next) =>
+    API_PATH.test(c.req.path) ? next() : withCaching(await files(c, next), c.req.path))
+  app.get('*', async (c, next) =>
+    API_PATH.test(c.req.path) || HAS_EXTENSION.test(c.req.path)
+      ? next()
+      : withCaching(await indexHtml(c, next), '/index.html'))
+}
+
 /**
- * The Couloir JSON/blob API: one route per StorageProvider method under /api.
- * Takes a provider rather than a backend so routes stay thin and tests can
- * run against the in-memory provider.
+ * The Couloir JSON/blob API: one route per StorageProvider method under /api,
+ * plus the built SPA when `staticDir` is given. Takes a provider rather than a
+ * backend so routes stay thin and tests can run against the in-memory provider.
  */
-export function createApp({ storage, config }: { storage: StorageProvider; config: AppConfig }): Hono {
+export function createApp({ storage, config, staticDir }: {
+  storage: StorageProvider
+  config: AppConfig
+  /** Directory holding the built SPA (dist/). Omitted in dev, where Vite serves it. */
+  staticDir?: string
+}): Hono {
   const app = new Hono()
 
   app.get('/api/health', (c) => c.json({ ok: true, schemaVersion: SCHEMA_VERSION }))
@@ -207,6 +244,8 @@ export function createApp({ storage, config }: { storage: StorageProvider; confi
     await storage.importAll(bundle, photos, thumbs)
     return c.body(null, 204)
   })
+
+  if (staticDir) mountStaticSite(app, staticDir)
 
   // --- Errors ---------------------------------------------------------------
 

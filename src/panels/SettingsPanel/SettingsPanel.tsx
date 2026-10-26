@@ -11,6 +11,8 @@ const MAPTILER_KEYS_URL = 'https://cloud.maptiler.com/account/keys/'
 export function SettingsPanel() {
   const maptilerKey = useSettingsStore((s) => s.maptilerKey)
   const setMaptilerKey = useSettingsStore((s) => s.setMaptilerKey)
+  const maptilerKeySource = useSettingsStore((s) => s.maptilerKeySource)
+  const hasServerKey = useSettingsStore((s) => s.serverMaptilerKey !== null)
   const terrainExaggeration = useUiStore((s) => s.terrainExaggeration)
   const setTerrainExaggeration = useUiStore((s) => s.setTerrainExaggeration)
 
@@ -49,8 +51,14 @@ export function SettingsPanel() {
         {!isEditing && maptilerKey !== null ? (
           <>
             <div className={styles.row}>
-              <span className={styles.subtle}>Key set ({maptilerKey.slice(0, 4)}…)</span>
+              <span className={styles.subtle}>
+                {maptilerKeySource === 'server' ? 'Key from server' : 'Key set'} ({maptilerKey.slice(0, 4)}…)
+              </span>
               <button type="button" onClick={startEdit}>Replace</button>
+              {maptilerKeySource === 'local' && hasServerKey && (
+                // Clearing this browser's key falls back to the server's.
+                <button type="button" onClick={() => setMaptilerKey(null)}>Use server key</button>
+              )}
             </div>
             <a
               className={styles.subtle}

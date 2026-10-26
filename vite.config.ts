@@ -36,6 +36,8 @@ export default defineConfig({
         // default would silently skip them.
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: '/index.html',
+        // /api is the server's; the shell must never stand in for it.
+        navigateFallbackDenylist: [/^\/api\//],
       },
     }),
   ],

@@ -3,7 +3,7 @@ import maplibregl from 'maplibre-gl'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './theme.css'
-import { OPFSStorageProvider } from './storage/opfs'
+import { HttpStorageProvider } from './storage/http'
 import { setStorage } from './storage/provider'
 import { useRoutesStore } from './store/routes'
 import { useTracksStore } from './store/tracks'
@@ -17,15 +17,18 @@ import { registerSlopeProtocol } from './map/slope/slopeProtocol'
 import { browserCodec } from './map/slope/browserCodec'
 
 async function bootstrap(): Promise<void> {
-  const storage = new OPFSStorageProvider()
-  // ensureSchema runs inside init(); blocks first render so we never read
-  // from a database that's not yet at SCHEMA_VERSION.
+  // All data lives on the Couloir server (same origin). init() checks it is
+  // reachable and on a schema this build understands; it blocks first render.
+  const storage = new HttpStorageProvider()
   await storage.init()
   setStorage(storage)
 
   // Hydrate localStorage-backed slices synchronously before first render.
   useSettingsStore.getState().hydrateFromStorage()
   useUiStore.getState().hydrateFromStorage()
+  // Fall back to the server's Maptiler key when this browser has none, so a
+  // new computer doesn't land on the welcome screen.
+  await useSettingsStore.getState().loadServerKey()
 
   // Fire entity loads in parallel; they update slice state when done.
   // Components show empty/loading state until the relevant slice fills in.
@@ -51,8 +54,14 @@ async function bootstrap(): Promise<void> {
   )
 
   if (import.meta.env.PROD) {
-    const { registerSW } = await import('virtual:pwa-register')
-    registerSW({ immediate: true })
+    // Service workers need a secure context, so this fails on a plain-HTTP
+    // LAN address. The app works without one; it just can't be installed.
+    try {
+      const { registerSW } = await import('virtual:pwa-register')
+      registerSW({ immediate: true })
+    } catch {
+      // No offline shell on this origin.
+    }
   }
 }
 
@@ -62,6 +71,9 @@ bootstrap().catch((err) => {
   const pre = document.createElement('pre')
   pre.style.cssText =
     'color:#e6e8ec;background:#0e1014;padding:24px;font-family:ui-monospace'
-  pre.textContent = `Couloir failed to start.\n\n${String(err)}`
+  pre.textContent =
+    `Couloir failed to start.\n\n${String(err)}\n\n` +
+    'Couloir keeps its data on the Couloir server. Check that the server is ' +
+    'running and reachable from this computer, then reload.'
   document.body.replaceChildren(pre)
 })

@@ -7,8 +7,25 @@ import { useUiStore } from '../../store/ui'
 describe('SettingsPanel', () => {
   beforeEach(() => {
     localStorage.clear()
-    useSettingsStore.setState({ maptilerKey: null })
+    useSettingsStore.setState({ maptilerKey: null, maptilerKeySource: null, serverMaptilerKey: null })
     useUiStore.setState(useUiStore.getInitialState())
+  })
+
+  it('labels a key supplied by the server', () => {
+    useSettingsStore.setState({ maptilerKey: 'SRV12345', maptilerKeySource: 'server', serverMaptilerKey: 'SRV12345' })
+    render(<SettingsPanel />)
+    expect(screen.getByText(/key from server \(SRV1…\)/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /use server key/i })).not.toBeInTheDocument()
+  })
+
+  it('offers to drop a local override in favour of the server key', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem('couloir_maptiler_key', 'LOCAL123')
+    useSettingsStore.setState({ maptilerKey: 'LOCAL123', maptilerKeySource: 'local', serverMaptilerKey: 'SRV12345' })
+    render(<SettingsPanel />)
+    await user.click(screen.getByRole('button', { name: /use server key/i }))
+    expect(useSettingsStore.getState()).toMatchObject({ maptilerKey: 'SRV12345', maptilerKeySource: 'server' })
+    expect(localStorage.getItem('couloir_maptiler_key')).toBeNull()
   })
 
   it('shows an empty key state and saves what the user types', async () => {

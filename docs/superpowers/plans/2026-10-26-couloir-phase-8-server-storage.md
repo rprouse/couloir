@@ -231,24 +231,38 @@ Pure refactor: no behaviour change in the running app.
 
 **Files:** create `server/main.ts`, `server/devPlugin.ts`. Modify `src/main.tsx`, `vite.config.ts`, `package.json` (scripts only), `src/utils/id.ts` (+ test), `src/store/settings.ts`.
 
-- [ ] **Step 8.5.1: `server/main.ts`.**
+- [x] **Step 8.5.1: `server/main.ts`.**
   - Read `PORT` (8080), `DATA_DIR` (`./data`), `MAPTILER_KEY`, `BACKUP_KEEP` (14) and `STATIC_DIR` (the `dist/` next to the bundle).
   - Build `NodeSqlBackend` → `SqlStorageProvider` → `createApp`. Add `serveStatic` for `STATIC_DIR`, with an SPA fallback: non-`/api` GETs that miss a file get `index.html` with `Cache-Control: no-cache`, and hashed `assets/*` get `immutable`.
   - Start with `serve()`.
   - On `SIGTERM`/`SIGINT`, stop accepting connections, close the provider (WAL checkpoint) and exit 0. Docker stop then never leaves a dirty DB.
 - [x] **Step 8.5.2: `server/devPlugin.ts`.** *(Done early in 8.3; see the 8.3 notes.)* Make Step 8.0.4 real. Dev data lives in `./data` (add it to `.gitignore`). The provider is cached on `globalThis` so hot reloads of `app.ts` don't reopen the DB.
-- [ ] **Step 8.5.3: `src/main.tsx`.** Replace `new OPFSStorageProvider()` with `new HttpStorageProvider()`. If `init()` fails, the existing bootstrap error screen shows "Couloir failed to start", which is acceptable for an unreachable server. Make its message suggest checking the server. Wrap `registerSW` so a failure on insecure origins is swallowed.
-- [ ] **Step 8.5.4: `newId()` fallback.** If `crypto.randomUUID` is undefined, build an RFC 4122 v4 UUID from `crypto.getRandomValues(new Uint8Array(16))`. Test both branches, and the version and variant bits.
-- [ ] **Step 8.5.5: Maptiler key.** In `settings.ts` hydration, if `localStorage` has no key, `GET /api/config` and use `maptilerKey` as an in-memory default. Don't write it to `localStorage`, so a server-side key change takes effect. Test: local key wins; server key used when local is empty; server unreachable → no key (existing onboarding).
-- [ ] **Step 8.5.6: PWA.** Set `workbox.navigateFallbackDenylist: [/^\/api\//]` so the service worker never answers API navigations with `index.html`. No runtime caching of `/api`.
-- [ ] **Step 8.5.7: Scripts** (changing only `scripts` in `package.json`, which the dependency rule allows):
-  - `"build": "tsc && tsc -p server && vite build && vite build --ssr server/main.ts --outDir dist-server"`
+- [x] **Step 8.5.3: `src/main.tsx`.** Replace `new OPFSStorageProvider()` with `new HttpStorageProvider()`. If `init()` fails, the existing bootstrap error screen shows "Couloir failed to start", which is acceptable for an unreachable server. Make its message suggest checking the server. Wrap `registerSW` so a failure on insecure origins is swallowed.
+- [x] **Step 8.5.4: `newId()` fallback.** If `crypto.randomUUID` is undefined, build an RFC 4122 v4 UUID from `crypto.getRandomValues(new Uint8Array(16))`. Test both branches, and the version and variant bits.
+- [x] **Step 8.5.5: Maptiler key.** In `settings.ts` hydration, if `localStorage` has no key, `GET /api/config` and use `maptilerKey` as an in-memory default. Don't write it to `localStorage`, so a server-side key change takes effect. Test: local key wins; server key used when local is empty; server unreachable → no key (existing onboarding).
+- [x] **Step 8.5.6: PWA.** Set `workbox.navigateFallbackDenylist: [/^\/api\//]` so the service worker never answers API navigations with `index.html`. No runtime caching of `/api`.
+- [x] **Step 8.5.7: Scripts** (changing only `scripts` in `package.json`, which the dependency rule allows):
+  - `"build": "tsc && tsc -p server && vite build && vite build -c vite.server.config.ts"`
   - `"start": "node dist-server/main.js"`
   - Add `dist-server/` and `data/` to `.gitignore`.
-- [ ] **Step 8.5.8: Browser smoke** (Playwright, `npm run dev`).
+- [x] **Step 8.5.8: Browser smoke** (Playwright, `npm run dev`).
   - Create a route, waypoint and photo, then reload; everything is still there and `./data/couloir.db` exists.
   - Open a second tab, which now works (the old single-tab lock is gone).
   - `npm run build && npm start` serves the same on :8080.
+
+> **Notes (2026-10-26):**
+> - **Static serving lives in `createApp({ staticDir })`, not only in `main.ts`,** so it's unit-tested (`server/app.test.ts` → "static site"). Hashed `/assets/*` files are `immutable`. Everything else (`index.html`, `sw.js`, manifest) is `no-cache`. Extension-less paths fall back to `index.html`. A missing file with an extension is a 404, never the shell. `/api` keeps its JSON 404. `serveStatic` refuses `..`, `%` and `//` itself; the tests check three traversal spellings get a 404.
+> - **Gotcha: `serveStatic`'s `onFound` runs after the response is built,** so headers set there are lost. `Cache-Control` is set on the returned `Response` instead. On a miss, the middleware returns whatever `next()` resolved to, which is Hono's context, not `undefined`. Hence the `instanceof Response` guard.
+> - **Maptiler key:** the store keeps `maptilerKey` as the effective key (local, else server), so `MapView` and the slope protocol are unchanged. `maptilerKeySource` and `serverMaptilerKey` were added. Settings shows "Key from server (abcd…)" and, when a local key overrides a server key, a "Use server key" button that clears the local one. `loadServerKey()` runs in bootstrap before first render.
+> - **`newId()` fallback:** builds a v4 UUID from `getRandomValues` (`uuidV4FromRandomBytes`, exported for the bit-twiddling tests).
+> - **The browser bundle no longer includes wa-sqlite.** `main.tsx` stopped importing OPFS, so tree-shaking dropped the worker and wasm. The PWA precache went from 2,214 KiB (17 entries) to 1,595 KiB (15). The OPFS sources are still in the tree until 8.6.
+> - **Browser smoke** (headless Edge via the CDP script, since Playwright's MCP needs Chrome):
+>   - **Dev mode, tab A:** creates a route, track, waypoint and photo. Tab B in the *same profile* sees them and adds a waypoint, and tab A sees it after a reload. The photo thumb is served as `image/jpeg`.
+>   - **Dev mode over the LAN IP** (`http://10.10.0.72:5199`): `isSecureContext` is false and `crypto.randomUUID` is undefined, yet the created route gets a valid v4 id.
+>   - **Production (`npm start`) with `MAPTILER_KEY` set:** boots straight to the map using the server key (no welcome screen), registers the service worker on localhost, and deep links boot. Over the LAN IP there's no service-worker API, and the app still boots to the map.
+>   - No page errors or warnings in any run.
+> - **Not verified here: SIGTERM shutdown.** Windows can't deliver a catchable SIGTERM to Node, and `TaskStop` kills hard. Check it in the container in 8.8 (`docker stop` → "shutting down" in the log, exit 0, no `-wal` left mid-transaction).
+> - **Your existing browser data is not visible in this build.** It's still in OPFS, untouched, until the ZIP export/import in 8.9 (export from the `last-opfs` tag or the current `main` build).
 
 ---
 
