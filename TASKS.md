@@ -56,7 +56,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [5.1 Photo placement mode and EXIF processing](#task-51---photo-placement-mode-and-exif-processing)
 - [x] [5.2 Photo creation form](#task-52---photo-creation-form)
 - [x] [5.3 Photos layer with clustering](#task-53---photos-layer-with-clustering)
-- [ ] [5.4 Photo viewer](#task-54---photo-viewer)
+- [x] [5.4 Photo viewer](#task-54---photo-viewer)
 - [ ] [5.5 Photo count badge](#task-55---photo-count-badge)
 
 ### Phase 6 — Polish and MVP Completion  ·  Plan: not yet written

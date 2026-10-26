@@ -2853,7 +2853,7 @@ Tick 5.3 → `chore(tasks): tick 5.3`.
 
 This task ends with: clicking a thumbnail shows the full photo (fit to width, click to toggle actual size with scrolling), name, description, taken date, elevation, bearing with compass, dimensions, location and tags. Edit changes the metadata and position, with the draggable pin. Delete removes the blob, thumbnail and row after confirmation.
 
-- [ ] **Step 5.4.1: Formatters — test then implement**
+- [x] **Step 5.4.1: Formatters — test then implement**
 
 `format.test.ts`:
 
@@ -2890,7 +2890,7 @@ export function formatDateTime(iso: string): string {
 }
 ```
 
-- [ ] **Step 5.4.2: `usePhotoBlobUrl` — test then implement**
+- [x] **Step 5.4.2: `usePhotoBlobUrl` — test then implement**
 
 `usePhotoBlobUrl.test.tsx`:
 
@@ -2964,7 +2964,7 @@ export function usePhotoBlobUrl(photoId: string): { url: string | null; status: 
 }
 ```
 
-- [ ] **Step 5.4.3: `PhotoDetail` — test first, `PhotoDetail.test.tsx`**
+- [x] **Step 5.4.3: `PhotoDetail` — test first, `PhotoDetail.test.tsx`**
 
 ```tsx
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -3040,7 +3040,7 @@ describe('PhotoDetail', () => {
 })
 ```
 
-- [ ] **Step 5.4.4: Implement `src/panels/DetailPanel/PhotoDetail.tsx`**
+- [x] **Step 5.4.4: Implement `src/panels/DetailPanel/PhotoDetail.tsx`**
 
 ```tsx
 import { useEffect, useState } from 'react'
@@ -3260,7 +3260,7 @@ Browser:
   `const d = await navigator.storage.getDirectory(); for await (const n of (await d.getDirectoryHandle('photos')).keys()) console.log(n)`
   Neither `{id}.jpg` nor `{id}_thumb.jpg` is listed.
 
-- [ ] **Step 5.4.6: Commit and tick**
+- [x] **Step 5.4.6: Commit and tick**
 
 ```bash
 git add src TASKS.md
