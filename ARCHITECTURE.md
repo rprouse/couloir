@@ -267,6 +267,12 @@ All transitions go through explicit actions on the UI slice:
 
 The map subscribes only to `PlacementState` (cursor and click handling). The detail panel subscribes only to `PanelState`. They communicate via actions, never via shared mutable state.
 
+### Tag filters
+
+`ui.tagFilters` holds a list of tag IDs per layer (`routes`, `tracks`, `waypoints`, `photos`). An entity passes when it carries **any** of the selected tags (OR semantics); an empty list means no filter. Filtering runs in JS (`filterByTags`) before each layer builds its GeoJSON, not through MapLibre filter expressions. Deleting a tag prunes it from every filter.
+
+Global search ignores tag filters. Clicking a search result turns the entity's layer on if it is hidden, frames the entity on the map and opens its detail panel. A hit that is tag-filtered out still opens and is framed, but does not render on the map (accepted for the MVP).
+
 ### Global ESC key handler
 
 `useEscapeKey()` owns the ESC key with this precedence:

@@ -63,7 +63,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 
 - [x] [6.1 Tag management](#task-61---tag-management)
 - [x] [6.2 Tag filtering](#task-62---tag-filtering)
-- [ ] [6.3 Global search](#task-63---global-search)
+- [x] [6.3 Global search](#task-63---global-search)
 - [ ] [6.4 Export and import (ZIP backup)](#task-64---export-and-import-zip-backup)
 - [ ] [6.5 PWA manifest and icons](#task-65---pwa-manifest-and-icons)
 - [ ] [6.6 Mobile layout](#task-66---mobile-layout)

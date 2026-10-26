@@ -4,6 +4,7 @@ import { Sidebar } from './panels/Sidebar'
 import { MapView } from './map/MapView'
 import { SettingsPanel } from './panels/SettingsPanel/SettingsPanel'
 import { LayerPanel } from './panels/LayerPanel/LayerPanel'
+import { SearchPanel } from './panels/SearchPanel/SearchPanel'
 import { useEscapeKey } from './hooks/useEscapeKey'
 import { FileDropzone } from './components/FileDropzone/FileDropzone'
 import { DuplicatePrompt, type DuplicatePromptHandle } from './features/import/DuplicatePrompt'
@@ -43,6 +44,7 @@ export default function App() {
       <Sidebar
         panels={{
           layers:   <LayerPanel promptDuplicate={promptDuplicate} />,
+          search:   <SearchPanel />,
           settings: <SettingsPanel />,
         }}
       />

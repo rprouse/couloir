@@ -1182,7 +1182,7 @@ git commit -am "feat(layers): per-layer tag filters"
 
 Ends with: the Search tab has a text input. Results across all four types are grouped under Routes / Tracks / Waypoints / Photos with counts. Clicking a result turns its layer on if it was hidden, flies the map to it (route/track: fit bounds; point: fly to), and opens its detail panel. A blank query shows a hint; no matches shows an empty state.
 
-- [ ] **Step 6.3.1: Search logic — test first, `src/features/search/search.test.ts`**
+- [x] **Step 6.3.1: Search logic — test first, `src/features/search/search.test.ts`**
 
 ```ts
 import { searchEntities } from './search'
@@ -1296,7 +1296,7 @@ function snippet(description: string, terms: string[]): string | null {
 
 (If the project's tsconfig flags `_inName` as unused, use `hits.map((h) => ({ type: h.type, id: h.id, name: h.name, snippet: h.snippet }))` instead.)
 
-- [ ] **Step 6.3.2: `lineBounds` and `flyToEntity`**
+- [x] **Step 6.3.2: `lineBounds` and `flyToEntity`**
 
 `geo.test.ts`:
 
@@ -1375,7 +1375,7 @@ export function flyToEntity(map: maplibregl.Map, target: FlyTarget): void {
 }
 ```
 
-- [ ] **Step 6.3.3: `SearchPanel` — test first**
+- [x] **Step 6.3.3: `SearchPanel` — test first**
 
 `SearchPanel.test.tsx`:
 
@@ -1622,7 +1622,7 @@ A search hit can be in a layer that's tag-filtered out. Opening it still works (
 
 `npm run typecheck`, `npm test` → green. Browser: search a route name, click the result, and the map fits the route and the panel opens. Search a description word and the snippet shows. Type nonsense and the empty state shows.
 
-- [ ] **Step 6.3.5: Docs, ticks, commit**
+- [x] **Step 6.3.5: Docs, ticks, commit**
 
 `ARCHITECTURE.md` › State Management: add a short "Tag filters" paragraph (`ui.tagFilters`, OR semantics, applied in JS before GeoJSON build; search ignores filters but turns a hidden layer on).
 
