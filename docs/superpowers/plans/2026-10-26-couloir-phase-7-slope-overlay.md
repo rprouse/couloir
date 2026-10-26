@@ -62,6 +62,8 @@ Browser-only and quick. The constants in 7.4 depend on it.
 
 - [ ] **Step 7.0.1:** With the dev server running and a key set, run this in the console: `fetch('https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=' + localStorage.couloir_maptiler_key).then(r => r.json())`. Record `tiles[0]` (the URL template and file extension), `maxzoom`, `tileSize` (if present) and `encoding`.
 - [ ] **Step 7.0.2:** Fetch one tile near Fernie (z12/738/1397, which contains 49.50°N, −115.06°W), decode it with `createImageBitmap`, and record its pixel width. Expected: 512 px, Mapbox terrain-rgb encoding (`-10000 + (R·65536 + G·256 + B) · 0.1`), maxzoom about 14.
+> **Status (2026-10-26, no key available to the implementer):** Maptiler's [Terrain RGB dataset docs](https://docs.maptiler.com/schema-raster/terrain-rgb/) give `terrain-rgb-v2` as zoom 0–14, WebP, 30 m global (5 m in some areas). That matches `DEM_MAX_ZOOM = 14`. Tile pixel size (512) isn't documented there and is still unconfirmed. The code doesn't depend on it for correctness, because the handler computes ground resolution from each decoded image's actual width. A different size would only change which zoom gets requested. Steps 7.0.1–7.0.2 still need a run with a real key.
+
 - [ ] **Step 7.0.3:** If anything differs from those expectations, update the `DEM_TILE_SIZE` / `DEM_MAX_ZOOM` values in Step 7.4.1 and the decode formula in 7.1 **before** starting. Note the confirmed values under this task.
 
 ---
@@ -464,12 +466,12 @@ export const DEM_MAX_ZOOM = 14
 **Files:**
 - Modify: `ARCHITECTURE.md`, `SPEC.md`, `TASKS.md`
 
-- [ ] **Step 7.6.1: `ARCHITECTURE.md`.**
+- [x] **Step 7.6.1: `ARCHITECTURE.md`.**
   - Add a "Slope Overlay" subsection under Maptiler Integration covering the protocol, the `tiles.json` template, the decode formula, Horn's method with extrapolated edges, how missing tiles and errors are handled, and the quota note.
   - Add `SlopeLayer → source: 'slope-source' (raster, slope://) → layer: 'slope-raster'` to Map Layer Architecture.
   - Add slope toggle/opacity to the `ui` slice description.
   - Add `map/slope/` to the project structure.
-- [ ] **Step 7.6.2: `SPEC.md`.** Move slope shading out of "out of scope" / "Future Considerations" into the map features list. Aspect shading stays future.
+- [x] **Step 7.6.2: `SPEC.md`.** Move slope shading out of "out of scope" / "Future Considerations" into the map features list. Aspect shading stays future.
 - [ ] **Step 7.6.3: Browser QA (Playwright, real key):**
   1. Slope off on first load, and no `slope://` requests in the network log.
   2. Toggle on near Fernie (Island Lake / Fernie Alpine Resort bowls). Bands appear under labels and under the routes, tracks, waypoints and photos layers.
