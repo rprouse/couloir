@@ -475,7 +475,7 @@ file picked (Add Photo)
 - **Task 5.3**: change "at the photo's **subject** coordinates (`lat`/`lng`), not the camera coordinates" to "at the photo's position (`lat`/`lng`)". Change "flies the map to the cluster's bounds" to "eases the map to the cluster's expansion zoom". In acceptance, change "at the subject coordinate" to "at the photo's position".
 - **Task 5.4**: replace the subject-coordinate and camera bullets with "Location (lat/lng; editable in edit mode by typing or dragging the pin)" and "Elevation". In acceptance, delete the "no camera location recorded" clause, and change "Subject pin drag on the map updates `lat`/`lng` in storage" to "Dragging the pin in edit mode and saving updates `lat`/`lng` in storage".
 
-- [x] **Step 5.0.13: Verify**
+- [ ] **Step 5.0.13: Verify**
 
 Run: `npm run typecheck` → clean. `npm test` → all pass.
 
@@ -1420,7 +1420,7 @@ export function usePhotoCursorPreview(): void {
 
 Run. Expected: PASS. In `MapView.tsx`, call `usePhotoCursorPreview()` directly under `usePlacementMapBinding()`. In `usePlacementMapBinding.ts`, delete the stale "Photo placement (Phase 5) will need a different click payload" comment: both modes complete with `(lat, lng)`.
 
-- [x] **Step 5.1.16: Verify**
+- [ ] **Step 5.1.16: Verify**
 
 `npm run typecheck` → clean. `npm test` → all pass.
 
@@ -2334,7 +2334,7 @@ Run `PhotoCreate.test.tsx` and `DetailPanel.test.tsx`. Expected: PASS. (If `Deta
 
 with `import exifr from 'exifr'` at the top. Dev-only, so the `import.meta.env.DEV` guard keeps it out of production builds.
 
-- [x] **Step 5.2.12: Verify**
+- [ ] **Step 5.2.12: Verify**
 
 `npm run typecheck`, `npm test` → green.
 
@@ -2819,7 +2819,7 @@ export function PhotosLayer(): null {
 
 Mount `<PhotosLayer />` in `MapView.tsx` after `<WaypointsLayer />` and before `<PhotoPositionMarker />`. Run the layer tests and the full suite. Expected: PASS. In jsdom, `loadPhotoIcon` rejects (there's no `createImageBitmap`), and `allSettled` absorbs it.
 
-- [x] **Step 5.3.6: Verify**
+- [ ] **Step 5.3.6: Verify**
 
 `npm run typecheck`, `npm test` → green.
 
