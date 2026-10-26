@@ -32,6 +32,7 @@ If `npm test` hangs or errors with a Vitest "esbuild service" issue on Windows, 
 - Tags are stored in the `entity_tags` junction table; each entity's `tags: string[]` is hydrated from that table by the storage layer on read.
 - GeoJSON LineStrings include Z coordinate (elevation) for routes and tracks.
 - Photo blobs stored in OPFS at `photos/{id}.jpg`, thumbnails at `photos/{id}_thumb.jpg`.
+- Photo metadata edits go through `StorageProvider.updatePhotoMetadata` (row + tags only); `savePhoto` is for new photos and writes the blobs.
 - Maptiler API key stored in `localStorage` under key `couloir_maptiler_key`.
 - Dark theme throughout. CSS custom properties for all colors.
 - CSS Modules for component styles.

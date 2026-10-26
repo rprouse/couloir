@@ -229,13 +229,12 @@ export class OPFSStorageProvider implements StorageProvider {
         {
           sql: `INSERT OR REPLACE INTO photos (
                   id, user_id, name, description,
-                  lat, lng, elevation_m,
-                  camera_lat, camera_lng, camera_elevation_m, bearing,
+                  lat, lng, elevation_m, bearing,
                   blob_ref,
                   width, height, file_size_bytes,
                   taken_at,
                   created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           params: this.photoToRow(photo),
         },
         ...this.replaceTagsOps('photo', photo.id, photo.tags),
@@ -249,6 +248,29 @@ export class OPFSStorageProvider implements StorageProvider {
       try { await this.client.deleteBlob(this.photoThumbPath(photo.id)) } catch { /* swallow */ }
       throw err
     }
+  }
+
+  async updatePhotoMetadata(photo: Photo): Promise<void> {
+    const existing = await this.client.one(`SELECT id FROM photos WHERE id = ?`, [photo.id])
+    if (!existing) throw new Error(`photo ${photo.id} not found`)
+    // Only user-editable columns. blob_ref / dimensions / size are fixed at
+    // import, so the OPFS files are never rewritten on a metadata edit.
+    await this.client.tx([
+      {
+        sql: `UPDATE photos
+                 SET name = ?, description = ?,
+                     lat = ?, lng = ?, elevation_m = ?, bearing = ?,
+                     taken_at = ?, updated_at = ?
+               WHERE id = ?`,
+        params: [
+          photo.name, photo.description,
+          photo.lat, photo.lng, photo.elevation_m, photo.bearing,
+          photo.taken_at, photo.updated_at,
+          photo.id,
+        ],
+      },
+      ...this.replaceTagsOps('photo', photo.id, photo.tags),
+    ])
   }
 
   async getPhotoBlob(id: string): Promise<Blob | null> {
@@ -477,13 +499,12 @@ export class OPFSStorageProvider implements StorageProvider {
       ops.push({
         sql: `INSERT OR REPLACE INTO photos (
                 id, user_id, name, description,
-                lat, lng, elevation_m,
-                camera_lat, camera_lng, camera_elevation_m, bearing,
+                lat, lng, elevation_m, bearing,
                 blob_ref,
                 width, height, file_size_bytes,
                 taken_at,
                 created_at, updated_at
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         params: this.photoToRow(p),
       })
     }
@@ -606,8 +627,7 @@ export class OPFSStorageProvider implements StorageProvider {
   private photoToRow(p: Photo): SqlValue[] {
     return [
       p.id, p.user_id, p.name, p.description,
-      p.lat, p.lng, p.elevation_m,
-      p.camera_lat, p.camera_lng, p.camera_elevation_m, p.bearing,
+      p.lat, p.lng, p.elevation_m, p.bearing,
       p.blob_ref,
       p.width, p.height, p.file_size_bytes,
       p.taken_at,
@@ -624,9 +644,6 @@ export class OPFSStorageProvider implements StorageProvider {
       lat:                Number(row.lat),
       lng:                Number(row.lng),
       elevation_m:        row.elevation_m === null ? null : Number(row.elevation_m),
-      camera_lat:         row.camera_lat === null ? null : Number(row.camera_lat),
-      camera_lng:         row.camera_lng === null ? null : Number(row.camera_lng),
-      camera_elevation_m: row.camera_elevation_m === null ? null : Number(row.camera_elevation_m),
       bearing:            row.bearing === null ? null : Number(row.bearing),
       blob_ref:           row.blob_ref as string,
       width:              Number(row.width),

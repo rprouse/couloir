@@ -39,6 +39,8 @@ export interface StorageProvider {
   getPhotos(): Promise<Photo[]>
   getPhoto(id: string): Promise<Photo | null>
   savePhoto(photo: Photo, blob: Blob, thumb: Blob): Promise<void>
+  /** Rewrite a photo's metadata row and tags. Blobs are untouched. Throws if the photo doesn't exist. */
+  updatePhotoMetadata(photo: Photo): Promise<void>
   getPhotoBlob(id: string): Promise<Blob | null>
   getPhotoThumb(id: string): Promise<Blob | null>
   deletePhoto(id: string): Promise<void>

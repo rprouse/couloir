@@ -140,6 +140,7 @@ export interface StorageProvider {
   getPhotos(): Promise<Photo[]>
   getPhoto(id: string): Promise<Photo | null>
   savePhoto(photo: Photo, blob: Blob, thumb: Blob): Promise<void>
+  updatePhotoMetadata(photo: Photo): Promise<void>
   getPhotoBlob(id: string): Promise<Blob | null>
   getPhotoThumb(id: string): Promise<Blob | null>
   deletePhoto(id: string): Promise<void>
@@ -159,6 +160,8 @@ export interface StorageProvider {
 ```
 
 The OPFS implementation (`src/storage/opfs.ts`) is the only file that contains SQLite calls. When a sync backend is added, a new implementation file is created and injected at the app root — zero changes to feature code.
+
+`updatePhotoMetadata` rewrites only the row and tag junction rows; it never touches OPFS blobs. All photo edits (including drag-to-reposition) use it.
 
 **Notable absences**: there are no `linkPhotoToRoute` / `linkPhotoToTrack` / `unlinkPhoto` methods. Photos do not link to routes, tracks, or waypoints; spatial proximity on the map is the relationship.
 
@@ -239,13 +242,16 @@ type PanelState =
   | { mode: 'idle' }
   | { mode: 'view';   entityType: EntityType; entityId: string }
   | { mode: 'edit';   entityType: EntityType; entityId: string; draft: EntityDraft }
-  | { mode: 'create'; entityType: 'waypoint' | 'photo'; draft: EntityDraft }
+  | { mode: 'create'; entityType: 'waypoint'; draft: EntityDraft }
+  | { mode: 'create'; entityType: 'photo'; draft: EntityDraft; pending: PendingPhoto }
 
 type PlacementState =
   | { mode: 'idle' }
   | { mode: 'waypoint' }
-  | { mode: 'photo'; blob: Blob; exif: ExifData; preview: string }
+  | { mode: 'photo'; pending: PendingPhoto }
 ```
+
+The pending photo moves from `placement.photo` to the `create` photo panel on `completePlacement`. The UI store owns its `preview` object URL and revokes it on the transition that drops the last reference.
 
 All transitions go through explicit actions on the UI slice:
 
@@ -255,7 +261,7 @@ All transitions go through explicit actions on the UI slice:
 | `editCurrent()` | `panel.view` → `panel.edit` |
 | `closePanel()` | any → `panel.idle` |
 | `startWaypointPlacement()` | `placement.idle` → `placement.waypoint` |
-| `startPhotoPlacement(blob, exif)` | `placement.idle` → `placement.photo` |
+| `startPhotoPlacement(pending)` | `placement.idle` → `placement.photo` |
 | `completePlacement(lat, lng)` | `placement.*` → `panel.create` (placement → idle) |
 | `cancelPlacement()` | `placement.*` → `placement.idle` |
 
@@ -307,27 +313,25 @@ On import, the app computes the SHA-256 of the file bytes, then checks for an ex
 ## Photo Import Pipeline
 
 ```
-file dropped/picked
-  → reject if not JPEG or PNG (HEIC: show guidance message and abort)
-  → read EXIF: orientation, GPSLat/GPSLng, GPSImgDirection, GPSAltitude, DateTimeOriginal
-  → decode → canvas → apply orientation → re-encode JPEG with EXIF stripped
-  → generate thumbnail (max 128 px on longest edge)
+file picked (Add Photo)
+  → classify: HEIC/HEIF → guidance message, abort; not JPEG/PNG → message, abort
+  → in parallel:
+      • read EXIF from the original file: GPS lat/lng, GPSAltitude(+Ref), GPSImgDirection, DateTimeOriginal
+      • createImageBitmap(file, { imageOrientation: 'from-image' })  — the browser applies EXIF orientation
+        → canvas → JPEG (longest edge ≤ 4096 px, q 0.9) — drawing through canvas strips all EXIF
+        → canvas → thumbnail JPEG (longest edge ≤ 128 px)
+  → startPhotoPlacement(pending)
   → if EXIF GPS present:
-      • dispatch startPhotoPlacement with blob/exif/preview
-      • map flies to GPS coordinates
-      • subject pin auto-drops at GPS location (this seeds lat/lng)
-      • completePlacement(lat, lng) immediately, transitioning to panel.create
-      • bearing/elevation/taken_at prefilled from EXIF in the create form
-      • user can drag the subject pin and edit any field, then save
-  → if EXIF GPS absent:
-      • startPhotoPlacement (placement.photo mode active)
-      • thumbnail-follow-cursor placement; click map → completePlacement(lat, lng)
-      • subject pin appears at clicked location; bearing input requires user
-  → on save:
-      • storage.savePhoto writes blob to OPFS (photos/{id}.jpg) and thumb (photos/{id}_thumb.jpg)
-      • SQLite row written with subject lat/lng, camera_lat/camera_lng/camera_elevation_m,
-        bearing, taken_at, dimensions
+      • map flies to the GPS position
+      • completePlacement(lat, lng) immediately → panel.create (pin draggable)
+  → else:
+      • placement.photo stays active; thumbnail follows the cursor
+      • click map → completePlacement(lat, lng) → panel.create
+  → create form: bearing / elevation / taken_at prefilled from EXIF; elevation falls back to terrain
+  → on save: storage.savePhoto writes photos/{id}.jpg + photos/{id}_thumb.jpg, then the row
 ```
+
+Orientation is not applied manually. `createImageBitmap` with `imageOrientation: 'from-image'` already returns upright pixels, so rotating by the EXIF tag again would double-rotate.
 
 Re-encoded JPEGs have all EXIF stripped before storage — both for privacy (no embedded GPS, device serial, or photographer identification) and for size.
 
@@ -350,11 +354,13 @@ PhotosLayer    → source: 'photos-source' (cluster: true, clusterMaxZoom: 13, c
 
 Each layer uses a GeoJSON source. When data changes in the Zustand store, the layer updates the source data via `map.getSource(id).setData(geojson)`.
 
+Photo thumbnails are placed at the photo's position (`lat`/`lng`). Photo thumbnail icons are decoded from OPFS on demand, framed on a canvas, and registered as `photo-{id}`; until ready, a `photo-placeholder` tile is shown via `['coalesce', ['image', ['get','icon']], ['image','photo-placeholder']]`. Cluster click eases to `getClusterExpansionZoom`.
+
 Click handlers:
 
 - Route / track / waypoint click → `openEntity(type, id)`.
 - Individual photo thumbnail click → `openEntity('photo', id)`.
-- Photo cluster click → fly map to cluster bounds (so the cluster splits naturally on zoom in).
+- Photo cluster click → ease the map to the cluster's expansion zoom (`getClusterExpansionZoom`), so the cluster splits naturally.
 
 ---
 

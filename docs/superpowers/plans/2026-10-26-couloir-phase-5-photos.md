@@ -129,7 +129,7 @@ couloir/
 
 This task ends with: `exifr` installed; `Photo` has no `camera_*` fields; the DB migrates to v2; `updatePhotoMetadata` exists on both providers; `usePhotosStore.update()` no longer touches blobs; docs describe the single-position model. `npm test` and `npm run typecheck` pass.
 
-- [ ] **Step 5.0.1: Install exifr**
+- [x] **Step 5.0.1: Install exifr**
 
 ```bash
 npm install exifr@7.1.3
@@ -137,7 +137,7 @@ npm install exifr@7.1.3
 
 Expected: `package.json` gains `"exifr": "^7.1.3"` under `dependencies`. No other dependency changes.
 
-- [ ] **Step 5.0.2: Write the failing migration test — `src/storage/migrations/index.test.ts`**
+- [x] **Step 5.0.2: Write the failing migration test — `src/storage/migrations/index.test.ts`**
 
 ```ts
 import { MIGRATIONS, SCHEMA_VERSION } from './index'
@@ -161,7 +161,7 @@ describe('MIGRATIONS', () => {
 
 Run: `npm test -- src/storage/migrations/index.test.ts`. Expected: FAIL, because there's no version 2.
 
-- [ ] **Step 5.0.3: Create `src/storage/migrations/2.sql`**
+- [x] **Step 5.0.3: Create `src/storage/migrations/2.sql`**
 
 The bundled SQLite is 3.44, and `ALTER TABLE … DROP COLUMN` needs 3.35+. The runner wraps the file in one transaction.
 
@@ -181,7 +181,7 @@ ALTER TABLE photos DROP COLUMN camera_lng;
 ALTER TABLE photos DROP COLUMN camera_elevation_m;
 ```
 
-- [ ] **Step 5.0.4: Register it in `src/storage/migrations/index.ts`**
+- [x] **Step 5.0.4: Register it in `src/storage/migrations/index.ts`**
 
 ```ts
 import sql1 from './1.sql?raw'
@@ -202,7 +202,7 @@ export const MIGRATIONS: readonly Migration[] = [
 
 Run the test from 5.0.2. Expected: PASS.
 
-- [ ] **Step 5.0.5: Update the `Photo` type in `src/types/index.ts`**
+- [x] **Step 5.0.5: Update the `Photo` type in `src/types/index.ts`**
 
 Replace the `Photo` interface with:
 
@@ -241,7 +241,7 @@ export type PhotoMetadataPatch = Partial<Pick<
 
 Run `npm run typecheck`. Expected: errors in `opfs.ts`, `devConsole.ts`, `memory.test.ts`, `photos.test.ts` (the remaining `camera_*` references). The next steps fix them.
 
-- [ ] **Step 5.0.6: Add `updatePhotoMetadata` to `src/storage/interface.ts`**
+- [x] **Step 5.0.6: Add `updatePhotoMetadata` to `src/storage/interface.ts`**
 
 In the Photos block, after `savePhoto`:
 
@@ -250,7 +250,7 @@ In the Photos block, after `savePhoto`:
   updatePhotoMetadata(photo: Photo): Promise<void>
 ```
 
-- [ ] **Step 5.0.7: Write failing provider tests in `src/storage/memory.test.ts`**
+- [x] **Step 5.0.7: Write failing provider tests in `src/storage/memory.test.ts`**
 
 1. In the photo fixture near line 228, delete the three `camera_*` lines.
 2. Replace the test `'preserves all camera_* fields including null values'` (near line 306) with:
@@ -297,7 +297,7 @@ In the Photos block, after `savePhoto`:
 
 Run: `npm test -- src/storage/memory.test.ts`. Expected: FAIL, because `updatePhotoMetadata` isn't implemented.
 
-- [ ] **Step 5.0.8: Implement in `src/storage/memory.ts`**
+- [x] **Step 5.0.8: Implement in `src/storage/memory.ts`**
 
 After `savePhoto`:
 
@@ -311,7 +311,7 @@ After `savePhoto`:
 
 Run the memory tests. Expected: PASS.
 
-- [ ] **Step 5.0.9: Update `src/storage/opfs.ts`**
+- [x] **Step 5.0.9: Update `src/storage/opfs.ts`**
 
 1. In `savePhoto`, replace the INSERT with the 15-column version:
 
@@ -356,7 +356,7 @@ Run the memory tests. Expected: PASS.
 3. `photoToRow`: replace the position line pair with `p.lat, p.lng, p.elevation_m, p.bearing,`, which removes the `camera_*` line.
 4. `rowToPhoto`: delete the three `camera_*` properties.
 
-- [ ] **Step 5.0.10: Switch `usePhotosStore.update` to the metadata path — test first**
+- [x] **Step 5.0.10: Switch `usePhotosStore.update` to the metadata path — test first**
 
 In `src/store/photos.test.ts`, remove the three `camera_*` lines from `baseInput`, then add:
 
@@ -394,7 +394,7 @@ import type { Photo, PhotoMetadataPatch } from '../types'
 
 Delete the old "Re-save with the same blob" comment. Run the photos tests. Expected: PASS.
 
-- [ ] **Step 5.0.11: Update `src/dev/devConsole.ts`**
+- [x] **Step 5.0.11: Update `src/dev/devConsole.ts`**
 
 1. In `createDummyPhoto`, delete the three `camera_*` properties.
 2. Add a bulk helper for the Task 5.3 performance check, next to `createDummyPhoto`:
@@ -422,7 +422,7 @@ Delete the old "Re-save with the same blob" comment. Run the photos tests. Expec
 
 (`helper` is the object literal `installDevConsole` builds and assigns to `window.__couloir`.)
 
-- [ ] **Step 5.0.12: Update the docs**
+- [x] **Step 5.0.12: Update the docs**
 
 `SPEC.md`:
 - **Core Concepts › Photo**: replace the paragraph with: "A geolocated photograph for recon photography: photos taken from across the valley looking at potential ski lines, used for navigation and route assessment. A photo is pinned to the map **where it was taken**: from EXIF GPS when present, otherwise placed by the user. It can be repositioned while being created or edited. Has name, description, bearing (the compass direction the camera faced, prefilled from EXIF `GPSImgDirection` when present), elevation, capture date, and tags. Photos relate to nearby routes, tracks, and waypoints by spatial proximity on the map; there are no explicit links."
@@ -475,13 +475,13 @@ file picked (Add Photo)
 - **Task 5.3**: change "at the photo's **subject** coordinates (`lat`/`lng`), not the camera coordinates" to "at the photo's position (`lat`/`lng`)". Change "flies the map to the cluster's bounds" to "eases the map to the cluster's expansion zoom". In acceptance, change "at the subject coordinate" to "at the photo's position".
 - **Task 5.4**: replace the subject-coordinate and camera bullets with "Location (lat/lng; editable in edit mode by typing or dragging the pin)" and "Elevation". In acceptance, delete the "no camera location recorded" clause, and change "Subject pin drag on the map updates `lat`/`lng` in storage" to "Dragging the pin in edit mode and saving updates `lat`/`lng` in storage".
 
-- [ ] **Step 5.0.13: Verify**
+- [x] **Step 5.0.13: Verify**
 
 Run: `npm run typecheck` → clean. `npm test` → all pass.
 
 Browser check (`npm run dev`, against an existing v1 database): the app loads without a `SchemaVersionError`. In DevTools, `await __couloir.listAll()` returns photos with no `camera_*` keys. `await __couloir.createDummyPhoto()` succeeds.
 
-- [ ] **Step 5.0.14: Commit**
+- [x] **Step 5.0.14: Commit**
 
 ```bash
 git add package.json package-lock.json src SPEC.md DATA-MODEL.md ARCHITECTURE.md AGENTS.md TASKS.md

@@ -95,16 +95,12 @@ export interface Photo {
   name: string
   description: string
 
-  // Subject location (user-placed)
+  // Where the photo was taken. Seeded from EXIF GPS when present, otherwise
+  // placed by the user; draggable while the photo is being created or edited.
   lat: number
   lng: number
-  elevation_m: number | null
-
-  // Camera (capture) metadata
-  camera_lat: number | null
-  camera_lng: number | null
-  camera_elevation_m: number | null
-  bearing: number | null
+  elevation_m: number | null            // EXIF GPSAltitude, else terrain lookup
+  bearing: number | null                // 0-359, compass direction the camera faced
 
   blob_ref: string                      // 'photos/{id}.jpg'
   width: number
@@ -116,6 +112,13 @@ export interface Photo {
   created_at: string
   updated_at: string
 }
+
+// Fields a photo edit may change. File metadata (blob_ref, dimensions, size)
+// is fixed at import.
+export type PhotoMetadataPatch = Partial<Pick<
+  Photo,
+  'name' | 'description' | 'lat' | 'lng' | 'elevation_m' | 'bearing' | 'taken_at' | 'tags'
+>>
 
 // ============================================================================
 // Backup bundle — written as `metadata.json` inside the ZIP archive (Phase 6).

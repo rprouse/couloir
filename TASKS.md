@@ -52,7 +52,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 
 ### Phase 5 — Photos  ·  Plan: [`2026-10-26-couloir-phase-5-photos.md`](docs/superpowers/plans/2026-10-26-couloir-phase-5-photos.md)
 
-- [ ] [5.0 Photo model simplification and storage prep](#task-50---photo-model-simplification-and-storage-prep)
+- [x] [5.0 Photo model simplification and storage prep](#task-50---photo-model-simplification-and-storage-prep)
 - [ ] [5.1 Photo placement mode and EXIF processing](#task-51---photo-placement-mode-and-exif-processing)
 - [ ] [5.2 Photo creation form](#task-52---photo-creation-form)
 - [ ] [5.3 Photos layer with clustering](#task-53---photos-layer-with-clustering)
@@ -427,27 +427,44 @@ Update the Waypoints count badge in the Layer panel.
 
 **Goal**: Photos can be uploaded, pinned to the map, viewed as thumbnails, and opened in a full viewer.
 
+### Task 5.0 - Photo model simplification and storage prep
+
+Design decisions taken in planning (2026-10-26); these supersede the earlier subject/camera wording in this phase:
+
+1. **One position per photo, the camera position.** The subject/camera split is removed. `lat`/`lng`/`elevation_m` mean "where the photo was taken". Migration `2.sql` copies any `camera_*` values into `lat`/`lng`/`elevation_m` and drops the `camera_*` columns. `bearing` stays, so a future direction arrow on the pin has its data.
+2. **Bearing comes from EXIF `GPSImgDirection` when present.** The form prefills it when available and accepts manual input otherwise. A compass rose shows the value, and clicking the rose sets it.
+3. **The pin can be dragged in create and edit modes only.** While a photo's panel is in `create` or `edit`, a draggable marker sits at the draft position, and edit mode also takes typed lat/lng. In view mode the position is locked. Thumbnails in the clustered layer can be clicked but not dragged.
+4. **Stored full-size JPEG is capped at 4096 px on the longest edge**, at quality 0.9 (`PHOTO_MAX_EDGE_PX`, `PHOTO_JPEG_QUALITY`).
+5. **New `StorageProvider.updatePhotoMetadata(photo)`.** It rewrites only the row and tags. `usePhotosStore.update()` stops re-reading and re-writing the blobs.
+6. **New dependency: `exifr@7.1.3`** (MIT, zero runtime dependencies; approved 2026-10-26).
+
+**Acceptance criteria**:
+- DB migrates v1→v2 preserving photos
+- `Photo` has no `camera_*` fields
+- `updatePhotoMetadata` exists on both providers
+- `exifr` installed
+
 ### Task 5.1 - Photo placement mode and EXIF processing
 
 Add an "Add Photo" button. Clicking it opens a file picker. Reject HEIC files with a guidance message ("HEIC is not supported. On iPhone: Settings → Camera → Formats → Most Compatible") and abort the import.
 
 For accepted JPEG/PNG files, run the import pipeline from `ARCHITECTURE.md`:
 1. Read EXIF via `exifr`: orientation, GPS, GPSImgDirection, GPSAltitude, DateTimeOriginal.
-2. Decode → canvas → apply orientation → re-encode JPEG with EXIF stripped.
+2. Decode with the browser applying EXIF orientation → canvas → re-encode JPEG with EXIF stripped.
 3. Generate a thumbnail (max 128px on the longest edge).
 4. Dispatch `startPhotoPlacement(blob, exif)`.
 
 Branching by EXIF GPS:
 
-- **EXIF GPS present**: fly the map to the GPS coordinates, then immediately dispatch `completePlacement(camera_lat, camera_lng)` so the subject pin is seeded at the camera location. The detail panel opens in `create` mode with the camera fields populated and the subject pin draggable. Bearing/elevation/taken_at are prefilled from EXIF.
-- **EXIF GPS absent**: stay in placement mode. A thumbnail-of-the-photo follows the cursor; the instruction banner reads "Click the map to pin this photo. Press Escape to cancel." Clicking dispatches `completePlacement(lat, lng)` with no camera coordinates.
+- **EXIF GPS present**: fly the map to the GPS position, then immediately dispatch `completePlacement(lat, lng)`. The detail panel opens in `create` mode with the pin draggable. Bearing/elevation/taken_at are prefilled from EXIF.
+- **EXIF GPS absent**: stay in placement mode. A thumbnail-of-the-photo follows the cursor; the instruction banner reads "Click the map where this photo was taken. Press Escape to cancel." Clicking dispatches `completePlacement(lat, lng)`.
 
 ESC cancels placement (global ESC hook).
 
 **Acceptance criteria**:
 - File picker opens on button click; HEIC files are rejected with the guidance message
 - An imported JPEG with EXIF orientation displays upright in the preview and on save
-- An imported JPEG with EXIF GPS auto-flies the map and drops the subject pin at the camera location; bearing/elevation/taken_at are prefilled
+- An imported JPEG with EXIF GPS auto-flies the map and drops the pin at the GPS position; bearing/elevation/taken_at are prefilled
 - An imported JPEG without EXIF GPS uses thumbnail-follow-cursor placement
 - ESC cancels and discards the selected photo
 - Saved photo blob in OPFS contains no EXIF
@@ -460,16 +477,17 @@ The photo creation form (panel `create` mode for a photo) contains:
 - Bearing (0-359° number input with a compass rose visual helper) — prefilled from EXIF when available
 - Tags
 - Taken-at date (date picker) — prefilled from EXIF when available
-- Camera coordinates (read-only when EXIF supplied them; editable otherwise) and camera elevation (read-only / editable on the same condition)
+- Elevation (prefilled from EXIF altitude, else terrain)
+- Location: lat/lng of the pin (drag the pin to adjust)
 
-The photo preview is shown alongside the form. The user can drag the subject pin on the map at any time during creation; the create form's lat/lng update live.
+The photo preview is shown alongside the form. The user can drag the pin on the map at any time during creation; the create form's lat/lng update live.
 
 Save stores the full-size blob and thumbnail in OPFS and writes the metadata row to SQLite. After save, the panel transitions to `view` mode for the new photo.
 
 **Acceptance criteria**:
-- All fields save correctly, including camera_* fields when present
+- All fields save correctly, including bearing, elevation and taken_at
 - Blob and thumbnail are stored in OPFS
-- Photo appears on map (subject location) immediately after save
+- Photo appears on map (at its position) immediately after save
 - Cancel discards both the form state and the un-saved blob
 
 ### Task 5.3 - Photos layer with clustering
@@ -480,13 +498,13 @@ Implement `PhotosLayer.tsx` per the layer architecture in `ARCHITECTURE.md`. The
 - `photos-cluster-count` — text layer rendering `point_count` on top of the cluster.
 - `photos-thumbnails` — symbol layer, filtered to features without `point_count`. Each photo's thumbnail (loaded via `getPhotoThumb` and registered with `map.addImage`) is the symbol icon, ~48px on the map, with a subtle white border and drop shadow.
 
-Clicking a cluster flies the map to the cluster's bounds. Clicking a thumbnail dispatches `openEntity('photo', id)`.
+Clicking a cluster eases the map to the cluster's expansion zoom. Clicking a thumbnail dispatches `openEntity('photo', id)`.
 
-The thumbnails are placed at the photo's **subject** coordinates (`lat`/`lng`), not the camera coordinates.
+The thumbnails are placed at the photo's position (`lat`/`lng`).
 
 **Acceptance criteria**:
 - At low zoom (≤13), clusters render as count badges
-- At high zoom (>13) and for un-clustered points, individual thumbnails render at the subject coordinate
+- At high zoom (>13) and for un-clustered points, individual thumbnails render at the photo's position
 - Clicking a cluster zooms in (cluster splits naturally)
 - Clicking an individual thumbnail opens its detail panel
 - Layer toggle shows/hides every photos-* layer in concert
@@ -499,8 +517,8 @@ Clicking a photo thumbnail dispatches `openEntity('photo', id)`. The detail pane
 - Name, description
 - Bearing (with a compass indicator)
 - Date taken
-- Subject coordinates (editable in edit mode; on the map, dragging the subject pin updates these)
-- Camera coordinates and camera elevation (read-only by default; edit mode allows manual override). When camera coordinates are null (no EXIF GPS, no manual entry), this section reads "No camera location recorded."
+- Location (lat/lng; editable in edit mode by typing or dragging the pin)
+- Elevation
 - Tags
 - Edit button (transitions panel to `edit` mode via `editCurrent`)
 - Delete button (removes both the full-size blob and the thumbnail from OPFS plus the row from SQLite, with confirmation)
@@ -509,9 +527,9 @@ There is no "associate with route/track" UI — the data model has no such links
 
 **Acceptance criteria**:
 - Full photo loads and displays correctly
-- All metadata shows correctly, including a clear "no camera location recorded" state when camera_* fields are null
+- All metadata shows correctly
 - Edit saves correctly
-- Subject pin drag on the map updates `lat`/`lng` in storage
+- Dragging the pin in edit mode and saving updates `lat`/`lng` in storage
 - Delete removes the full blob, thumbnail, and metadata
 
 ### Task 5.5 - Photo count badge

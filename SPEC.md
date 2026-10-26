@@ -28,7 +28,7 @@ A recorded GPS track, imported from a GPX track file. Represents reality - where
 A named point feature pinned to a map location. Used to mark terrain features: entry gates, cliff bands, rollover points, hazard zones, skin track junctions, cache locations, summit points, etc. Has a name, description, category, icon, elevation, and tags.
 
 ### Photo
-A geolocated photograph for recon photography: photos taken from across the valley looking at potential ski lines, used for navigation and route assessment. A photo has two map positions: the **subject** (the terrain depicted, placed by the user — defaults to the EXIF GPS coordinate when present, draggable to refine) and the **camera position** (preserved from EXIF when available, rarely edited). Has name, description, bearing (camera direction, prefilled from EXIF when available), elevations of camera and subject, and tags. Photos are visually related to nearby routes, tracks, and waypoints by spatial proximity on the map; there are no explicit links between photos and other entities.
+A geolocated photograph for recon photography: photos taken from across the valley looking at potential ski lines, used for navigation and route assessment. A photo is pinned to the map **where it was taken**: from EXIF GPS when present, otherwise placed by the user. It can be repositioned while being created or edited. Has name, description, bearing (the compass direction the camera faced, prefilled from EXIF `GPSImgDirection` when present), elevation, capture date, and tags. Photos relate to nearby routes, tracks, and waypoints by spatial proximity on the map; there are no explicit links.
 
 ---
 
@@ -90,12 +90,12 @@ All four data types are rendered as distinct map layers. Each layer can be toggl
 
 - Upload photo file. JPEG and PNG are supported; HEIC is rejected with a guidance message (on iPhone: Settings → Camera → Formats → Most Compatible).
 - EXIF data is read at import for orientation, GPS coordinates, camera direction (`GPSImgDirection`), altitude, and capture date. Orientation is applied to the stored JPEG; remaining EXIF is stripped from storage.
-- Subject pin placement: if the photo has EXIF GPS, the map flies to that coordinate and a subject pin is dropped there for the user to drag to the actual subject location. If the photo has no EXIF GPS, the user clicks the map to place the subject pin.
-- The camera position is preserved separately from the subject position, defaulted from EXIF GPS, and editable in the photo detail panel.
+- Placement: if the photo has EXIF GPS, the map flies there and the pin is dropped at that position. Without EXIF GPS, the photo's thumbnail follows the cursor and the user clicks the map where the photo was taken.
+- The pin is draggable while the photo is being created or edited; coordinates can also be typed in edit mode. In view mode the position is locked.
 - Add name, description, bearing (0-359°, direction camera was pointing — prefilled from EXIF when available), tags. The capture date is also prefilled from EXIF.
-- Thumbnail visible as a map pin at the subject location. At low zoom levels, photo pins are clustered (count badges); thumbnails appear when zoomed in.
+- Thumbnail visible as a map pin at the photo's location. At low zoom levels, photo pins are clustered (count badges); thumbnails appear when zoomed in.
 - Click photo pin to open photo viewer with full image and metadata.
-- Edit metadata and reposition pin (drag subject pin on the map, or edit camera position fields directly).
+- Edit metadata and reposition the pin (drag it in edit mode, or type coordinates).
 - Delete photo and blob.
 
 ### Settings
@@ -148,6 +148,6 @@ The following are explicitly out of scope for the MVP but should not be architec
 - Multi-user with per-user route libraries and optional sharing
 - Slope angle shading derived from Maptiler terrain tiles
 - Aspect shading layer
-- Bearing cone visualization on photo pins (FOV footprint on map)
+- Direction arrow / bearing cone on photo pins (from the stored `bearing`)
 - PWA with offline tile caching for field use
 - Capacitor wrapper for native iOS/Android
