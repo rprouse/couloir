@@ -30,3 +30,8 @@ dist-ssr
 # Test
 coverage
 .claude/scheduled_tasks.lock
+
+# Server
+dist-server
+data
+*.tsbuildinfo

@@ -82,7 +82,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 
 ### Phase 8 — Server Storage  ·  Plan: [`2026-10-26-couloir-phase-8-server-storage.md`](docs/superpowers/plans/2026-10-26-couloir-phase-8-server-storage.md)
 
-- [ ] [8.0 Spike: toolchain compatibility](#task-80---spike-toolchain-compatibility)
+- [x] [8.0 Spike: toolchain compatibility](#task-80---spike-toolchain-compatibility)
 - [ ] [8.1 Extract SqlStorageProvider and the contract suite](#task-81---extract-sqlstorageprovider-and-the-contract-suite)
 - [ ] [8.2 Node backend](#task-82---node-backend)
 - [ ] [8.3 HTTP API](#task-83---http-api)
