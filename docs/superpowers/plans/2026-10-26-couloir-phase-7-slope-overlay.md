@@ -391,15 +391,15 @@ Not unit-tested, because jsdom has no `OffscreenCanvas`. It's covered in 7.6.
 **Files:**
 - Modify: `src/store/ui.ts`, `src/store/ui.test.ts`
 
-- [ ] **Step 7.3.1: Tests first.** In a new `describe('ui store — slope overlay')`:
+- [x] **Step 7.3.1: Tests first.** In a new `describe('ui store — slope overlay')`:
   - It defaults to off with opacity 0.6.
   - `toggleSlope` flips it and writes `couloir_slope_enabled` (`'true'`/`'false'`).
   - `setSlopeOpacity` clamps to 0.2–1 and writes `couloir_slope_opacity`.
   - `hydrateFromStorage` restores both. Garbage values fall back to the defaults, the same as the terrain/basemap handling.
 
-- [ ] **Step 7.3.2: Implement.** Add `slopeEnabled`, `slopeOpacity`, `toggleSlope` and `setSlopeOpacity` to `UiState`, under a `// Phase 7 — slope overlay` comment. Extend `hydrateFromStorage`. Export `SLOPE_OPACITY_MIN = 0.2` and `SLOPE_OPACITY_MAX = 1` for the slider.
+- [x] **Step 7.3.2: Implement.** Add `slopeEnabled`, `slopeOpacity`, `toggleSlope` and `setSlopeOpacity` to `UiState`, under a `// Phase 7 — slope overlay` comment. Extend `hydrateFromStorage`. Export `SLOPE_OPACITY_MIN = 0.2` and `SLOPE_OPACITY_MAX = 1` for the slider.
 
-- [ ] **Step 7.3.3:** Tests and typecheck pass. Commit `feat(ui): slope overlay toggle and opacity state`.
+- [x] **Step 7.3.3:** Tests and typecheck pass. Commit `feat(ui): slope overlay toggle and opacity state`.
 
 ---
 

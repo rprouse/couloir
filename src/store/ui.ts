@@ -3,9 +3,14 @@ import type { Basemap, EntityDraft, EntityType, PendingPhoto } from '../types'
 
 const TERRAIN_KEY  = 'couloir_terrain_exaggeration'
 const BASEMAP_KEY  = 'couloir_basemap'
+const SLOPE_ENABLED_KEY = 'couloir_slope_enabled'
+const SLOPE_OPACITY_KEY = 'couloir_slope_opacity'
 const VALID_BASEMAPS: ReadonlySet<Basemap> = new Set(['satellite', 'outdoor', 'winter'])
 const MIN = 1
 const MAX = 3
+export const SLOPE_OPACITY_MIN = 0.2
+export const SLOPE_OPACITY_MAX = 1
+const SLOPE_OPACITY_DEFAULT = 0.6
 
 export type SidebarTab = 'layers' | 'search' | 'settings'
 export type LayerKey = 'routes' | 'tracks' | 'waypoints' | 'photos'
@@ -57,9 +62,16 @@ interface UiState {
   setTagFilter: (layer: LayerKey, tagIds: string[]) => void
   clearTagFilter: (layer: LayerKey) => void
   pruneTagFromFilters: (tagId: string) => void
+
+  // Phase 7 — slope overlay (both persisted; off by default to spare quota)
+  slopeEnabled: boolean
+  slopeOpacity: number
+  toggleSlope: () => void
+  setSlopeOpacity: (value: number) => void
 }
 
 const clamp = (n: number) => Math.max(MIN, Math.min(MAX, n))
+const clampOpacity = (n: number) => Math.max(SLOPE_OPACITY_MIN, Math.min(SLOPE_OPACITY_MAX, n))
 
 // The in-flight photo's preview object URL is owned by this store: whichever
 // transition drops the last reference to a pending photo revokes its URL.
@@ -124,6 +136,15 @@ export const useUiStore = create<UiState>((set, get) => {
       const rawBasemap = localStorage.getItem(BASEMAP_KEY)
       if (rawBasemap && VALID_BASEMAPS.has(rawBasemap as Basemap)) {
         set({ activeBasemap: rawBasemap as Basemap })
+      }
+      const rawSlopeEnabled = localStorage.getItem(SLOPE_ENABLED_KEY)
+      if (rawSlopeEnabled === 'true' || rawSlopeEnabled === 'false') {
+        set({ slopeEnabled: rawSlopeEnabled === 'true' })
+      }
+      const rawSlopeOpacity = localStorage.getItem(SLOPE_OPACITY_KEY)
+      if (rawSlopeOpacity !== null) {
+        const n = Number(rawSlopeOpacity)
+        if (Number.isFinite(n)) set({ slopeOpacity: clampOpacity(n) })
       }
     },
 
@@ -195,5 +216,19 @@ export const useUiStore = create<UiState>((set, get) => {
           photos: s.tagFilters.photos.filter((t) => t !== tagId),
         },
       })),
+
+    // ----- Phase 7 fields: slope overlay -----
+    slopeEnabled: false,
+    slopeOpacity: SLOPE_OPACITY_DEFAULT,
+    toggleSlope: () => {
+      const next = !get().slopeEnabled
+      localStorage.setItem(SLOPE_ENABLED_KEY, String(next))
+      set({ slopeEnabled: next })
+    },
+    setSlopeOpacity: (value) => {
+      const next = clampOpacity(value)
+      localStorage.setItem(SLOPE_OPACITY_KEY, String(next))
+      set({ slopeOpacity: next })
+    },
   }
 })
