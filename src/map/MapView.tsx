@@ -12,6 +12,7 @@ import { setMap } from '../hooks/useMap'
 import { RoutesLayer } from './layers/RoutesLayer'
 import { TracksLayer } from './layers/TracksLayer'
 import { WaypointsLayer } from './layers/WaypointsLayer'
+import { PhotosLayer } from './layers/PhotosLayer'
 import { usePlacementMapBinding } from './placement/usePlacementMapBinding'
 import { usePhotoCursorPreview } from './placement/photoCursorPreview'
 import { PhotoPositionMarker } from './placement/PhotoPositionMarker'
@@ -170,6 +171,7 @@ export function MapView() {
       <RoutesLayer />
       <TracksLayer />
       <WaypointsLayer />
+      <PhotosLayer />
       <PhotoPositionMarker />
       {styleError && (
         <div role="alert" className={styles.banner}>

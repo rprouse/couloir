@@ -24,7 +24,7 @@ export function categoryGlyph(category: WaypointCategory): string {
 // Fallback ImageData factory for environments where the global isn't available
 // (e.g. jsdom without the canvas npm package). Returns an object that satisfies
 // the { width, height, data } structural shape that MapLibre's addImage accepts.
-function makeEmptyImageData(size: number): ImageData {
+export function makeEmptyImageData(size: number): ImageData {
   if (typeof ImageData !== 'undefined') {
     return new ImageData(size, size)
   }

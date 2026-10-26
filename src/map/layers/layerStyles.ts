@@ -24,3 +24,29 @@ export const WAYPOINT_ICON_PX = 32
 // Draggable pin shown while a photo is created or edited. A literal hex
 // because maplibregl.Marker paints it into an SVG fill attribute.
 export const PHOTO_PIN_COLOR = '#F472B6'
+
+export const PHOTOS_SOURCE_ID = 'photos-source'
+export const PHOTOS_CLUSTERS_LAYER_ID = 'photos-clusters'
+export const PHOTOS_CLUSTER_COUNT_LAYER_ID = 'photos-cluster-count'
+export const PHOTOS_THUMBNAILS_LAYER_ID = 'photos-thumbnails'
+export const PHOTOS_LAYER_IDS = [
+  PHOTOS_CLUSTERS_LAYER_ID,
+  PHOTOS_CLUSTER_COUNT_LAYER_ID,
+  PHOTOS_THUMBNAILS_LAYER_ID,
+] as const
+
+// Thumbnail icons are drawn at PHOTO_ICON_PIXEL_RATIO× and registered with
+// that pixelRatio, so they render at PHOTO_ICON_PX CSS pixels and stay crisp
+// on high-DPI screens.
+export const PHOTO_ICON_PX = 48
+export const PHOTO_ICON_PIXEL_RATIO = 2
+export const PHOTO_PLACEHOLDER_ICON = 'photo-placeholder'
+
+// Cluster circles step from light to deep blue as the count grows.
+export const PHOTO_CLUSTER_STEPS = {
+  colors: ['#60A5FA', '#3B82F6', '#1D4ED8'] as const,
+  radii: [16, 20, 26] as const,
+  thresholds: [10, 50] as const,
+}
+// Maptiler styles serve this glyph stack; the count label needs a font.
+export const PHOTO_CLUSTER_FONT = ['Noto Sans Bold']

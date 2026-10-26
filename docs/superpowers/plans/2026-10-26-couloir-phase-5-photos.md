@@ -2367,7 +2367,7 @@ Tick 5.2 → `chore(tasks): tick 5.2`.
 
 This task ends with: saved photos on the map. At zoom ≤ 13 they show as count circles; above that, or when un-clustered, as framed 48 px thumbnails at their position. Clicking a cluster zooms in until it splits. Clicking a thumbnail opens the photo. The Photos toggle hides all three layers. 100+ photos stay smooth.
 
-- [ ] **Step 5.3.1: Constants in `layerStyles.ts`**
+- [x] **Step 5.3.1: Constants in `layerStyles.ts`**
 
 ```ts
 export const PHOTOS_SOURCE_ID = 'photos-source'
@@ -2397,7 +2397,7 @@ export const PHOTO_CLUSTER_STEPS = {
 export const PHOTO_CLUSTER_FONT = ['Noto Sans Bold']
 ```
 
-- [ ] **Step 5.3.2: GeoJSON builder — test then implement**
+- [x] **Step 5.3.2: GeoJSON builder — test then implement**
 
 `photosLayerData.test.ts`:
 
@@ -2456,7 +2456,7 @@ export function buildPhotosGeoJson(photos: Photo[]): FeatureCollection {
 }
 ```
 
-- [ ] **Step 5.3.3: Framed thumbnail icons — test then implement**
+- [x] **Step 5.3.3: Framed thumbnail icons — test then implement**
 
 In `wpIcons.ts`, change `function makeEmptyImageData` to `export function makeEmptyImageData` so photo icons share the jsdom fallback.
 
@@ -2557,7 +2557,7 @@ export async function loadPhotoIcon(thumb: Blob): Promise<ImageData> {
 
 Run both test files. Expected: PASS.
 
-- [ ] **Step 5.3.4: `PhotosLayer` — test first, `PhotosLayer.test.tsx`**
+- [x] **Step 5.3.4: `PhotosLayer` — test first, `PhotosLayer.test.tsx`**
 
 The mock map doesn't render. This test pins down the source config, layer IDs and filters, and the visibility wiring.
 
@@ -2608,7 +2608,7 @@ describe('PhotosLayer', () => {
 
 (If `map.getLayer.mockReturnValue` is rejected by the `vi.fn(() => null)` type, cast: `(map.getLayer as unknown as ReturnType<typeof vi.fn>).mockReturnValue({})`.)
 
-- [ ] **Step 5.3.5: Implement `src/map/layers/PhotosLayer.tsx`**
+- [x] **Step 5.3.5: Implement `src/map/layers/PhotosLayer.tsx`**
 
 ```tsx
 import { useEffect, useRef } from 'react'
@@ -2819,7 +2819,7 @@ export function PhotosLayer(): null {
 
 Mount `<PhotosLayer />` in `MapView.tsx` after `<WaypointsLayer />` and before `<PhotoPositionMarker />`. Run the layer tests and the full suite. Expected: PASS. In jsdom, `loadPhotoIcon` rejects (there's no `createImageBitmap`), and `allSettled` absorbs it.
 
-- [ ] **Step 5.3.6: Verify**
+- [x] **Step 5.3.6: Verify**
 
 `npm run typecheck`, `npm test` → green.
 
@@ -2832,7 +2832,7 @@ Browser:
 - With 120+ photos, panning and zooming stay smooth (Performance panel: no long tasks after the initial thumbnail decode).
 - Optional cleanup: delete the dummy photos via the viewer after 5.4, or clear site data.
 
-- [ ] **Step 5.3.7: Commit and tick**
+- [x] **Step 5.3.7: Commit and tick**
 
 ```bash
 git add src TASKS.md
