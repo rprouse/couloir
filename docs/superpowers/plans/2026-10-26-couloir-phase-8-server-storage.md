@@ -314,20 +314,20 @@ Pure refactor: no behaviour change in the running app.
 
 **Files:** create `Dockerfile`, `.dockerignore`, `.github/workflows/docker.yml`, `deploy/unraid/couloir.xml`, `docs/DEPLOY.md`.
 
-- [ ] **Step 8.8.1: `Dockerfile`.**
+- [x] **Step 8.8.1: `Dockerfile`.**
   - **Build stage** (`node:24-alpine`, or the version from 8.0.5): `npm ci` and `npm run build`.
   - **Runtime stage** (same base): copy only `dist/` and `dist-server/`, then `ENV DATA_DIR=/data PORT=8080`, `VOLUME /data`, `EXPOSE 8080`.
   - `HEALTHCHECK` with `wget -qO- localhost:8080/api/health`, and `CMD ["node", "dist-server/main.js"]`.
   - Runs as `USER node` by default. The Unraid template overrides it to `99:100` (nobody:users).
-- [ ] **Step 8.8.2: `.dockerignore`:** `node_modules`, `dist*`, `data`, `.git`, `docs`.
-- [ ] **Step 8.8.3: `docker.yml`.** On push to `main` (plus `workflow_dispatch`):
+- [x] **Step 8.8.2: `.dockerignore`:** `node_modules`, `dist*`, `data`, `.git`, `docs`.
+- [x] **Step 8.8.3: `docker.yml`.** On push to `main` (plus `workflow_dispatch`):
   - checkout → setup-node → `npm ci` → `npm run typecheck` → `npm test`
   - `docker/login-action` to GHCR with `GITHUB_TOKEN`
   - `docker/build-push-action` with tags `latest` and `sha-${{ github.sha }}` (short form)
   - `permissions: packages: write`
   - Pin action versions.
-- [ ] **Step 8.8.4: `deploy/unraid/couloir.xml`.** Repository `ghcr.io/rprouse/couloir:latest`. Port 8080. Path `/data` → `/mnt/user/appdata/couloir`. Variables `MAPTILER_KEY` (masked) and `BACKUP_KEEP`. `--user 99:100` in ExtraParams. WebUI `http://[IP]:[PORT:8080]`.
-- [ ] **Step 8.8.5: `docs/DEPLOY.md`.** Cover:
+- [x] **Step 8.8.4: `deploy/unraid/couloir.xml`.** Repository `ghcr.io/rprouse/couloir:latest`. Port 8080. Path `/data` → `/mnt/user/appdata/couloir`. Variables `MAPTILER_KEY` (masked) and `BACKUP_KEEP`. `--user 99:100` in ExtraParams. WebUI `http://[IP]:[PORT:8080]`.
+- [x] **Step 8.8.5: `docs/DEPLOY.md`.** Cover:
   - installing the template, making the GHCR package public or adding a registry login
   - first run, and migrating data: export a ZIP from the old build, then import it
   - where the backups live
@@ -335,6 +335,16 @@ Pure refactor: no behaviour change in the running app.
   - an explicit warning never to port-forward the unauthenticated API to the internet
 - [ ] **Step 8.8.6 (Unraid, user):** Deploy, open from two computers, add a photo on one and see it on the other. Restart the container and confirm the data survives. Confirm a backup file appears in `/mnt/user/appdata/couloir/backups`.
 
+> **Notes (2026-10-27):**
+> - **Image:** multi-stage `node:24-alpine`. The runtime stage holds only `dist/` and `dist-server/`, 246 MB in total (most of it the Node base). It runs as `node` by default; the Unraid template passes `--user 99:100`. The healthcheck uses `wget` on `/api/health`. The exec-form `CMD` makes node PID 1, so it receives SIGTERM directly.
+> - **Workflow:** `test` (npm ci, typecheck, test on Node 24) then `publish` (buildx, GHCR login with `GITHUB_TOKEN`, metadata tags `latest` on the default branch + `sha-<short>`, gha layer cache, linux/amd64). Actions are pinned to the latest exact releases as of 2026-10-27: checkout v7.0.1, setup-node v7.1.0, setup-buildx v4.4.1, login v4.7.0, metadata v6.2.0, build-push v7.4.0. These are tags, not SHAs; switch to SHA pins if supply-chain hardening becomes a goal.
+> - **Verified locally in Docker:**
+>   - Running as `--user 99:100` on a volume owned by 99:100 reports *healthy*. The startup backup is written, and a route and a multipart photo survive `docker restart`. Every file under `/data` is owned by `99:100`.
+>   - **`docker stop`** logs `SIGTERM, shutting down` and exits 0 in ~0.7 s, and the `-wal`/`-shm` files are gone afterwards (a clean close). This closes the 8.5 gap.
+>   - Running as the default user on a plain named volume is also healthy.
+> - **Gotcha (documented in DEPLOY.md):** a *new named volume* gets the image's `/data` ownership (`node`, uid 1000) copied in, so `--user 99:100` fails with `EACCES mkdir /data/photos`. Unraid bind-mounts a host path, which doesn't do this. The tests used `--mount ...,volume-nocopy` to match Unraid.
+> - **The CI test job, run in a `node:24` Linux container, found a real bug:** `scheduleBackups` queued every tick behind a slow run, building an unbounded backlog, and the interval test failed 3 times out of 3 on Linux. A tick that arrives during a run is now skipped. A new test holds a snapshot open across many ticks and asserts one call and no overlap. The interval tests now `stop()` in `finally`, count files after stopping, and use a 10 s `waitFor`. The whole CI job (npm ci, typecheck, 78 files / 635 tests) then passed in that container, and on Windows.
+> - **Step 8.8.6 is still open** (the user, on Unraid). It needs this branch merged to `main` so the workflow publishes the image. GitHub creates the GHCR package as **private**: make it public, or `docker login ghcr.io` on Unraid (see DEPLOY.md).
 ---
 
 ## Task 8.9 — Data migration and end-to-end QA

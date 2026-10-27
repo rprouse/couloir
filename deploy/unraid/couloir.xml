@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>couloir</Name>
+  <Repository>ghcr.io/rprouse/couloir:latest</Repository>
+  <Registry>https://github.com/rprouse/couloir/pkgs/container/couloir</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/rprouse/couloir</Support>
+  <Project>https://github.com/rprouse/couloir</Project>
+  <Overview>Couloir: a personal backcountry ski route library. Serves the web app and its API on one port, with data in a SQLite database and photo files under /data. No authentication: keep it on your LAN or tailnet and never port-forward it.</Overview>
+  <Category>Tools:</Category>
+  <WebUI>http://[IP]:[PORT:8080]/</WebUI>
+  <Icon>https://raw.githubusercontent.com/rprouse/couloir/main/public/icons/icon-192.png</Icon>
+  <ExtraParams>--user 99:100</ExtraParams>
+  <Config Name="Web UI port" Target="8080" Default="8080" Mode="tcp" Description="Port the app and API are served on." Type="Port" Display="always" Required="true" Mask="false">8080</Config>
+  <Config Name="Data" Target="/data" Default="/mnt/user/appdata/couloir" Mode="rw" Description="Database (couloir.db), photos/ and daily backups/. Back this folder up." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/couloir</Config>
+  <Config Name="Maptiler API key" Target="MAPTILER_KEY" Default="" Mode="" Description="Optional. Used by browsers that haven't entered their own key." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="Backups to keep" Target="BACKUP_KEEP" Default="14" Mode="" Description="Daily database snapshots kept in /data/backups." Type="Variable" Display="advanced" Required="false" Mask="false">14</Config>
+</Container>
