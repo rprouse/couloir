@@ -72,13 +72,13 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 
 ### Phase 7 — Slope Angle Overlay  ·  Plan: [`2026-10-26-couloir-phase-7-slope-overlay.md`](docs/superpowers/plans/2026-10-26-couloir-phase-7-slope-overlay.md)
 
-- [ ] [7.0 Confirm DEM tile facts](#task-70---confirm-dem-tile-facts)
+- [x] [7.0 Confirm DEM tile facts](#task-70---confirm-dem-tile-facts)
 - [x] [7.1 Slope maths and colour bands](#task-71---slope-maths-and-colour-bands)
 - [x] [7.2 Slope tile protocol](#task-72---slope-tile-protocol)
 - [x] [7.3 Slope UI state](#task-73---slope-ui-state)
 - [x] [7.4 Slope layer](#task-74---slope-layer)
 - [x] [7.5 Slope controls and legend](#task-75---slope-controls-and-legend)
-- [ ] [7.6 Docs and browser QA](#task-76---docs-and-browser-qa)
+- [x] [7.6 Docs and browser QA](#task-76---docs-and-browser-qa)
 
 ### Phase 8 — Server Storage  ·  Plan: [`2026-10-26-couloir-phase-8-server-storage.md`](docs/superpowers/plans/2026-10-26-couloir-phase-8-server-storage.md)
 
@@ -90,9 +90,9 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [8.5 Wire the app to the server](#task-85---wire-the-app-to-the-server)
 - [x] [8.6 Remove OPFS](#task-86---remove-opfs)
 - [x] [8.7 Server backups](#task-87---server-backups)
-- [ ] [8.8 Docker, CI and Unraid](#task-88---docker-ci-and-unraid)
-- [ ] [8.9 Data migration and end-to-end QA](#task-89---data-migration-and-end-to-end-qa)
-- [ ] [8.10 Docs](#task-810---docs)
+- [x] [8.8 Docker, CI and Unraid](#task-88---docker-ci-and-unraid)
+- [x] [8.9 Data migration and end-to-end QA](#task-89---data-migration-and-end-to-end-qa)
+- [x] [8.10 Docs](#task-810---docs)
 
 ---
 
@@ -832,10 +832,11 @@ These are confirmed future features, not part of the MVP:
 - Bearing cone / FOV footprint visualization for photo pins
 - ~~Slope angle shading overlay (derived from Maptiler DEM)~~ → Phase 7
 - Aspect shading layer
-- Offline tile caching for field use (Workbox tile cache strategy)
-- Cloud sync via PowerSync or ElectricSQL
-- Photo blob sync to S3 / MinIO
-- Multi-user support with auth
+- Offline use in the field: cache library data (`/api` GETs) and map tiles (Workbox), or local-first sync if editing offline matters
+- ~~Cloud sync via PowerSync or ElectricSQL~~ → superseded by Phase 8 (self-hosted server)
+- ~~Photo blob sync to S3 / MinIO~~ → superseded by Phase 8 (photos as files on the server)
+- Multi-user support with auth (forward-auth `Remote-User` header + filtering by `user_id`)
+- Stale-write detection: `409` when another computer changed the item since it was loaded
 - Capacitor wrapper for native iOS/Android
 - Waypoint import from GPX `<wpt>` elements
 - Route/track export back to GPX

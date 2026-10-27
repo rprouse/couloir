@@ -334,7 +334,7 @@ Pure refactor: no behaviour change in the running app.
   - where the backups live
   - **HTTPS options:** Tailscale (`tailscale serve --https=443 http://localhost:8080`, tailnet = access control) vs reverse proxy with a LAN cert
   - an explicit warning never to port-forward the unauthenticated API to the internet
-- [ ] **Step 8.8.6 (Unraid, user):** Deploy, open from two computers, add a photo on one and see it on the other. Restart the container and confirm the data survives. Confirm a backup file appears in `/mnt/user/appdata/couloir/backups`.
+- [x] **Step 8.8.6 (Unraid, user):** Deploy, open from two computers, add a photo on one and see it on the other. Restart the container and confirm the data survives. Confirm a backup file appears in `/mnt/user/appdata/couloir/backups`.
 
 > **Notes (2026-10-27):**
 > - **Image:** multi-stage `node:24-alpine`. The runtime stage holds only `dist/` and `dist-server/`, 246 MB in total (most of it the Node base). It runs as `node` by default; the Unraid template passes `--user 99:100`. The healthcheck uses `wget` on `/api/health`. The exec-form `CMD` makes node PID 1, so it receives SIGTERM directly.
@@ -345,14 +345,14 @@ Pure refactor: no behaviour change in the running app.
 >   - Running as the default user on a plain named volume is also healthy.
 > - **Gotcha (documented in DEPLOY.md):** a *new named volume* gets the image's `/data` ownership (`node`, uid 1000) copied in, so `--user 99:100` fails with `EACCES mkdir /data/photos`. Unraid bind-mounts a host path, which doesn't do this. The tests used `--mount ...,volume-nocopy` to match Unraid.
 > - **The CI test job, run in a `node:24` Linux container, found a real bug:** `scheduleBackups` queued every tick behind a slow run, building an unbounded backlog, and the interval test failed 3 times out of 3 on Linux. A tick that arrives during a run is now skipped. A new test holds a snapshot open across many ticks and asserts one call and no overlap. The interval tests now `stop()` in `finally`, count files after stopping, and use a 10 s `waitFor`. The whole CI job (npm ci, typecheck, 78 files / 635 tests) then passed in that container, and on Windows.
-> - **Step 8.8.6 is still open** (the user, on Unraid). It needs this branch merged to `main` so the workflow publishes the image. GitHub creates the GHCR package as **private**: make it public, or `docker login ghcr.io` on Unraid (see DEPLOY.md).
+> - **Step 8.8.6 done (2026-10-27):** after merging PR #12 the workflow published the image, which was pulled to Unraid and runs there. The first run exposed the plain-HTTP GPX hashing bug, fixed in PR #13 (see the 8.5 notes).
 ---
 
 ## Task 8.9 — Data migration and end-to-end QA
 
-- [ ] **Step 8.9.1 (user):** In the browser that holds today's data, run the current production build and use Settings → Export to make a ZIP. Keep it.
-- [ ] **Step 8.9.2 (user):** Against the deployed server, use Settings → Import with that ZIP. Spot-check counts against the old build (`window.__couloir.listAll()` in dev, or the layer panel badges), confirm photos open full size, and check tags and filters.
-- [ ] **Step 8.9.3:** Browser QA checklist (Playwright against `npm start`):
+- [x] **Step 8.9.1 (user):** *N/A (2026-10-27): no pre-server data to move; the app was still in development.* In the browser that holds today's data, run the current production build and use Settings → Export to make a ZIP. Keep it.
+- [x] **Step 8.9.2 (user):** *N/A (2026-10-27): no pre-server data to move; the app was still in development.* Against the deployed server, use Settings → Import with that ZIP. Spot-check counts against the old build (`window.__couloir.listAll()` in dev, or the layer panel badges), confirm photos open full size, and check tags and filters.
+- [x] **Step 8.9.3:** *Done by the user against the Unraid deployment (2026-10-27).* Browser QA checklist (Playwright against `npm start`):
   - GPX import and duplicate detection (`by-hash`)
   - waypoint create/edit/delete
   - photo add, view and reposition (`PATCH`)
@@ -368,16 +368,26 @@ Pure refactor: no behaviour change in the running app.
 
 ## Task 8.10 — Docs
 
-- [ ] **Step 8.10.1: `ARCHITECTURE.md`.**
+- [x] **Step 8.10.1: `ARCHITECTURE.md`.**
   - Rewrite Guiding Principles: "server-authoritative, self-hosted" replaces "local-first". Keep "storage abstraction" and "sync-aware schema".
   - Tech stack rows: Hono, `node:sqlite`, photo files on a volume. Remove wa-sqlite and OPFS.
   - Replace the VFS/OPFS section with "Server" (layout, API table, backups, deployment pointer).
   - Update the project structure tree.
-- [ ] **Step 8.10.2: `DATA-MODEL.md`.** Photo blobs live at `{DATA_DIR}/photos/{id}.jpg` and `_thumb.jpg`. Mention WAL and the backup snapshots.
-- [ ] **Step 8.10.3: `AGENTS.md`.**
+- [x] **Step 8.10.2: `DATA-MODEL.md`.** Photo blobs live at `{DATA_DIR}/photos/{id}.jpg` and `_thumb.jpg`. Mention WAL and the backup snapshots.
+- [x] **Step 8.10.3: `AGENTS.md`.**
   - Update the photo storage convention and the "OPFS implementation" wording in Never Do (now "SQL provider and HTTP provider").
   - Add `npm start` and the `./data` dev directory to Commands.
   - Note that server tests use `// @vitest-environment node`.
-- [ ] **Step 8.10.4: `SPEC.md` and the `TASKS.md` backlog.**
+- [x] **Step 8.10.4: `SPEC.md` and the `TASKS.md` backlog.**
   - Strike "Cloud sync via PowerSync or ElectricSQL" and "Photo blob sync to S3 / MinIO" (superseded by Phase 8).
   - Add "Offline read cache for field use", "Stale-write (409) detection" and "Forward-auth + per-user filtering".
+
+> **Notes (2026-10-27):**
+> - **Beyond the plan, `README.md` was updated too.** It still described a local-first app with "no server", OPFS browser requirements and Node 20.19. The minimum Node is now 22.13, for `node:sqlite`. It gained deploy, develop and scripts sections, and the Phase 7/8 status.
+> - **`DEPLOY.md` lost its "Moving your existing data across" section.** There was no pre-server data, since the app was still in development. The `last-opfs` tag remains.
+> - **`ARCHITECTURE.md` changes:**
+>   - New "Server" section: data directory, API table, ID and caching rules, concurrency, the `node:sqlite` loader, shutdown, backups, and plain-HTTP support.
+>   - "Storage Interface" now describes the four providers and the contract suite.
+>   - "Deferred items" (auth, stale writes, offline) replaces the PowerSync/S3 plan.
+>   - The tree, the Maptiler key, photo storage, migrations, backup and PWA sections are updated.
+> - **`AGENTS.md` changes:** new commands (`npm start`, docker, CI), the storage layering, `newId()` and the plain-HTTP rule, a "Server conventions" list, and an updated StorageProvider rule in "Never Do".

@@ -6,7 +6,7 @@ Couloir is a personal backcountry ski route library. It is a map-centric web app
 
 The core workflow it supports: scout terrain from across the valley with binoculars and a camera, tag photos to exact map locations, overlay planned routes and recorded tracks on 3D terrain, and annotate key features with waypoints. Over time Couloir becomes an intimate, personal atlas of known terrain.
 
-The application is initially local-first and single-user. The architecture explicitly supports a future migration to cloud sync and multi-user access without requiring a rewrite.
+The application is single-user and self-hosted: one small server (a Docker container on a home server) holds the library and serves the app, so it can be used from any computer on the home network or tailnet without the data living in one browser. The architecture leaves room for multi-user access and offline field use without requiring a rewrite.
 
 ---
 
@@ -101,7 +101,7 @@ All four data types are rendered as distinct map layers. Each layer can be toggl
 
 ### Settings
 
-- Maptiler API key input and persistence (localStorage). Invalid or revoked keys are surfaced explicitly: a non-2xx style fetch on startup opens the Settings panel with the key field focused, and runtime tile errors above a threshold show a non-modal banner.
+- Maptiler API key input and persistence (localStorage), falling back to a key configured on the server (`MAPTILER_KEY`) so new computers need no setup. Invalid or revoked keys are surfaced explicitly: a non-2xx style fetch on startup opens the Settings panel with the key field focused, and runtime tile errors above a threshold show a non-modal banner.
 - Map defaults: starting center coordinates, zoom level, default basemap
 - Default terrain exaggeration value
 - Export all data as a single ZIP bundle: metadata, photo blobs, and a manifest. The pre-export size is shown before download.
@@ -120,7 +120,6 @@ All four data types are rendered as distinct map layers. Each layer can be toggl
 
 The following are explicitly out of scope for the MVP but should not be architecturally prevented:
 
-- Cloud sync or remote storage
 - Multi-user access or sharing
 - Collaborative editing
 - Avalanche forecast integration
@@ -136,18 +135,17 @@ The following are explicitly out of scope for the MVP but should not be architec
 
 - Map is always the primary surface. Panels and UI chrome are secondary and collapsible.
 - Dark theme by default. Backcountry planning happens in dim environments; light bleed from a white UI is unwelcome.
-- Fast. Data loads from local storage; there should be no perceptible lag when switching layers or opening panels.
-- Mobile-aware from the start. Layout adapts to narrow screens even in the local-only MVP.
+- Fast. Data loads from the home server over the local network; there should be no perceptible lag when switching layers or opening panels.
+- Mobile-aware from the start. Layout adapts to narrow screens.
 - No unnecessary UI. Every element earns its place.
 
 ---
 
 ## Future Considerations
 
-- PowerSync or ElectricSQL for local SQLite → Postgres cloud sync
-- S3-compatible object storage (MinIO on Unraid, or AWS S3) for photo blobs
-- Multi-user with per-user route libraries and optional sharing
+- Multi-user with per-user route libraries and optional sharing (forward-auth in front of the server; every row already carries `user_id`)
+- Offline use in the field: cache library data and map tiles for areas without signal
 - Aspect shading layer
 - Direction arrow / bearing cone on photo pins (from the stored `bearing`)
-- PWA with offline tile caching for field use
+- PWA install over HTTPS (Tailscale or a reverse proxy; see `docs/DEPLOY.md`)
 - Capacitor wrapper for native iOS/Android

@@ -33,7 +33,7 @@ export interface Tag {
 
 export interface Route {
   id: string           // uuid
-  user_id: string      // 'local' until cloud sync arrives
+  user_id: string      // 'local' until there are multiple users
   name: string
   description: string
   geojson: GeoJSON.LineString  // parsed from GPX, stored as JSON string in DB
@@ -151,14 +151,13 @@ export interface BackupManifest {
 
 ```sql
 -- src/storage/migrations/1.sql
--- Forward-compatible with Postgres when cloud sync is added.
--- Avoid SQLite-specific types; use plain TEXT/REAL/INTEGER.
+-- Keep types portable (plain TEXT/REAL/INTEGER) so moving to another
+-- SQL engine later stays cheap.
 
 -- Note: PRAGMAs are intentionally NOT in this migration.
 -- `PRAGMA foreign_keys = ON` is connection-scoped, so we run it from
--- workerHost.ts on every open() rather than once during migration.
--- We do not enable WAL because the async OPFS VFS we use does not
--- support it (WAL needs sync access handles).
+-- NodeSqlBackend.init() (server/nodeBackend.ts) on every open, along with
+-- journal_mode = WAL and busy_timeout, rather than once during migration.
 
 CREATE TABLE schema_version (
   version     INTEGER PRIMARY KEY,
@@ -235,7 +234,7 @@ CREATE TABLE photos (
   elevation_m         REAL,
   bearing             REAL,                   -- 0-359 degrees
 
-  blob_ref            TEXT NOT NULL,          -- OPFS path or future S3 URL
+  blob_ref            TEXT NOT NULL,          -- path under DATA_DIR, e.g. photos/{id}.jpg
   width               INTEGER NOT NULL,
   height              INTEGER NOT NULL,
   file_size_bytes     INTEGER NOT NULL,
@@ -334,7 +333,7 @@ export const PHOTO_CLUSTER = {
 }
 
 // Photo re-encoding (src/utils/image.ts). The full-size cap keeps a 24 MP
-// phone photo around 2-3 MB in OPFS while leaving plenty of zoom detail.
+// phone photo around 2-3 MB on the server while leaving plenty of zoom detail.
 export const PHOTO_MAX_EDGE_PX = 4096
 export const PHOTO_THUMB_EDGE_PX = 128
 export const PHOTO_JPEG_QUALITY = 0.9
@@ -366,7 +365,7 @@ Waypoints and photos are rendered from individual coordinate fields (`lat`, `lng
 
 ## ID Generation
 
-All entity IDs are UUIDs generated client-side using `crypto.randomUUID()`. This is intentional — it ensures IDs are globally unique when cloud sync is added, with no ID conflicts between devices.
+All entity IDs are UUIDs generated client-side by `newId()` (`src/utils/id.ts`): `crypto.randomUUID()` where available, otherwise a v4 UUID built from `crypto.getRandomValues` (plain-HTTP origins lack `randomUUID`). The server never assigns IDs; it validates them (`^[A-Za-z0-9_-]{1,64}$`) because they become photo file names. Client-side UUIDs also keep IDs globally unique if offline sync is ever added.
 
 ---
 
@@ -389,9 +388,9 @@ CREATE TABLE schema_version (
 );
 ```
 
-Single-row table. The OPFS storage implementation reads the current version on startup, compares to a `SCHEMA_VERSION` constant in code, and applies any pending migrations from `src/storage/migrations/{n}.sql` in numeric order. Each migration is wrapped in a transaction.
+Single-row table. `ensureSchema` (`src/storage/schema.ts`), run by the server's `SqlStorageProvider.init()`, reads the current version on startup, compares to a `SCHEMA_VERSION` constant in code, and applies any pending migrations from `src/storage/migrations/{n}.sql` in numeric order. Each migration is wrapped in a transaction.
 
-If the DB version is **greater** than the app's `SCHEMA_VERSION`, the implementation throws `SchemaVersionError` rather than continuing — an older build must not silently operate on a newer database.
+If the DB version is **greater** than the build's `SCHEMA_VERSION`, the server throws `SchemaVersionError` and refuses to start: an older build must not silently operate on a newer database. The browser makes the same check against `/api/health` and asks for a reload.
 
 Initial schema is migration `1.sql`. Future schema changes are numbered sequentially.
 
@@ -399,12 +398,11 @@ Migration `2.sql` (Phase 5) collapses the photo subject/camera split into a sing
 
 ---
 
-## Sync-deferred items
+## Deferred schema changes
 
-These columns and tables are intentionally *not* added now, but the migrations are easy to write when sync arrives:
+Intentionally *not* added now; each is a small migration when its feature arrives (see ARCHITECTURE.md, "Deferred items"):
 
-- `deleted_at TEXT` on every entity table, with all read paths gaining `WHERE deleted_at IS NULL`.
-- A sync-state table (per the chosen sync engine — PowerSync or ElectricSQL).
-- Per-tab coordination via Web Locks if multi-tab use becomes a real workflow.
+- **Multiple users:** nothing to add. `user_id` already exists on every entity table; the server would start filtering by it.
+- **Offline sync:** `deleted_at TEXT` on every entity table, with all read paths gaining `WHERE deleted_at IS NULL`, plus whatever per-device sync state the chosen approach needs.
 
-The current schema is intentionally not "fully sync-ready" — only the cheapest, no-runtime-cost preparation has been done (`user_id`, ISO 8601 timestamps).
+Only the cheapest, no-runtime-cost preparation has been done (`user_id`, client-generated UUIDs, ISO 8601 timestamps).

@@ -2,9 +2,9 @@
 
 ## Guiding Principles
 
-- **Local-first**: All data lives in the browser. No network dependency for core functionality.
+- **Self-hosted and server-authoritative**: All data lives on a small Couloir server: one Docker container (on Unraid) serving the web app and a JSON/blob API from SQLite plus photo files on a volume. Browsers hold no entity data, so any computer on the network sees the same library and a lost browser profile loses nothing. The app is online-only; offline field use is deferred.
 - **Storage abstraction**: All data access goes through a storage interface. The implementation is swappable without touching application code.
-- **Sync-aware schema**: The local SQLite schema is shaped so that adopting a sync backend is a code change, not a schema redesign. We pay the costs that are nearly free now and defer those that aren't (see "Sync-deferred items" below).
+- **Sync-aware schema**: The SQLite schema is shaped so that adopting offline sync later is a code change, not a schema redesign. We pay the costs that are nearly free now and defer those that aren't (see "Deferred items" below).
 - **One codebase**: The same React app runs as a desktop web app, a PWA, and (eventually) a Capacitor mobile app.
 
 ---
@@ -17,8 +17,10 @@
 | Language | TypeScript | Type safety is worth it for a data-model-heavy app |
 | Map renderer | MapLibre GL JS | Open source, Maptiler-compatible, excellent 3D terrain support |
 | Terrain & tiles | Maptiler | RGB terrain tiles, satellite, topo, and winter basemaps |
-| Local database | wa-sqlite (async build) with `OriginPrivateFileSystemVFS` | wa-sqlite 1.0.0 on npm doesn't ship `OPFSCoopSyncVFS`, so we use the async-build OPFS VFS that does ship; it has the same architectural properties (no COOP/COEP requirement, OPFS access handles serialized via WebLocks) |
-| Photo storage | OPFS blobs alongside SQLite | Self-contained, no server required |
+| Server | Node 24 + [Hono](https://hono.dev) (`@hono/node-server`) | Small, TypeScript-first, Web-standard `Request`/`Response`; serves the SPA and `/api` from one process |
+| Database | SQLite via Node's built-in `node:sqlite` | No native module to compile, no dependency; WAL mode; one file on the volume |
+| Photo storage | Plain JPEG files on the server's data volume | Immutable per id, so they're cached forever by browsers and backed up with the volume |
+| Deployment | Docker image on GHCR, built by GitHub Actions; Unraid template | One container, one port, one data directory |
 | State management | Zustand | Lightweight, no boilerplate, works well with async storage layer |
 | Styling | CSS Modules + CSS custom properties | Scoped styles, no runtime cost, easy theming |
 | Charts | Recharts | Elevation profiles; React-native, lightweight |
@@ -33,8 +35,21 @@
 
 ```
 couloir/
+├── Dockerfile                 # Multi-stage node:24-alpine image (SPA + single-file server)
+├── .github/workflows/docker.yml  # Test, then publish ghcr.io/rprouse/couloir on push to main
+├── deploy/unraid/couloir.xml  # Unraid container template
+├── docs/DEPLOY.md             # Install, backups, HTTPS, updates, troubleshooting
+├── vite.server.config.ts      # Bundles server/main.ts into dist-server/main.js
 ├── public/
 │   └── icons/                 # App icons (icon.svg source + rendered PNGs)
+├── server/                    # Node server (own tsconfig; tests use the node environment)
+│   ├── main.ts                # Production entry: env → storage → app → listen; backups; SIGTERM
+│   ├── app.ts                 # createApp(): the /api routes + static SPA serving
+│   ├── nodeBackend.ts         # SqlBackend over node:sqlite + files under DATA_DIR
+│   ├── sqlite.ts              # Loads node:sqlite via createRequire (see Server below)
+│   ├── backups.ts             # Daily VACUUM INTO snapshots + retention; snapshot download
+│   ├── devApp.ts / devPlugin.ts  # Mount the API inside the Vite dev server
+│   └── log.ts                 # stderr logging for the container log
 ├── src/
 │   ├── main.tsx               # App entry point
 │   ├── App.tsx                # Root component, layout shell
@@ -42,14 +57,14 @@ couloir/
 │   │   ├── interface.ts       # StorageProvider interface (the abstraction)
 │   │   ├── errors.ts          # SchemaVersionError, StorageNotInitializedError
 │   │   ├── provider.ts        # getStorage / setStorage DI seam
+│   │   ├── http.ts            # HttpStorageProvider: the browser's provider, over /api
+│   │   ├── sqlProvider.ts     # SqlStorageProvider: all of Couloir's SQL, over a SqlBackend
+│   │   ├── sqlBackend.ts      # SqlBackend interface + SqlValue/SqlRow/SqlOp
+│   │   ├── schema.ts          # ensureSchema(): runs pending migrations
 │   │   ├── memory.ts          # InMemoryStorageProvider (used by tests)
-│   │   ├── opfs.ts            # OPFSStorageProvider main-thread shell (RPC client)
-│   │   ├── workerProtocol.ts  # Wire types between main thread and worker
-│   │   ├── workerClient.ts    # postMessage RPC wrapper (rejects pending on worker death, rehydrates SchemaVersionError)
-│   │   ├── workerHost.ts      # Worker entry: wa-sqlite + OPFS VFS + ensureSchema + blob ops
-│   │   ├── wa-sqlite.d.ts     # Ambient declarations for the wa-sqlite surface we use
+│   │   ├── contract.ts        # storageContract(): the shared suite every provider passes
 │   │   └── migrations/
-│   │       ├── 1.sql          # Initial schema (source of truth for v1)
+│   │       ├── 1.sql, 2.sql   # Schema migrations (the source of truth)
 │   │       └── index.ts       # MIGRATIONS list + SCHEMA_VERSION constant
 │   ├── dev/
 │   │   └── devConsole.ts      # window.__couloir helper, dev-only
@@ -88,7 +103,8 @@ couloir/
 │   │   ├── routes/            # Route import, form, list
 │   │   ├── tracks/            # Track import, form, list
 │   │   ├── waypoints/         # Waypoint creation, form
-│   │   └── photos/            # Photo upload, EXIF processing, placement, viewer
+│   │   ├── photos/            # Photo upload, EXIF processing, placement, viewer
+│   │   └── backup/            # ZIP backup read/write via fflate
 │   ├── components/
 │   │   ├── ElevationProfile/  # Recharts elevation chart
 │   │   ├── TagPicker/
@@ -103,11 +119,11 @@ couloir/
 │   │   ├── gpx.ts             # GPX parser
 │   │   ├── exif.ts            # EXIF reading (orientation, GPS, bearing, altitude, date)
 │   │   ├── image.ts           # Re-encode JPEG with applied orientation, generate thumbnails
-│   │   ├── hash.ts            # SHA-256 of bytes (for source_hash)
+│   │   ├── hash.ts            # SHA-256 of bytes (for source_hash); pure-JS fallback off HTTPS
+│   │   ├── id.ts              # newId(): UUID v4, with a fallback off HTTPS
 │   │   ├── geo.ts             # Coordinate utilities, distance, elevation
 │   │   ├── format.ts          # Distance, elevation, duration formatting; isValidHex
-│   │   ├── debug.ts           # Debug-logging helper, gated by localStorage flag
-│   │   └── backup.ts          # ZIP read/write via fflate
+│   │   └── debug.ts           # Debug-logging helper, gated by localStorage flag
 │   └── types/
 │       └── index.ts           # Shared TypeScript types
 ```
@@ -165,35 +181,83 @@ export interface StorageProvider {
 }
 ```
 
-The OPFS implementation (`src/storage/opfs.ts`) is the only file that contains SQLite calls. When a sync backend is added, a new implementation file is created and injected at the app root — zero changes to feature code.
+### Implementations
 
-`updatePhotoMetadata` rewrites only the row and tag junction rows; it never touches OPFS blobs. All photo edits (including drag-to-reposition) use it.
+```
+browser                                   server
+HttpStorageProvider ── fetch /api/* ──▶  Hono app (server/app.ts)
+                                            │
+                                            ▼
+                                         SqlStorageProvider ── SqlBackend ──▶ NodeSqlBackend
+                                         (src/storage/sqlProvider.ts)         node:sqlite + files
+```
+
+- **`HttpStorageProvider`** (`src/storage/http.ts`) is the only provider the app uses. It maps each method to an `/api` call: 404 on a read becomes `null`, other failures throw `HttpStorageError` with the server's message, and an unreachable server or a server schema newer than the build fails `init()` clearly. `exportAll` assembles the bundle from the list endpoints; the server has no export endpoint, because it would have to load every blob to answer one.
+- **`SqlStorageProvider`** (`src/storage/sqlProvider.ts`) is the only code that contains SQL. It runs `ensureSchema` in `init()` and talks to a `SqlBackend` (`all`/`one`/`run`/`tx` plus blob read/write/delete).
+- **`NodeSqlBackend`** (`server/nodeBackend.ts`) implements `SqlBackend` on `node:sqlite` and the filesystem under `DATA_DIR`.
+- **`InMemoryStorageProvider`** (`src/storage/memory.ts`) backs most unit tests.
+
+All four run the same `storageContract()` suite (`src/storage/contract.ts`). `server/httpProvider.test.ts` runs it end to end: `HttpStorageProvider` → the Hono app in-process (via `app.fetch`, no network) → `SqlStorageProvider` → `node:sqlite` in a temp directory.
+
+`updatePhotoMetadata` rewrites only the row and tag junction rows; it never touches the stored photo files. All photo edits (including drag-to-reposition) use it.
 
 **Notable absences**: there are no `linkPhotoToRoute` / `linkPhotoToTrack` / `unlinkPhoto` methods. Photos do not link to routes, tracks, or waypoints; spatial proximity on the map is the relationship.
 
 ---
 
-## VFS Choice and OPFS Caveats
+## Server
 
-We use `wa-sqlite`'s `OriginPrivateFileSystemVFS` paired with the async `wa-sqlite-async.mjs` build. (The plan originally specified `OPFSCoopSyncVFS` but that VFS only ships in unreleased wa-sqlite versions; the published 1.0.0 npm package only carries `OriginPrivateFileSystemVFS`. The substitute preserves the relevant architectural properties.) Three important properties:
+One Node process serves the built SPA and the API (`server/main.ts`, bundled by `vite.server.config.ts` into `dist-server/main.js` with its dependencies inlined, so the Docker image carries no `node_modules`). In development, `server/devPlugin.ts` mounts the same API inside the Vite dev server, so `npm run dev` is still one process on one port, with data in `./data`.
 
-- It does **not** require COOP/COEP (cross-origin-isolation) headers. The Vite dev server can stay simple, and third-party iframes/images keep working.
-- It serializes access to the database file via OPFS sync access handles + Web Locks, which makes it effectively single-tab. Opening Couloir in two tabs at once will cause the second tab's `init()` to block (or fail) when the first holds the access handle. Acceptable for a single-user app; not acceptable for multi-tab use without coordination.
-- The async build forwards every wa-sqlite operation through a worker round-trip. Latency overhead is small for the CRUD-heavy workload Couloir produces.
+### Data directory
 
-**Browser support caveats:**
+```
+DATA_DIR (/data in Docker)
+├── couloir.db             SQLite, WAL mode, foreign keys on
+├── photos/{id}.jpg        full-size photo
+├── photos/{id}_thumb.jpg  thumbnail
+└── backups/couloir-YYYYMMDD.db   daily snapshots
+```
 
-- **Safari incognito**: OPFS is unavailable. The app cannot operate in Safari private browsing.
-- **Chrome incognito**: 100 MB OPFS quota cap.
-- **All browsers**: OPFS quotas are dynamic and can be reclaimed by the OS under storage pressure. Backups (the ZIP export) are the user's only protection against this.
+### API
 
-These limitations are documented in the user-facing settings panel as "Storage requirements."
+One route per `StorageProvider` method. Writes return `204`; missing entities and blobs `404 { error }`; bad input `400 { error }`; anything else `500 { error }`, logged to stderr.
+
+| Method | Path | |
+|---|---|---|
+| GET | `/api/health` | `{ ok, schemaVersion }` |
+| GET | `/api/config` | `{ maptilerKey }` from `MAPTILER_KEY`, or null |
+| GET / PUT / DELETE | `/api/routes[/:id]`, `/api/tracks[/:id]`, `/api/waypoints[/:id]` | list / read / upsert / delete |
+| GET | `/api/routes/by-hash/:hash`, `/api/tracks/by-hash/:hash` | duplicate detection |
+| GET | `/api/photos[/:id]`, `/api/photos/:id/full`, `/api/photos/:id/thumb` | metadata and JPEGs |
+| PUT | `/api/photos/:id` | new photo: multipart `photo` (JSON) + `full` + `thumb` |
+| PATCH | `/api/photos/:id` | metadata and tags only |
+| GET / PUT / DELETE | `/api/tags[/:id]` | |
+| PUT | `/api/entity-tags/:type/:id` | `{ tagIds }` |
+| POST | `/api/import` | backup restore: multipart `bundle` + `full:{id}` / `thumb:{id}` files |
+| GET | `/api/backup/db` | a fresh database snapshot as a download |
+
+- **IDs** must match `^[A-Za-z0-9_-]{1,64}$` before they reach storage, since they become file names; the backend also refuses any blob path that resolves outside `DATA_DIR`. A `PUT` body's `id` must match the URL.
+- **Caching**: photo JPEGs are immutable per id (`Cache-Control: immutable`). Hashed `/assets/*` bundles are immutable; `index.html`, `sw.js` and the manifest are `no-cache`. Extension-less paths fall back to `index.html`.
+- **Concurrency**: one SQLite connection serves every request, so `NodeSqlBackend.tx()` is synchronous from `BEGIN` to `COMMIT`: an `await` inside it would let another request's statements join the transaction. Writes are last-write-wins.
+- **`node:sqlite` is loaded through `createRequire`** (`server/sqlite.ts`). Vitest 2's module runner strips the `node:` prefix from every builtin except `node:test`, so `import 'node:sqlite'` fails under test. Import `DatabaseSync` from `./sqlite`, never from `node:sqlite`.
+- **Shutdown**: on SIGTERM/SIGINT the server stops accepting connections, waits for in-flight requests and any running snapshot (up to 5 s), then closes the database, which checkpoints the WAL.
+
+### Backups
+
+At startup and every 24 hours, `VACUUM INTO` writes `backups/couloir-YYYYMMDD.db` (UTC date) via a temp file and rename; the newest `BACKUP_KEEP` (default 14) are kept. A tick that arrives while a snapshot is running is skipped. Photos are not in the snapshots: they're immutable files covered by backing up the volume. The ZIP export (below) is the all-in-one copy.
+
+### Plain HTTP
+
+Browsers only provide some APIs in secure contexts (HTTPS or localhost), and on a LAN address like `http://unraid:8080` they are missing. The app works there anyway: `newId()` builds UUIDs from `getRandomValues` when `crypto.randomUUID` is absent, `sha256Hex` falls back to a pure-JS SHA-256 when `crypto.subtle` is absent (identical digests), and service-worker registration failure is ignored (the app just can't be installed). Any new use of a secure-context-only API needs the same treatment. HTTPS options (Tailscale, reverse proxy) are in `docs/DEPLOY.md`.
+
+There is no authentication. The server is meant for a home network or tailnet only.
 
 ---
 
 ## Maptiler Integration
 
-The Maptiler API key is stored in `localStorage` under the key `couloir_maptiler_key`. It is read at app startup and injected into all map style URLs and terrain source URLs.
+The key in effect is the browser's own key, stored in `localStorage` under `couloir_maptiler_key`, or failing that the server's `MAPTILER_KEY`, fetched from `/api/config` at startup and held in memory only (so a change on the server applies on reload). The settings store exposes the effective `maptilerKey` plus `maptilerKeySource` (`'local' | 'server'`); Settings labels a server key and offers "Use server key" to drop a local override. The key is injected into all map style URLs and terrain source URLs.
 
 ### Style URLs
 
@@ -383,7 +447,7 @@ PhotosLayer    → source: 'photos-source' (cluster: true, clusterMaxZoom: 13, c
 
 Each layer uses a GeoJSON source. When data changes in the Zustand store, the layer updates the source data via `map.getSource(id).setData(geojson)`.
 
-Photo thumbnails are placed at the photo's position (`lat`/`lng`). Photo thumbnail icons are decoded from OPFS on demand, framed on a canvas, and registered as `photo-{id}`; until ready, a `photo-placeholder` tile is shown via `['coalesce', ['image', ['get','icon']], ['image','photo-placeholder']]`. Cluster click eases to `getClusterExpansionZoom`.
+Photo thumbnails are placed at the photo's position (`lat`/`lng`). Photo thumbnail icons are fetched from the server on demand, framed on a canvas, and registered as `photo-{id}`; until ready, a `photo-placeholder` tile is shown via `['coalesce', ['image', ['get','icon']], ['image','photo-placeholder']]`. Cluster click eases to `getClusterExpansionZoom`.
 
 Click handlers:
 
@@ -395,46 +459,18 @@ Click handlers:
 
 ## Photo Storage Detail
 
-Photos are stored as blobs in OPFS alongside the SQLite database file. The SQLite `photos` table stores metadata and a `blob_ref` filename. The OPFS implementation stores blobs at predictable paths:
+Photos are stored as files on the server, under `DATA_DIR` beside the SQLite database. The SQLite `photos` table stores metadata and a `blob_ref` filename. Blobs live at predictable paths:
 
 - `photos/{id}.jpg` — full-size, EXIF-stripped JPEG
 - `photos/{id}_thumb.jpg` — thumbnail (max 128 px on longest edge)
 
-When the app moves to cloud sync:
-- The `photos` table syncs via PowerSync/ElectricSQL to Postgres.
-- Blobs are uploaded to S3 on save; `blob_ref` becomes a stable S3 key.
-- The OPFS blob accessor is replaced with an S3 fetcher.
-- The storage interface does not change.
+The browser uploads both in one multipart `PUT /api/photos/:id` and reads them from `/api/photos/:id/full` and `/thumb`. Writes go to a temp file and are renamed into place, so a crash never leaves a truncated photo. Photos never change after upload, so browsers cache them indefinitely.
 
 ---
 
 ## Schema Migrations
 
-```typescript
-// src/storage/opfs.ts (sketch)
-
-const SCHEMA_VERSION = 1
-
-async function ensureSchema(db) {
-  const current = await readSchemaVersion(db)   // 0 if table missing/empty
-  if (current === 0) {
-    await applyMigration(db, 1)                 // src/storage/migrations/1.sql
-    await writeSchemaVersion(db, SCHEMA_VERSION)
-    return
-  }
-  if (current === SCHEMA_VERSION) return
-  if (current > SCHEMA_VERSION) {
-    throw new SchemaVersionError(
-      `Database is v${current}; this build expects v${SCHEMA_VERSION}. ` +
-      `Refresh or downgrade the app.`
-    )
-  }
-  for (let v = current + 1; v <= SCHEMA_VERSION; v++) {
-    await applyMigration(db, v)                 // src/storage/migrations/{v}.sql, in a transaction
-    await writeSchemaVersion(db, v)
-  }
-}
-```
+`ensureSchema(db)` (`src/storage/schema.ts`) runs from `SqlStorageProvider.init()` when the server starts. It reads the current version (0 for a fresh database), applies each pending `src/storage/migrations/{n}.sql` in its own transaction, and throws `SchemaVersionError` if the database is newer than the build, so the server refuses to start rather than run an older build on a newer schema. The browser checks too: `HttpStorageProvider.init()` throws `SchemaVersionError` if `/api/health` reports a schema newer than its own `SCHEMA_VERSION` (a stale cached app; reloading fixes it).
 
 **Conventions**:
 
@@ -461,7 +497,7 @@ couloir-backup-2026-05-05.zip
 
 **Import** collects the picked file and reads it through the ZIP central directory with `fflate.unzipSync`, holding the extracted entries in memory because `importAll` takes `Map`s of every blob. It deliberately does not use the streaming `fflate.Unzip`: `fflate.Zip` writes every entry with a trailing data descriptor, and the streaming reader finds the end of such an entry by scanning for the descriptor's signature bytes, which can occur inside JPEG data and truncate a photo. Backups whose `bundle_version` is newer than `BUNDLE_VERSION` are rejected.
 
-`StorageProvider.exportAll()` remains (the dev console's `window.__couloir.exportAll` uses it), but the backup UI doesn't. Restore does go through `importAll()`.
+`StorageProvider.exportAll()` remains (the dev console's `window.__couloir.exportAll` uses it), but the backup UI doesn't. Restore does go through `importAll()`, which `HttpStorageProvider` sends as one multipart `POST /api/import`; the server applies it with `SqlStorageProvider.importAll`.
 
 The Settings UI shows a pre-export size estimate ("Backup will be ~412 MB. Continue?") computed by summing photo `file_size_bytes` plus a small overhead.
 
@@ -493,38 +529,23 @@ Enable from DevTools: `localStorage.setItem('couloir_debug', '1')` (then reload)
 
 ---
 
-## Sync-deferred items
+## Deferred items
 
-These items are intentionally not implemented now; each is cheap to add when sync arrives:
+Intentionally not implemented yet; each has a clear path:
 
-- **`deleted_at TEXT` column** on every entity table, plus `WHERE deleted_at IS NULL` on every list query. Migration: a single `ALTER TABLE` per entity table.
-- **Sync-state tracking** (per the chosen sync engine — PowerSync or ElectricSQL).
-- **Multi-tab coordination** via Web Locks if multiple-tab use becomes a real workflow.
+- **Authentication and multiple users.** Every entity row already has `user_id` (`'local'` today). The planned route is forward-auth in front of the container (Authelia, Authentik or Tailscale identity) passing a `Remote-User` header, with the server filtering by `user_id`. The server would never handle passwords.
+- **Stale-write detection.** Writes are last-write-wins. If two computers editing the same item becomes a real problem, the client sends the `updated_at` it loaded and the server answers `409` when the row has moved on.
+- **Offline use in the field.** The app is online-only. Options, cheapest first: a read-only cache of `/api` GETs and map tiles in the service worker; or local-first storage with two-way sync to the server, which would need `deleted_at` tombstones (one `ALTER TABLE` per entity table plus `WHERE deleted_at IS NULL` on list queries) and per-device sync cursors.
 
-The schema *is* prepared for sync in the cheap ways (`user_id`, ISO 8601 timestamps), and the storage interface is already abstracted.
-
----
-
-## Future Sync Architecture
-
-When cloud sync is added, the recommended path is:
-
-1. **PowerSync** or **ElectricSQL** for SQLite → Postgres sync with offline-first conflict resolution.
-2. **MinIO on Unraid** (S3-compatible) or **AWS S3** for photo blob storage.
-3. **Hono** on a Docker container (Unraid) as the lightweight API/auth layer.
-4. A new `StorageProvider` implementation (`src/storage/sync.ts`) is injected at app root.
-5. Auth is added (simple JWT or Clerk for multi-user).
-
-No feature code changes are required — only the storage implementation, the deferred-items migration, and app-root provider injection.
+The schema is prepared in the cheap ways (`user_id`, client-generated UUIDs, ISO 8601 `updated_at`), and the storage interface is abstracted, so none of these needs feature-code changes.
 
 ---
 
 ## PWA Configuration
 
 - `vite-plugin-pwa` (dev dependency) in `generateSW` mode, configured in `vite.config.ts`. `registerType: 'autoUpdate'`: a new build's service worker activates on the next visit.
-- Workbox precaches everything the build emits that matches `**/*.{js,css,html,wasm,svg,png,webmanifest}`: `index.html`, the main JS/CSS chunks, the storage worker chunk (`assets/workerHost-*.js`), the wa-sqlite `.wasm`, the icons and the manifest. `maximumFileSizeToCacheInBytes` is raised to 6 MB so the ~1.5 MB main chunk is not skipped. `navigateFallback: '/index.html'`.
-- Map tiles are **not** cached yet (post-MVP "offline tile caching"). Offline, the app opens with all its data but the basemap is blank.
-- OPFS data is inherently offline-capable.
-- The service worker exists only in production builds: `devOptions.enabled` is false, and `src/main.tsx` registers it via a dynamic `import('virtual:pwa-register')` behind `import.meta.env.PROD`, so the dev server and Vitest never see it.
+- Workbox precaches everything the build emits that matches `**/*.{js,css,html,svg,png,webmanifest}`: `index.html`, the main JS/CSS chunks, the icons and the manifest. `maximumFileSizeToCacheInBytes` is raised to 4 MB because the ~1.5 MB main chunk (mostly MapLibre) is close to Workbox's 2 MB default, which would silently drop it. `navigateFallback: '/index.html'`, with `navigateFallbackDenylist: [/^\/api\//]` so the shell never answers for the API.
+- Neither `/api` data nor map tiles are cached, so the cached shell can start offline but has no data until the server is reachable (see "Deferred items").
+- The service worker exists only in production builds: `devOptions.enabled` is false, and `src/main.tsx` registers it via a dynamic `import('virtual:pwa-register')` behind `import.meta.env.PROD`, so the dev server and Vitest never see it. Registration fails on plain-HTTP origins and that failure is ignored.
 - The plugin emits `manifest.webmanifest` (name/short_name "Couloir", `display: standalone`, theme and background `#0e1014`) and injects the `<link rel="manifest">` into `index.html`.
 - Icons live in `public/icons/`. `icon.svg` is the hand-written source (full-bleed so it doubles as maskable). `icon-192.png`, `icon-512.png` (also the maskable entry) and `apple-touch-icon.png` (180 px) are rendered once from it and committed; no icon tooling is in the repo.

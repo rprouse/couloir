@@ -56,24 +56,6 @@ docker run -d --name couloir --restart unless-stopped \
 | `MAPTILER_KEY` | unset | Maptiler key for browsers that have none of their own |
 | `BACKUP_KEEP` | `14` | Daily snapshots kept in `backups/` (at least 1) |
 
-## Moving your existing data across
-
-Before the server existed, Couloir kept everything in each browser's own storage. To bring that library over:
-
-1. On the computer and browser that hold the data, run the last browser-storage build:
-   ```sh
-   git fetch --tags
-   git switch --detach last-opfs
-   npm ci
-   npm run dev
-   ```
-2. Open **the same address you always used**, normally `http://localhost:5173`. Browser storage is tied to the exact address, so a different port shows an empty library.
-3. Settings → Backup → **Export backup…**. Keep the ZIP somewhere safe.
-4. Open the server (`http://<unraid-ip>:8080`), then Settings → Backup → **Restore from backup…** and choose that ZIP.
-5. Spot-check: route, track, waypoint and photo counts in the Layers panel, a few photos at full size, and tags.
-
-Restore merges by `updated_at`, so running it twice is harmless.
-
 ## Backups
 
 - **Daily database snapshots.** At startup and every 24 hours the server writes a consistent copy of the database to `backups/couloir-YYYYMMDD.db` (UTC date) and keeps the newest `BACKUP_KEEP`. Settings → **Download the database only** grabs a fresh one on demand.
