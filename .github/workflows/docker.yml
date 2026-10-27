@@ -1,10 +1,11 @@
 name: Docker image
 
 # Every push to main is tested and published to GHCR as :latest and
-# :sha-<short>. Unraid pulls :latest.
+# :sha-<short>. Unraid pulls :latest. Pull requests run the tests only.
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -30,6 +31,7 @@ jobs:
 
   publish:
     needs: test
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
