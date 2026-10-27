@@ -10,42 +10,42 @@ import type {
 } from '../types'
 import { APP_VERSION, BUNDLE_VERSION } from '../types'
 import type { StorageProvider } from './interface'
-import { WorkerClient } from './workerClient'
-import StorageWorker from './workerHost?worker'
-import type { SqlOp, SqlRow, SqlValue } from './workerProtocol'
+import { ensureSchema } from './schema'
+import type { SqlBackend, SqlOp, SqlRow, SqlValue } from './sqlBackend'
 
-export class OPFSStorageProvider implements StorageProvider {
-  private client: WorkerClient
-  // Once closed, the worker is terminated; further calls would hang forever
-  // waiting for replies. Track the state so close() is safely idempotent.
+// StorageProvider over any SqlBackend. All of Couloir's SQL lives here; the
+// server's node:sqlite backend (server/nodeBackend.ts) only supplies the
+// connection and blob I/O.
+export class SqlStorageProvider implements StorageProvider {
+  // Track the state so close() is safely idempotent.
   private closed = false
 
-  constructor() {
-    this.client = new WorkerClient(new StorageWorker())
-  }
+  constructor(protected db: SqlBackend) {}
 
   async init(): Promise<void> {
-    await this.client.init()
+    await this.db.init()
+    // Blocks until the schema is at SCHEMA_VERSION, so nothing ever reads
+    // from a half-migrated database.
+    await ensureSchema(this.db)
   }
 
   async close(): Promise<void> {
     if (this.closed) return
-    await this.client.close()
-    this.client.terminate()
     this.closed = true
+    await this.db.close()
   }
 
   // --- Routes ---------------------------------------------------------------
 
   async getRoutes(): Promise<Route[]> {
-    const rows = await this.client.all(`SELECT * FROM routes ORDER BY created_at`)
+    const rows = await this.db.all(`SELECT * FROM routes ORDER BY created_at`)
     const ids = rows.map((r) => r.id as string)
     const tagMap = await this.tagsByEntity('route', ids)
     return rows.map((r) => this.rowToRoute(r, tagMap.get(r.id as string) ?? []))
   }
 
   async getRoute(id: string): Promise<Route | null> {
-    const row = await this.client.one(`SELECT * FROM routes WHERE id = ?`, [id])
+    const row = await this.db.one(`SELECT * FROM routes WHERE id = ?`, [id])
     if (!row) return null
     const tagMap = await this.tagsByEntity('route', [id])
     return this.rowToRoute(row, tagMap.get(id) ?? [])
@@ -65,11 +65,11 @@ export class OPFSStorageProvider implements StorageProvider {
       },
       ...this.replaceTagsOps('route', route.id, route.tags),
     ]
-    await this.client.tx(ops)
+    await this.db.tx(ops)
   }
 
   async deleteRoute(id: string): Promise<void> {
-    await this.client.tx([
+    await this.db.tx([
       {
         sql: `DELETE FROM entity_tags WHERE entity_type = 'route' AND entity_id = ?`,
         params: [id],
@@ -79,7 +79,7 @@ export class OPFSStorageProvider implements StorageProvider {
   }
 
   async getRouteBySourceHash(hash: string): Promise<Route | null> {
-    const row = await this.client.one(
+    const row = await this.db.one(
       `SELECT * FROM routes WHERE source_hash = ? LIMIT 1`,
       [hash],
     )
@@ -92,14 +92,14 @@ export class OPFSStorageProvider implements StorageProvider {
   // --- Tracks ---------------------------------------------------------------
 
   async getTracks(): Promise<Track[]> {
-    const rows = await this.client.all(`SELECT * FROM tracks ORDER BY created_at`)
+    const rows = await this.db.all(`SELECT * FROM tracks ORDER BY created_at`)
     const ids = rows.map((r) => r.id as string)
     const tagMap = await this.tagsByEntity('track', ids)
     return rows.map((r) => this.rowToTrack(r, tagMap.get(r.id as string) ?? []))
   }
 
   async getTrack(id: string): Promise<Track | null> {
-    const row = await this.client.one(`SELECT * FROM tracks WHERE id = ?`, [id])
+    const row = await this.db.one(`SELECT * FROM tracks WHERE id = ?`, [id])
     if (!row) return null
     const tagMap = await this.tagsByEntity('track', [id])
     return this.rowToTrack(row, tagMap.get(id) ?? [])
@@ -119,11 +119,11 @@ export class OPFSStorageProvider implements StorageProvider {
       },
       ...this.replaceTagsOps('track', track.id, track.tags),
     ]
-    await this.client.tx(ops)
+    await this.db.tx(ops)
   }
 
   async deleteTrack(id: string): Promise<void> {
-    await this.client.tx([
+    await this.db.tx([
       {
         sql: `DELETE FROM entity_tags WHERE entity_type = 'track' AND entity_id = ?`,
         params: [id],
@@ -133,7 +133,7 @@ export class OPFSStorageProvider implements StorageProvider {
   }
 
   async getTrackBySourceHash(hash: string): Promise<Track | null> {
-    const row = await this.client.one(
+    const row = await this.db.one(
       `SELECT * FROM tracks WHERE source_hash = ? LIMIT 1`,
       [hash],
     )
@@ -146,14 +146,14 @@ export class OPFSStorageProvider implements StorageProvider {
   // --- Waypoints ------------------------------------------------------------
 
   async getWaypoints(): Promise<Waypoint[]> {
-    const rows = await this.client.all(`SELECT * FROM waypoints ORDER BY created_at`)
+    const rows = await this.db.all(`SELECT * FROM waypoints ORDER BY created_at`)
     const ids = rows.map((r) => r.id as string)
     const tagMap = await this.tagsByEntity('waypoint', ids)
     return rows.map((r) => this.rowToWaypoint(r, tagMap.get(r.id as string) ?? []))
   }
 
   async getWaypoint(id: string): Promise<Waypoint | null> {
-    const row = await this.client.one(`SELECT * FROM waypoints WHERE id = ?`, [id])
+    const row = await this.db.one(`SELECT * FROM waypoints WHERE id = ?`, [id])
     if (!row) return null
     const tagMap = await this.tagsByEntity('waypoint', [id])
     return this.rowToWaypoint(row, tagMap.get(id) ?? [])
@@ -172,11 +172,11 @@ export class OPFSStorageProvider implements StorageProvider {
       },
       ...this.replaceTagsOps('waypoint', waypoint.id, waypoint.tags),
     ]
-    await this.client.tx(ops)
+    await this.db.tx(ops)
   }
 
   async deleteWaypoint(id: string): Promise<void> {
-    await this.client.tx([
+    await this.db.tx([
       {
         sql: `DELETE FROM entity_tags WHERE entity_type = 'waypoint' AND entity_id = ?`,
         params: [id],
@@ -191,14 +191,14 @@ export class OPFSStorageProvider implements StorageProvider {
   private photoThumbPath(id: string): string { return `photos/${id}_thumb.jpg` }
 
   async getPhotos(): Promise<Photo[]> {
-    const rows = await this.client.all(`SELECT * FROM photos ORDER BY created_at`)
+    const rows = await this.db.all(`SELECT * FROM photos ORDER BY created_at`)
     const ids = rows.map((r) => r.id as string)
     const tagMap = await this.tagsByEntity('photo', ids)
     return rows.map((r) => this.rowToPhoto(r, tagMap.get(r.id as string) ?? []))
   }
 
   async getPhoto(id: string): Promise<Photo | null> {
-    const row = await this.client.one(`SELECT * FROM photos WHERE id = ?`, [id])
+    const row = await this.db.one(`SELECT * FROM photos WHERE id = ?`, [id])
     if (!row) return null
     const tagMap = await this.tagsByEntity('photo', [id])
     return this.rowToPhoto(row, tagMap.get(id) ?? [])
@@ -213,19 +213,19 @@ export class OPFSStorageProvider implements StorageProvider {
     // not stream-backed — those would be consumed by the first read.
     const fullBuf = await blob.arrayBuffer()
     const thumbBuf = await thumb.arrayBuffer()
-    await this.client.writeBlob(this.photoFullPath(photo.id), fullBuf)
+    await this.db.writeBlob(this.photoFullPath(photo.id), fullBuf)
     try {
-      await this.client.writeBlob(this.photoThumbPath(photo.id), thumbBuf)
+      await this.db.writeBlob(this.photoThumbPath(photo.id), thumbBuf)
     } catch (err) {
       // Best-effort rollback — if deleteBlob itself rejects, swallow it so
       // the original error wins. (The metadata row was never written, so
       // a leaked blob is the only consequence — no UI will see it.)
-      try { await this.client.deleteBlob(this.photoFullPath(photo.id)) } catch { /* swallow */ }
+      try { await this.db.deleteBlob(this.photoFullPath(photo.id)) } catch { /* swallow */ }
       throw err
     }
 
     try {
-      await this.client.tx([
+      await this.db.tx([
         {
           sql: `INSERT OR REPLACE INTO photos (
                   id, user_id, name, description,
@@ -241,21 +241,21 @@ export class OPFSStorageProvider implements StorageProvider {
       ])
     } catch (err) {
       // Best-effort rollback of both blobs. Either swallow may run if the
-      // file isn't present (worker tolerates that); if a rollback rejects
+      // file isn't present (backends tolerate that); if a rollback rejects
       // for another reason, swallow it so the original tx-failure error
       // wins and bubbles up unchanged.
-      try { await this.client.deleteBlob(this.photoFullPath(photo.id)) } catch { /* swallow */ }
-      try { await this.client.deleteBlob(this.photoThumbPath(photo.id)) } catch { /* swallow */ }
+      try { await this.db.deleteBlob(this.photoFullPath(photo.id)) } catch { /* swallow */ }
+      try { await this.db.deleteBlob(this.photoThumbPath(photo.id)) } catch { /* swallow */ }
       throw err
     }
   }
 
   async updatePhotoMetadata(photo: Photo): Promise<void> {
-    const existing = await this.client.one(`SELECT id FROM photos WHERE id = ?`, [photo.id])
+    const existing = await this.db.one(`SELECT id FROM photos WHERE id = ?`, [photo.id])
     if (!existing) throw new Error(`photo ${photo.id} not found`)
     // Only user-editable columns. blob_ref / dimensions / size are fixed at
-    // import, so the OPFS files are never rewritten on a metadata edit.
-    await this.client.tx([
+    // import, so the stored blobs are never rewritten on a metadata edit.
+    await this.db.tx([
       {
         sql: `UPDATE photos
                  SET name = ?, description = ?,
@@ -274,40 +274,40 @@ export class OPFSStorageProvider implements StorageProvider {
   }
 
   async getPhotoBlob(id: string): Promise<Blob | null> {
-    const buf = await this.client.readBlob(this.photoFullPath(id))
+    const buf = await this.db.readBlob(this.photoFullPath(id))
     return buf ? new Blob([buf], { type: 'image/jpeg' }) : null
   }
 
   async getPhotoThumb(id: string): Promise<Blob | null> {
-    const buf = await this.client.readBlob(this.photoThumbPath(id))
+    const buf = await this.db.readBlob(this.photoThumbPath(id))
     return buf ? new Blob([buf], { type: 'image/jpeg' }) : null
   }
 
   async deletePhoto(id: string): Promise<void> {
-    // Row-first ordering: SQL row + entity_tags first, then OPFS blobs.
+    // Row-first ordering: SQL row + entity_tags first, then blobs.
     // A crash between the two leaves orphan files but no UI references
     // them (getPhoto returns null), which is preferable to the inverse
     // (rows pointing at missing blobs that getPhotoBlob would surface as
     // broken images). Phase 6 backup/restore is the orphan-recovery path.
-    await this.client.tx([
+    await this.db.tx([
       {
         sql: `DELETE FROM entity_tags WHERE entity_type = 'photo' AND entity_id = ?`,
         params: [id],
       },
       { sql: `DELETE FROM photos WHERE id = ?`, params: [id] },
     ])
-    // Blob cleanup is post-tx because OPFS isn't transactional with SQLite.
-    // The worker's deleteBlob silently tolerates a missing file; other
+    // Blob cleanup is post-tx because blob storage isn't transactional with SQLite.
+    // The backend's deleteBlob silently tolerates a missing file; other
     // errors (quota, permissions) propagate, so a caller retry will be
     // a no-op for the SQL side and re-attempt the blob delete.
-    await this.client.deleteBlob(this.photoFullPath(id))
-    await this.client.deleteBlob(this.photoThumbPath(id))
+    await this.db.deleteBlob(this.photoFullPath(id))
+    await this.db.deleteBlob(this.photoThumbPath(id))
   }
 
   // --- Tags -----------------------------------------------------------------
 
   async getTags(): Promise<Tag[]> {
-    const rows = await this.client.all(`SELECT * FROM tags ORDER BY name`)
+    const rows = await this.db.all(`SELECT * FROM tags ORDER BY name`)
     return rows.map(r => ({
       id:         r.id as string,
       name:       r.name as string,
@@ -317,7 +317,7 @@ export class OPFSStorageProvider implements StorageProvider {
   }
 
   async saveTag(tag: Tag): Promise<void> {
-    await this.client.run(
+    await this.db.run(
       `INSERT OR REPLACE INTO tags (id, name, color, created_at) VALUES (?, ?, ?, ?)`,
       [tag.id, tag.name, tag.color, tag.created_at],
     )
@@ -326,7 +326,7 @@ export class OPFSStorageProvider implements StorageProvider {
   async deleteTag(id: string): Promise<void> {
     // ON DELETE CASCADE on entity_tags(tag_id) cleans up junction rows
     // automatically — no application-level cleanup needed (DATA-MODEL.md).
-    await this.client.run(`DELETE FROM tags WHERE id = ?`, [id])
+    await this.db.run(`DELETE FROM tags WHERE id = ?`, [id])
   }
 
   async setEntityTags(
@@ -334,7 +334,7 @@ export class OPFSStorageProvider implements StorageProvider {
     entityId: string,
     tagIds: string[],
   ): Promise<void> {
-    await this.client.tx(this.replaceTagsOps(entityType, entityId, tagIds))
+    await this.db.tx(this.replaceTagsOps(entityType, entityId, tagIds))
   }
 
   // --- Backup ---------------------------------------------------------------
@@ -352,7 +352,7 @@ export class OPFSStorageProvider implements StorageProvider {
       this.getTags(),
     ])
 
-    const junctionRows = await this.client.all(
+    const junctionRows = await this.db.all(
       `SELECT entity_type, entity_id, tag_id FROM entity_tags
        ORDER BY entity_type, entity_id, tag_id`,
     )
@@ -407,7 +407,7 @@ export class OPFSStorageProvider implements StorageProvider {
       // backup exceeds ~500 entities of one type, chunk this query. See the
       // matching comment in tagsByEntity().
       const placeholders = ids.map(() => '?').join(',')
-      const rows = await this.client.all(
+      const rows = await this.db.all(
         `SELECT id, updated_at FROM ${table} WHERE id IN (${placeholders})`,
         ids,
       )
@@ -427,7 +427,7 @@ export class OPFSStorageProvider implements StorageProvider {
       currentUpdatedAt('waypoints', bundle.waypoints.map(w => w.id)),
       currentUpdatedAt('photos', bundle.photos.map(p => p.id)),
       // Same SQLite parameter-count cap applies here as in currentUpdatedAt().
-      this.client.all(
+      this.db.all(
         `SELECT id FROM tags WHERE id IN (${bundle.tags.map(() => '?').join(',') || 'NULL'})`,
         bundle.tags.map(t => t.id),
       ),
@@ -517,14 +517,14 @@ export class OPFSStorageProvider implements StorageProvider {
       })
     }
 
-    if (ops.length > 0) await this.client.tx(ops)
+    if (ops.length > 0) await this.db.tx(ops)
 
     // Blobs — write outside the SQL transaction (file ops aren't transactional).
     for (const [id, blob] of photos) {
-      await this.client.writeBlob(this.photoFullPath(id), await blob.arrayBuffer())
+      await this.db.writeBlob(this.photoFullPath(id), await blob.arrayBuffer())
     }
     for (const [id, thumb] of thumbs) {
-      await this.client.writeBlob(this.photoThumbPath(id), await thumb.arrayBuffer())
+      await this.db.writeBlob(this.photoThumbPath(id), await thumb.arrayBuffer())
     }
   }
 
@@ -669,7 +669,7 @@ export class OPFSStorageProvider implements StorageProvider {
     // pattern, ids.length is bounded by the number of rows in the table —
     // for the MVP this is safely well under the limit.
     const placeholders = ids.map(() => '?').join(',')
-    const rows = await this.client.all(
+    const rows = await this.db.all(
       `SELECT entity_id, tag_id FROM entity_tags
        WHERE entity_type = ? AND entity_id IN (${placeholders})`,
       [entityType, ...ids],

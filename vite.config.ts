@@ -1,14 +1,16 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { couloirApi } from './server/devPlugin'
 
 export default defineConfig({
   plugins: [
     react(),
+    couloirApi(),
     VitePWA({
       registerType: 'autoUpdate',
       // The service worker is only built for production; dev stays SW-free so
-      // HMR and the storage worker never fight a stale cache.
+      // HMR never fights a stale cache.
       devOptions: { enabled: false },
       includeAssets: ['icons/icon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
@@ -27,17 +29,17 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // App shell + every emitted chunk, including the storage worker and
-        // the wa-sqlite .wasm. Map tiles are deliberately not cached (post-MVP).
-        globPatterns: ['**/*.{js,css,html,wasm,svg,png,webmanifest}'],
-        // The main chunk is ~1.5 MB and the wasm is large; Workbox's 2 MB
-        // default would silently skip them.
-        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+        // App shell + every emitted chunk. Map tiles and /api data are
+        // deliberately not cached (offline use is post-MVP).
+        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
+        // The main chunk (mostly MapLibre) is ~1.5 MB, close to Workbox's 2 MB
+        // default, which would silently drop it from the precache if it grew.
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         navigateFallback: '/index.html',
+        // /api is the server's; the shell must never stand in for it.
+        navigateFallbackDenylist: [/^\/api\//],
       },
     }),
   ],
   server: { port: 5173 },
-  worker: { format: 'es' },
-  optimizeDeps: { exclude: ['wa-sqlite'] },
 })

@@ -11,6 +11,8 @@ const MAPTILER_KEYS_URL = 'https://cloud.maptiler.com/account/keys/'
 export function SettingsPanel() {
   const maptilerKey = useSettingsStore((s) => s.maptilerKey)
   const setMaptilerKey = useSettingsStore((s) => s.setMaptilerKey)
+  const maptilerKeySource = useSettingsStore((s) => s.maptilerKeySource)
+  const hasServerKey = useSettingsStore((s) => s.serverMaptilerKey !== null)
   const terrainExaggeration = useUiStore((s) => s.terrainExaggeration)
   const setTerrainExaggeration = useUiStore((s) => s.setTerrainExaggeration)
 
@@ -49,8 +51,14 @@ export function SettingsPanel() {
         {!isEditing && maptilerKey !== null ? (
           <>
             <div className={styles.row}>
-              <span className={styles.subtle}>Key set ({maptilerKey.slice(0, 4)}…)</span>
+              <span className={styles.subtle}>
+                {maptilerKeySource === 'server' ? 'Key from server' : 'Key set'} ({maptilerKey.slice(0, 4)}…)
+              </span>
               <button type="button" onClick={startEdit}>Replace</button>
+              {maptilerKeySource === 'local' && hasServerKey && (
+                // Clearing this browser's key falls back to the server's.
+                <button type="button" onClick={() => setMaptilerKey(null)}>Use server key</button>
+              )}
             </div>
             <a
               className={styles.subtle}
@@ -119,7 +127,13 @@ export function SettingsPanel() {
       <section className={styles.section}>
         <h3>Backup</h3>
         <BackupSection />
-        <p className={styles.subtle}>Backups are your only protection if the browser clears site storage.</p>
+        <p className={styles.subtle}>
+          Your library is stored on your Couloir server, which also keeps daily database snapshots.
+          Export a backup to keep a copy somewhere else.
+        </p>
+        <a className={styles.subtle} href="/api/backup/db" download>
+          Download the database only (no photos) →
+        </a>
       </section>
 
       <section className={styles.section}>

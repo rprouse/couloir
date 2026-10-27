@@ -43,7 +43,7 @@ export function PhotosLayer(): null {
 
   // Framed thumbnail pixels by photo id. Survives style swaps (which wipe
   // every map image), so re-registering after a basemap change is
-  // synchronous and doesn't re-read OPFS.
+  // synchronous and doesn't re-fetch thumbnails from the server.
   const icons = useRef(new Map<string, ImageData>())
 
   useEffect(() => {

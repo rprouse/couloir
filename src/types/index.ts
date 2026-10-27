@@ -239,7 +239,7 @@ export const PHOTO_CLUSTER = {
 } as const
 
 // Photo re-encoding (src/utils/image.ts). The full-size cap keeps a 24 MP
-// phone photo around 2-3 MB in OPFS while leaving plenty of zoom detail.
+// phone photo around 2-3 MB on the server while leaving plenty of zoom detail.
 export const PHOTO_MAX_EDGE_PX = 4096
 export const PHOTO_THUMB_EDGE_PX = 128
 export const PHOTO_JPEG_QUALITY = 0.9
