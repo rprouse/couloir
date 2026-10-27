@@ -350,9 +350,9 @@ Pure refactor: no behaviour change in the running app.
 
 ## Task 8.9 — Data migration and end-to-end QA
 
-- [ ] **Step 8.9.1 (user):** In the browser that holds today's data, run the current production build and use Settings → Export to make a ZIP. Keep it.
-- [ ] **Step 8.9.2 (user):** Against the deployed server, use Settings → Import with that ZIP. Spot-check counts against the old build (`window.__couloir.listAll()` in dev, or the layer panel badges), confirm photos open full size, and check tags and filters.
-- [ ] **Step 8.9.3:** Browser QA checklist (Playwright against `npm start`):
+- [x] **Step 8.9.1 (user):** *N/A (2026-10-27): no pre-server data to move; the app was still in development.* In the browser that holds today's data, run the current production build and use Settings → Export to make a ZIP. Keep it.
+- [x] **Step 8.9.2 (user):** *N/A (2026-10-27): no pre-server data to move; the app was still in development.* Against the deployed server, use Settings → Import with that ZIP. Spot-check counts against the old build (`window.__couloir.listAll()` in dev, or the layer panel badges), confirm photos open full size, and check tags and filters.
+- [x] **Step 8.9.3:** *Done by the user against the Unraid deployment (2026-10-27).* Browser QA checklist (Playwright against `npm start`):
   - GPX import and duplicate detection (`by-hash`)
   - waypoint create/edit/delete
   - photo add, view and reposition (`PATCH`)
