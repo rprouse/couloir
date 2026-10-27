@@ -104,6 +104,9 @@ describe('scheduleBackups', () => {
     vi.restoreAllMocks()
   })
 
+  // Generous: CI runners and containers snapshot far slower than a dev box.
+  const WAIT = { timeout: 10_000 }
+
   it('snapshots and prunes immediately, then on each interval', async () => {
     let day = 1
     const stop = scheduleBackups({
@@ -113,22 +116,59 @@ describe('scheduleBackups', () => {
       intervalMs: 20,
       now: () => new Date(Date.UTC(2026, 9, day++)),
     })
-    await vi.waitFor(async () => {
-      expect((await readdir(backupDir).catch(() => [])).filter((n) => n.endsWith('.db')).length).toBe(2)
-      expect(day).toBeGreaterThan(4)
-    })
-    await stop()
+    try {
+      // At least four runs have started (days 1-4).
+      await vi.waitFor(() => expect(day).toBeGreaterThan(4), WAIT)
+    } finally {
+      await stop()
+    }
+    // Counted after stop(): mid-run there can briefly be keep + 1 files.
     const names = (await readdir(backupDir)).sort()
     expect(names).toHaveLength(2)
     expect(names.every((n) => /^couloir-202610\d\d\.db$/.test(n))).toBe(true)
+  })
+
+  it('skips ticks while a snapshot is still running instead of queueing them', async () => {
+    // The fake writes no file, so each run's rename fails and is logged.
+    vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    let active = 0
+    let maxActive = 0
+    let calls = 0
+    let release: () => void = () => {}
+    const slow = {
+      snapshotTo: async () => {
+        calls++
+        active++
+        maxActive = Math.max(maxActive, active)
+        await new Promise<void>((resolve) => { release = resolve })
+        active--
+      },
+    }
+    const stop = scheduleBackups({ db: slow, dir: backupDir, keep: 2, intervalMs: 5 })
+    try {
+      // Let many ticks pass while the first snapshot is held open.
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      expect(calls).toBe(1)
+      release()
+      await vi.waitFor(() => expect(calls).toBe(2), WAIT)
+      release()
+    } finally {
+      const stopped = stop()
+      release()
+      await stopped
+    }
+    expect(maxActive).toBe(1)
   })
 
   it('logs a failed snapshot and keeps going', async () => {
     const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
     const failing = { snapshotTo: () => Promise.reject(new Error('disk full')) }
     const stop = scheduleBackups({ db: failing, dir: backupDir, keep: 2, intervalMs: 20 })
-    await vi.waitFor(() => expect(stderr.mock.calls.length).toBeGreaterThanOrEqual(2))
-    await stop()
+    try {
+      await vi.waitFor(() => expect(stderr.mock.calls.length).toBeGreaterThanOrEqual(2), WAIT)
+    } finally {
+      await stop()
+    }
     expect(String(stderr.mock.calls[0][0])).toMatch(/scheduled backup: .*disk full/)
   })
 })

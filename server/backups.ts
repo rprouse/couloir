@@ -68,7 +68,7 @@ export function scheduleBackups(opts: {
   now?: () => Date
 }): () => Promise<void> {
   const now = opts.now ?? (() => new Date())
-  let current: Promise<void> = Promise.resolve()
+  let inFlight: Promise<void> | null = null
   const backup = async () => {
     try {
       const file = await snapshot(opts.db, opts.dir, now())
@@ -80,9 +80,13 @@ export function scheduleBackups(opts: {
       logError('scheduled backup', err)
     }
   }
-  // Chained, so a slow snapshot never overlaps the next one.
+  // A tick that arrives while a snapshot is still running is skipped, not
+  // queued: runs never overlap, and a slow disk can't build up a backlog.
   const run = () => {
-    current = current.then(backup)
+    if (inFlight) return
+    inFlight = backup().finally(() => {
+      inFlight = null
+    })
   }
   run()
   const timer = setInterval(run, opts.intervalMs ?? DAY_MS)
@@ -90,6 +94,6 @@ export function scheduleBackups(opts: {
   timer.unref()
   return async () => {
     clearInterval(timer)
-    await current
+    await inFlight
   }
 }
