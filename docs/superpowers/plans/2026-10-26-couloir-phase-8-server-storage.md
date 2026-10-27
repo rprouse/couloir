@@ -334,7 +334,7 @@ Pure refactor: no behaviour change in the running app.
   - where the backups live
   - **HTTPS options:** Tailscale (`tailscale serve --https=443 http://localhost:8080`, tailnet = access control) vs reverse proxy with a LAN cert
   - an explicit warning never to port-forward the unauthenticated API to the internet
-- [ ] **Step 8.8.6 (Unraid, user):** Deploy, open from two computers, add a photo on one and see it on the other. Restart the container and confirm the data survives. Confirm a backup file appears in `/mnt/user/appdata/couloir/backups`.
+- [x] **Step 8.8.6 (Unraid, user):** Deploy, open from two computers, add a photo on one and see it on the other. Restart the container and confirm the data survives. Confirm a backup file appears in `/mnt/user/appdata/couloir/backups`.
 
 > **Notes (2026-10-27):**
 > - **Image:** multi-stage `node:24-alpine`. The runtime stage holds only `dist/` and `dist-server/`, 246 MB in total (most of it the Node base). It runs as `node` by default; the Unraid template passes `--user 99:100`. The healthcheck uses `wget` on `/api/health`. The exec-form `CMD` makes node PID 1, so it receives SIGTERM directly.
@@ -345,7 +345,7 @@ Pure refactor: no behaviour change in the running app.
 >   - Running as the default user on a plain named volume is also healthy.
 > - **Gotcha (documented in DEPLOY.md):** a *new named volume* gets the image's `/data` ownership (`node`, uid 1000) copied in, so `--user 99:100` fails with `EACCES mkdir /data/photos`. Unraid bind-mounts a host path, which doesn't do this. The tests used `--mount ...,volume-nocopy` to match Unraid.
 > - **The CI test job, run in a `node:24` Linux container, found a real bug:** `scheduleBackups` queued every tick behind a slow run, building an unbounded backlog, and the interval test failed 3 times out of 3 on Linux. A tick that arrives during a run is now skipped. A new test holds a snapshot open across many ticks and asserts one call and no overlap. The interval tests now `stop()` in `finally`, count files after stopping, and use a 10 s `waitFor`. The whole CI job (npm ci, typecheck, 78 files / 635 tests) then passed in that container, and on Windows.
-> - **Step 8.8.6 is still open** (the user, on Unraid). It needs this branch merged to `main` so the workflow publishes the image. GitHub creates the GHCR package as **private**: make it public, or `docker login ghcr.io` on Unraid (see DEPLOY.md).
+> - **Step 8.8.6 done (2026-10-27):** after merging PR #12 the workflow published the image, which was pulled to Unraid and runs there. The first run exposed the plain-HTTP GPX hashing bug, fixed in PR #13 (see the 8.5 notes).
 ---
 
 ## Task 8.9 — Data migration and end-to-end QA
