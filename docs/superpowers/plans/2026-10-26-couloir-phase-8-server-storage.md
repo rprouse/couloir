@@ -368,16 +368,26 @@ Pure refactor: no behaviour change in the running app.
 
 ## Task 8.10 — Docs
 
-- [ ] **Step 8.10.1: `ARCHITECTURE.md`.**
+- [x] **Step 8.10.1: `ARCHITECTURE.md`.**
   - Rewrite Guiding Principles: "server-authoritative, self-hosted" replaces "local-first". Keep "storage abstraction" and "sync-aware schema".
   - Tech stack rows: Hono, `node:sqlite`, photo files on a volume. Remove wa-sqlite and OPFS.
   - Replace the VFS/OPFS section with "Server" (layout, API table, backups, deployment pointer).
   - Update the project structure tree.
-- [ ] **Step 8.10.2: `DATA-MODEL.md`.** Photo blobs live at `{DATA_DIR}/photos/{id}.jpg` and `_thumb.jpg`. Mention WAL and the backup snapshots.
-- [ ] **Step 8.10.3: `AGENTS.md`.**
+- [x] **Step 8.10.2: `DATA-MODEL.md`.** Photo blobs live at `{DATA_DIR}/photos/{id}.jpg` and `_thumb.jpg`. Mention WAL and the backup snapshots.
+- [x] **Step 8.10.3: `AGENTS.md`.**
   - Update the photo storage convention and the "OPFS implementation" wording in Never Do (now "SQL provider and HTTP provider").
   - Add `npm start` and the `./data` dev directory to Commands.
   - Note that server tests use `// @vitest-environment node`.
-- [ ] **Step 8.10.4: `SPEC.md` and the `TASKS.md` backlog.**
+- [x] **Step 8.10.4: `SPEC.md` and the `TASKS.md` backlog.**
   - Strike "Cloud sync via PowerSync or ElectricSQL" and "Photo blob sync to S3 / MinIO" (superseded by Phase 8).
   - Add "Offline read cache for field use", "Stale-write (409) detection" and "Forward-auth + per-user filtering".
+
+> **Notes (2026-10-27):**
+> - **Beyond the plan, `README.md` was updated too.** It still described a local-first app with "no server", OPFS browser requirements and Node 20.19. The minimum Node is now 22.13, for `node:sqlite`. It gained deploy, develop and scripts sections, and the Phase 7/8 status.
+> - **`DEPLOY.md` lost its "Moving your existing data across" section.** There was no pre-server data, since the app was still in development. The `last-opfs` tag remains.
+> - **`ARCHITECTURE.md` changes:**
+>   - New "Server" section: data directory, API table, ID and caching rules, concurrency, the `node:sqlite` loader, shutdown, backups, and plain-HTTP support.
+>   - "Storage Interface" now describes the four providers and the contract suite.
+>   - "Deferred items" (auth, stale writes, offline) replaces the PowerSync/S3 plan.
+>   - The tree, the Maptiler key, photo storage, migrations, backup and PWA sections are updated.
+> - **`AGENTS.md` changes:** new commands (`npm start`, docker, CI), the storage layering, `newId()` and the plain-HTTP rule, a "Server conventions" list, and an updated StorageProvider rule in "Never Do".

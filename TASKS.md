@@ -92,7 +92,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [8.7 Server backups](#task-87---server-backups)
 - [x] [8.8 Docker, CI and Unraid](#task-88---docker-ci-and-unraid)
 - [x] [8.9 Data migration and end-to-end QA](#task-89---data-migration-and-end-to-end-qa)
-- [ ] [8.10 Docs](#task-810---docs)
+- [x] [8.10 Docs](#task-810---docs)
 
 ---
 
@@ -832,10 +832,11 @@ These are confirmed future features, not part of the MVP:
 - Bearing cone / FOV footprint visualization for photo pins
 - ~~Slope angle shading overlay (derived from Maptiler DEM)~~ → Phase 7
 - Aspect shading layer
-- Offline tile caching for field use (Workbox tile cache strategy)
-- Cloud sync via PowerSync or ElectricSQL
-- Photo blob sync to S3 / MinIO
-- Multi-user support with auth
+- Offline use in the field: cache library data (`/api` GETs) and map tiles (Workbox), or local-first sync if editing offline matters
+- ~~Cloud sync via PowerSync or ElectricSQL~~ → superseded by Phase 8 (self-hosted server)
+- ~~Photo blob sync to S3 / MinIO~~ → superseded by Phase 8 (photos as files on the server)
+- Multi-user support with auth (forward-auth `Remote-User` header + filtering by `user_id`)
+- Stale-write detection: `409` when another computer changed the item since it was loaded
 - Capacitor wrapper for native iOS/Android
 - Waypoint import from GPX `<wpt>` elements
 - Route/track export back to GPX
