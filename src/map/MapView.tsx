@@ -8,6 +8,7 @@ import { styleUrl, terrainSourceUrl } from './mapConfig'
 import { createTileErrorMonitor, type TileErrorMonitor } from './errors/tileErrorMonitor'
 import { BasemapControl } from './controls/BasemapControl'
 import { TerrainControl } from './controls/TerrainControl'
+import { NavigationAid } from './controls/NavigationAid'
 import { setMap } from '../hooks/useMap'
 import { TerrainOverlayLayer } from './layers/TerrainOverlayLayer'
 import { RoutesLayer } from './layers/RoutesLayer'
@@ -73,6 +74,7 @@ export function MapView() {
       bearing: MAP_DEFAULTS.bearing,
     })
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-left')
+    map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left')
     mapRef.current = map
     setMap(map)
 
@@ -152,6 +154,7 @@ export function MapView() {
       <div ref={containerRef} className={styles.canvas} data-testid="map-canvas" />
       <BasemapControl />
       <TerrainControl />
+      <NavigationAid />
       <TerrainOverlayLayer overlay="slope" />
       <TerrainOverlayLayer overlay="aspect" />
       <RoutesLayer />

@@ -52,6 +52,12 @@
   font: inherit;
 }
 
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
 .field input[type='range'] {
   width: 100%;
 }

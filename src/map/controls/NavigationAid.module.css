@@ -1,0 +1,59 @@
+.readout {
+  position: absolute;
+  /* Below the basemap switcher, which sits at the top right. */
+  top: calc(var(--space-md) + 44px);
+  right: var(--space-md);
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  display: grid;
+  grid-template-columns: auto auto;
+  column-gap: var(--space-md);
+  row-gap: 2px;
+  background: var(--color-hud-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  /* Read-only: let drags and clicks fall through to the map. */
+  pointer-events: none;
+  z-index: 4;
+}
+
+.readout dt {
+  color: var(--color-text-dim);
+}
+
+.readout dd {
+  margin: 0;
+  text-align: right;
+}
+
+/* A small plus at the exact centre of the map: two 1px lines drawn as
+   background gradients, with a dark halo so it reads on snow and on rock. */
+.crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 21px;
+  height: 21px;
+  transform: translate(-50%, -50%);
+  background:
+    linear-gradient(var(--color-crosshair), var(--color-crosshair)) center / 1px 100% no-repeat,
+    linear-gradient(var(--color-crosshair), var(--color-crosshair)) center / 100% 1px no-repeat;
+  filter: drop-shadow(0 0 1px var(--color-crosshair-halo));
+  pointer-events: none;
+  z-index: 3;
+}
+
+@media (max-width: 640px) {
+  /* Top centre, below the row holding the navigation control and the basemap
+     switcher. */
+  .readout {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    grid-template-columns: repeat(2, auto auto);
+    white-space: nowrap;
+  }
+}

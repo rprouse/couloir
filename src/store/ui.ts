@@ -12,6 +12,7 @@ const TERRAIN_KEY  = 'couloir_terrain_exaggeration'
 const BASEMAP_KEY  = 'couloir_basemap'
 const TERRAIN_OVERLAY_KEY = 'couloir_terrain_overlay'
 const OVERLAY_OPACITY_KEY = 'couloir_overlay_opacity'
+const NAVIGATION_AID_KEY = 'couloir_navigation_aid'
 const VALID_BASEMAPS: ReadonlySet<Basemap> = new Set(['satellite', 'outdoor', 'winter'])
 const MIN = 1
 const MAX = 3
@@ -76,6 +77,11 @@ interface UiState {
   overlayOpacity: number
   setTerrainOverlay: (overlay: TerrainOverlay | null) => void
   setOverlayOpacity: (value: number) => void
+
+  // Centre crosshair plus lat/lng, elevation and bearing readout (persisted;
+  // on by default).
+  navigationAidEnabled: boolean
+  setNavigationAidEnabled: (enabled: boolean) => void
 }
 
 const clamp = (n: number) => Math.max(MIN, Math.min(MAX, n))
@@ -153,6 +159,10 @@ export const useUiStore = create<UiState>((set, get) => {
       if (rawOpacity !== null) {
         const n = Number(rawOpacity)
         if (Number.isFinite(n)) set({ overlayOpacity: clampOpacity(n) })
+      }
+      const rawNavigationAid = localStorage.getItem(NAVIGATION_AID_KEY)
+      if (rawNavigationAid === 'true' || rawNavigationAid === 'false') {
+        set({ navigationAidEnabled: rawNavigationAid === 'true' })
       }
     },
 
@@ -237,6 +247,13 @@ export const useUiStore = create<UiState>((set, get) => {
       const next = clampOpacity(value)
       localStorage.setItem(OVERLAY_OPACITY_KEY, String(next))
       set({ overlayOpacity: next })
+    },
+
+    // ----- Navigation aid -----
+    navigationAidEnabled: true,
+    setNavigationAidEnabled: (enabled) => {
+      localStorage.setItem(NAVIGATION_AID_KEY, String(enabled))
+      set({ navigationAidEnabled: enabled })
     },
   }
 })

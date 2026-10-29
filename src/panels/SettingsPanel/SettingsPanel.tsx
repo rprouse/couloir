@@ -17,6 +17,8 @@ export function SettingsPanel() {
   const setTerrainExaggeration = useUiStore((s) => s.setTerrainExaggeration)
   const overlayOpacity = useUiStore((s) => s.overlayOpacity)
   const setOverlayOpacity = useUiStore((s) => s.setOverlayOpacity)
+  const navigationAidEnabled = useUiStore((s) => s.navigationAidEnabled)
+  const setNavigationAidEnabled = useUiStore((s) => s.setNavigationAidEnabled)
 
   const [draft, setDraft] = useState('')
   const [editing, setEditing] = useState(false)
@@ -131,6 +133,14 @@ export function SettingsPanel() {
             onChange={(e) => setOverlayOpacity(Number(e.target.value))}
           />
           <span className={styles.subtle}>{Math.round(overlayOpacity * 100)}%</span>
+        </label>
+        <label className={styles.checkbox}>
+          <input
+            type="checkbox"
+            checked={navigationAidEnabled}
+            onChange={(e) => setNavigationAidEnabled(e.target.checked)}
+          />
+          <span>Show centre crosshair and position readout</span>
         </label>
       </section>
 
