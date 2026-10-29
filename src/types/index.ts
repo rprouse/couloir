@@ -146,6 +146,51 @@ export interface PendingPhoto {
 }
 
 // ============================================================================
+// ATES terrain ratings (Phase 12) — imported from Avalanche Canada KMZ files
+// (src/utils/atesKml.ts). One AtesArea per downloaded area; its geometry is a
+// FeatureCollection with 2D [lng, lat] coordinates (ATES has no elevation).
+// ============================================================================
+
+// A zone rating. ATES (above) is the route rating; zones can also be Class 0.
+export type AtesClass = 'non_avalanche' | ATES
+export const ATES_CLASSES: readonly AtesClass[] = [
+  'non_avalanche', 'simple', 'challenging', 'complex', 'extreme',
+]
+export type LngLat = [number, number]
+
+interface AtesGeoFeature<G, P> {
+  type: 'Feature'
+  geometry: G
+  properties: P
+}
+export interface AtesPolygon { type: 'Polygon'; coordinates: LngLat[][] }  // outer ring, then holes
+export interface AtesLineString { type: 'LineString'; coordinates: LngLat[] }
+export interface AtesPoint { type: 'Point'; coordinates: LngLat }
+
+export type AtesFeature =
+  | AtesGeoFeature<AtesPolygon, { kind: 'zone'; ates: AtesClass; description: string }>
+  | AtesGeoFeature<AtesLineString, { kind: 'ates_line'; ates: AtesClass; name: string }>
+  | AtesGeoFeature<AtesPolygon, { kind: 'area' }>
+  | AtesGeoFeature<AtesLineString, { kind: 'avalanche_path'; name: string }>
+  | AtesGeoFeature<AtesPoint, { kind: 'decision_point'; name: string; description: string }>
+
+export type AtesFeatureKind = AtesFeature['properties']['kind']
+
+export interface AtesFeatureCollection {
+  type: 'FeatureCollection'
+  features: AtesFeature[]
+}
+
+export interface AtesArea {
+  id: string
+  name: string               // the KML Document name, e.g. 'Tunnel Creek South'
+  source_filename: string
+  geojson: AtesFeatureCollection
+  imported_at: string        // first import; kept when the area is re-imported
+  updated_at: string
+}
+
+// ============================================================================
 // Backup bundle — written as `metadata.json` inside the ZIP archive (Phase 6).
 // The Phase 2 storage layer returns this in-memory shape from `exportAll()`.
 // ============================================================================
@@ -224,6 +269,11 @@ export const ATES_LABELS: Record<ATES, string> = {
   challenging: 'Challenging (Class 2)',
   complex:     'Complex (Class 3)',
   extreme:     'Extreme (Class 4)',
+}
+
+export const ATES_CLASS_LABELS: Record<AtesClass, string> = {
+  non_avalanche: 'Non-avalanche (Class 0)',
+  ...ATES_LABELS,
 }
 
 export const TECHNICAL_DIFFICULTY_LABELS: Record<TechnicalDifficulty, string> = {
