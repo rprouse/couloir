@@ -102,7 +102,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 ### Phase 10 — Waypoint Icons and Colours  ·  Plan: [`2026-10-29-couloir-phase-10-waypoint-icons.md`](docs/superpowers/plans/2026-10-29-couloir-phase-10-waypoint-icons.md)
 
 - [x] [10.1 Icon catalogue](#task-101---icon-catalogue)
-- [ ] [10.2 Waypoint icon field](#task-102---waypoint-icon-field)
+- [x] [10.2 Waypoint icon field](#task-102---waypoint-icon-field)
 - [ ] [10.3 Render icon and colour on the map](#task-103---render-icon-and-colour-on-the-map)
 - [ ] [10.4 Icon and colour picker](#task-104---icon-and-colour-picker)
 - [ ] [10.5 Docs](#task-105---docs)

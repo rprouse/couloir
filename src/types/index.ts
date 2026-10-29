@@ -85,7 +85,8 @@ export interface Waypoint {
   lng: number
   elevation_m: number | null
   category: WaypointCategory
-  color: string | null
+  color: string | null       // overrides the category colour if set
+  icon: WaypointIcon | null  // overrides the category icon if set
   tags: string[]
   created_at: string
   updated_at: string

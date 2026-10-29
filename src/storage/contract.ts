@@ -86,6 +86,7 @@ export function buildWaypoint(overrides: Partial<Waypoint> = {}): Waypoint {
     elevation_m: 1500,
     category: 'summit',
     color: null,
+    icon: null,
     tags: [],
     created_at: now,
     updated_at: now,
@@ -316,6 +317,13 @@ export function storageContract(name: string, options: StorageContractOptions): 
         expect((await storage.getWaypoint('wp-1'))?.color).toBe('#FF0000')
       })
 
+      it('round-trips an icon override and clears it again', async () => {
+        await storage.saveWaypoint(buildWaypoint({ icon: 'cabin' }))
+        expect((await storage.getWaypoint('wp-1'))?.icon).toBe('cabin')
+        await storage.saveWaypoint(buildWaypoint({ icon: null }))
+        expect((await storage.getWaypoint('wp-1'))?.icon).toBeNull()
+      })
+
       it('deletes a waypoint and clears its tags', async () => {
         await seedTags(storage, 't1')
         await storage.saveWaypoint(buildWaypoint({ tags: ['t1'] }))
@@ -455,6 +463,29 @@ export function storageContract(name: string, options: StorageContractOptions): 
         expect(await fresh.getPhoto(photo.id)).toEqual(photo)
         expect(await blobText(await fresh.getPhotoBlob(photo.id))).toBe('full-bytes')
         expect(await blobText(await fresh.getPhotoThumb(photo.id))).toBe('thumb-bytes')
+      })
+
+      it('round-trips waypoint icon and colour through export+import', async () => {
+        const wp = buildWaypoint({ icon: 'local_parking', color: '#EF4444' })
+        await storage.saveWaypoint(wp)
+        const exported = await storage.exportAll()
+        expect(exported.bundle.waypoints[0].icon).toBe('local_parking')
+
+        const fresh = await open()
+        await fresh.importAll(exported.bundle, exported.photos, exported.thumbs)
+        expect(await fresh.getWaypoint(wp.id)).toEqual(wp)
+      })
+
+      it('imports a pre-icon waypoint (no icon key) with icon null', async () => {
+        const exported = await storage.exportAll()
+        const { icon: _icon, ...legacy } = buildWaypoint()
+        // A ZIP from before migration 3 has no `icon` key at all; the cast
+        // through unknown models that older bundle shape.
+        const bundle = { ...exported.bundle, waypoints: [legacy as unknown as Waypoint] }
+
+        const fresh = await open()
+        await fresh.importAll(bundle, exported.photos, exported.thumbs)
+        expect((await fresh.getWaypoint('wp-1'))?.icon).toBeNull()
       })
 
       it('importAll is idempotent — running it twice changes nothing', async () => {

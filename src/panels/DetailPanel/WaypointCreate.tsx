@@ -71,6 +71,7 @@ export function WaypointCreate(): JSX.Element {
         elevation_m: elevNum,
         category,
         color: null,
+        icon: null,
         tags,
       })
       openEntity('waypoint', wp.id)

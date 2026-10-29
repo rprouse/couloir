@@ -136,9 +136,9 @@ couloir/
 
 **Files:** `src/storage/migrations/3.sql`, `src/storage/migrations/index.ts`, `src/storage/migrations/index.test.ts`, `src/types/index.ts`, `src/storage/sqlProvider.ts` (+ test), `src/storage/memory.ts`, `src/storage/contract.ts`, `src/dev/devConsole.ts`, `src/panels/DetailPanel/WaypointCreate.tsx`
 
-- [ ] **Step 10.2.1: Migration test first.** In `migrations/index.test.ts`, assert migration 3 matches `/ALTER TABLE waypoints ADD COLUMN icon TEXT/i`. The existing contiguity test covers the version bump.
+- [x] **Step 10.2.1: Migration test first.** In `migrations/index.test.ts`, assert migration 3 matches `/ALTER TABLE waypoints ADD COLUMN icon TEXT/i`. The existing contiguity test covers the version bump.
 
-- [ ] **Step 10.2.2: Write `3.sql`** and register it (`SCHEMA_VERSION = 3`):
+- [x] **Step 10.2.2: Write `3.sql`** and register it (`SCHEMA_VERSION = 3`):
 
   ```sql
   -- Migration 3: a waypoint can override its category's icon with a
@@ -146,19 +146,19 @@ couloir/
   ALTER TABLE waypoints ADD COLUMN icon TEXT;
   ```
 
-- [ ] **Step 10.2.3: Add `icon: WaypointIcon | null` to `Waypoint`**, next to `color`, with the comment `// overrides category default if set`. Fix the type errors this causes: `devConsole.ts` (`icon: null`), `WaypointCreate.tsx` (`icon: null` for now, replaced in 10.4), the contract `buildWaypoint` fixture, and any test fixtures.
+- [x] **Step 10.2.3: Add `icon: WaypointIcon | null` to `Waypoint`**, next to `color`, with the comment `// overrides category default if set`. Fix the type errors this causes: `devConsole.ts` (`icon: null`), `WaypointCreate.tsx` (`icon: null` for now, replaced in 10.4), the contract `buildWaypoint` fixture, and any test fixtures.
 
-- [ ] **Step 10.2.4: Contract tests** (`src/storage/contract.ts`, Waypoints block):
+- [x] **Step 10.2.4: Contract tests** (`src/storage/contract.ts`, Waypoints block):
   - `icon` round-trips `null` and `'cabin'`
   - `saveWaypoint` overwrites `icon` (`'cabin'` → `null`)
   - `importAll` of a bundle whose waypoint has **no `icon` key** (simulating a pre-Phase-10 ZIP) stores `icon: null`. Build it with `const { icon: _icon, ...legacy } = buildWaypoint()` and cast through `unknown` with a comment explaining why.
   - `exportAll` carries `icon`
 
-- [ ] **Step 10.2.5: SQL provider.** Add `icon` to both `INSERT OR REPLACE INTO waypoints` column lists (in `saveWaypoint` and `importAll`, now 12 placeholders) and to `waypointToRow` as `w.icon ?? null`, so legacy bundles don't pass `undefined` to SQLite. In `rowToWaypoint`: `icon: isWaypointIcon(row.icon) ? row.icon : null`. In the SQL provider's own test, add a case: a row written with `icon = 'not_an_icon'` reads back as `null`.
+- [x] **Step 10.2.5: SQL provider.** Add `icon` to both `INSERT OR REPLACE INTO waypoints` column lists (in `saveWaypoint` and `importAll`, now 12 placeholders) and to `waypointToRow` as `w.icon ?? null`, so legacy bundles don't pass `undefined` to SQLite. In `rowToWaypoint`: `icon: isWaypointIcon(row.icon) ? row.icon : null`. In the SQL provider's own test, add a case: a row written with `icon = 'not_an_icon'` reads back as `null`.
 
-- [ ] **Step 10.2.6: In-memory provider.** Normalise on save and import (`icon: w.icon ?? null`) so the legacy-bundle contract case passes there too. `HttpStorageProvider` and `server/app.ts` pass JSON through unchanged, so check with the contract suite that they need no edits.
+- [x] **Step 10.2.6: In-memory provider.** Normalise on save and import (`icon: w.icon ?? null`) so the legacy-bundle contract case passes there too. `HttpStorageProvider` and `server/app.ts` pass JSON through unchanged, so check with the contract suite that they need no edits.
 
-- [ ] **Step 10.2.7:** `npm test`, `npm run typecheck`. Commit `feat: per-waypoint icon field (migration 3)`.
+- [x] **Step 10.2.7:** `npm test`, `npm run typecheck`. Commit `feat: per-waypoint icon field (migration 3)`.
 
 ## Task 10.3 — Render icon and colour on the map
 

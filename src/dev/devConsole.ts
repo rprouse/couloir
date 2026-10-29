@@ -79,6 +79,7 @@ export function installDevConsole(storage: StorageProvider): void {
         elevation_m: 1500,
         category: 'summit',
         color: null,
+        icon: null,
         tags: [],
         created_at: now,
         updated_at: now,

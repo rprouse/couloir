@@ -102,7 +102,7 @@ export class InMemoryStorageProvider implements StorageProvider {
     return w ? this.hydrateTags(w, 'waypoint') : null
   }
   async saveWaypoint(waypoint: Waypoint): Promise<void> {
-    this.waypoints.set(waypoint.id, JSON.parse(JSON.stringify(waypoint)) as Waypoint)
+    this.waypoints.set(waypoint.id, cloneWaypoint(waypoint))
     this.replaceEntityTags('waypoint', waypoint.id, waypoint.tags)
   }
   async deleteWaypoint(id: string): Promise<void> {
@@ -262,7 +262,7 @@ export class InMemoryStorageProvider implements StorageProvider {
     for (const w of bundle.waypoints) {
       const existing = this.waypoints.get(w.id)
       if (!existing || isNewer(w.updated_at, existing.updated_at)) {
-        this.waypoints.set(w.id, JSON.parse(JSON.stringify(w)) as Waypoint)
+        this.waypoints.set(w.id, cloneWaypoint(w))
       }
     }
     for (const p of bundle.photos) {
@@ -318,4 +318,10 @@ export class InMemoryStorageProvider implements StorageProvider {
       if (key.startsWith(prefix)) this.entityTags.delete(key)
     }
   }
+}
+
+// Deep copy, defaulting `icon` for bundles exported before migration 3.
+function cloneWaypoint(w: Waypoint): Waypoint {
+  const copy = JSON.parse(JSON.stringify(w)) as Waypoint
+  return { ...copy, icon: copy.icon ?? null }
 }
