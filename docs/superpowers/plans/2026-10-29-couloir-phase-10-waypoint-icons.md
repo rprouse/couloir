@@ -207,20 +207,20 @@ couloir/
 
 **Files:** `src/icons/WaypointBadge.tsx` / `.module.css` / `.test.tsx`, `src/panels/DetailPanel/WaypointStyleFields.tsx` / `.test.tsx`, `WaypointCreate.tsx` (+ test), `WaypointDetail.tsx` (+ test), `DetailPanel.shared.module.css`
 
-- [ ] **Step 10.4.1: `WaypointBadge`.** `<WaypointBadge icon color size?={24} />` renders a round `span` with `background-color: color` (an inline style, because the colour is data, not theme) and an inline `<svg viewBox={SYMBOL_VIEWBOX}><path d={iconPath(icon)} fill="currentColor" /></svg>` in white. `aria-hidden` by default, or `role="img"` with `aria-label` when a `label` prop is passed. Test: renders the path for the given icon and applies the colour.
+- [x] **Step 10.4.1: `WaypointBadge`.** `<WaypointBadge icon color size?={24} />` renders a round `span` with `background-color: color` (an inline style, because the colour is data, not theme) and an inline `<svg viewBox={SYMBOL_VIEWBOX}><path d={iconPath(icon)} fill="currentColor" /></svg>` in white. `aria-hidden` by default, or `role="img"` with `aria-label` when a `label` prop is passed. Test: renders the path for the given icon and applies the colour.
 
-- [ ] **Step 10.4.2: `WaypointStyleFields`, tests first.** Props: `{ category, icon, color, onIconChange(icon | null), onColorChange(hex | null) }`.
+- [x] **Step 10.4.2: `WaypointStyleFields`, tests first.** Props: `{ category, icon, color, onIconChange(icon | null), onColorChange(hex | null) }`.
   - A preview `WaypointBadge` of the resolved style at 40 px.
   - **Icon:** a `role="radiogroup"` labelled "Icon". The first radio is "Category default" (it shows the category's icon), followed by the catalogue under its group headings. Each option is a 40 × 40 button with `role="radio"`, `aria-checked` and `aria-label={label}`. Arrow keys move between options within the group.
   - **Colour:** a `role="radiogroup"` labelled "Colour", with "Default" (category colour), then the ten `WAYPOINT_SWATCHES`, then a "Custom" native `<input type="color">` plus the existing hex text input and `isValidHex` check. Choosing a swatch or "Default" clears an invalid custom entry.
   - Tests: selecting an icon calls `onIconChange('cabin')`. "Category default" calls `onIconChange(null)`. Swatches and Default call `onColorChange` with the hex or null. An invalid hex shows "Use #RRGGBB hex." The preview follows `category` when `icon` is null.
   - It must fit at 375 px: the grid wraps with `grid-template-columns: repeat(auto-fill, minmax(40px, 1fr))`. Every colour comes from CSS custom properties except the swatch fills.
 
-- [ ] **Step 10.4.3: Wire into the forms.** `WaypointCreate` gains `icon`/`color` state (both start null) and saves them. `WaypointEdit` replaces its "Color override" block with `WaypointStyleFields` and re-syncs `icon` in the upstream-change effect. `canSave` still blocks an invalid custom hex. Update both test files: creating with an icon and swatch saves them, and editing back to "Category default" saves `icon: null`.
+- [x] **Step 10.4.3: Wire into the forms.** `WaypointCreate` gains `icon`/`color` state (both start null) and saves them. `WaypointEdit` replaces its "Color override" block with `WaypointStyleFields` and re-syncs `icon` in the upstream-change effect. `canSave` still blocks an invalid custom hex. Update both test files: creating with an icon and swatch saves them, and editing back to "Category default" saves `icon: null`.
 
-- [ ] **Step 10.4.4: Show it in the view.** `WaypointView` puts a 28 px `WaypointBadge` (labelled with the icon name) before the heading, so the panel matches the map.
+- [x] **Step 10.4.4: Show it in the view.** `WaypointView` puts a 28 px `WaypointBadge` (labelled with the icon name) before the heading, so the panel matches the map.
 
-- [ ] **Step 10.4.5:** `npm test`, `npm run typecheck`. Commit `feat: icon and colour picker for waypoints`.
+- [x] **Step 10.4.5:** `npm test`, `npm run typecheck`. Commit `feat: icon and colour picker for waypoints`.
 
 ## Task 10.5 — Docs
 

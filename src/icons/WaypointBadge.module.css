@@ -1,0 +1,15 @@
+.badge {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid var(--color-marker-glyph);
+  box-sizing: border-box;
+  color: var(--color-marker-glyph);
+}
+
+.glyph {
+  width: 60%;
+  height: 60%;
+}

@@ -45,6 +45,12 @@ describe('WaypointDetail (view)', () => {
     expect(screen.getByText(/49\.50000, -116\.00000/)).toBeInTheDocument()
   })
 
+  it('shows the waypoint marker next to the name', () => {
+    setup(sample({ icon: 'cabin' }))
+    render(<WaypointDetail waypointId="w1" mode="view" />)
+    expect(screen.getByRole('img', { name: 'Cabin' })).toBeInTheDocument()
+  })
+
   it('renders "—" for null elevation', () => {
     setup(sample({ elevation_m: null }))
     render(<WaypointDetail waypointId="w1" mode="view" />)
@@ -108,11 +114,28 @@ describe('WaypointDetail (edit)', () => {
 
   it('disables Save when color override is an invalid hex', () => {
     render(<WaypointDetail waypointId="w1" mode="edit" />)
-    // The hex text input has placeholder "leave blank to use category default"
-    // and no explicit aria-label. Find it via placeholder text.
-    const hexInput = screen.getByPlaceholderText(/leave blank/i)
-    fireEvent.change(hexInput, { target: { value: '#gg0000' } })
+    fireEvent.change(screen.getByLabelText('Hex colour'), { target: { value: '#gg0000' } })
     expect(screen.getByRole('button', { name: /save/i })).toBeDisabled()
+  })
+
+  it('saves an icon and swatch, then resets them to the category default', async () => {
+    render(<WaypointDetail waypointId="w1" mode="edit" />)
+    fireEvent.click(screen.getByRole('radio', { name: 'Parking' }))
+    fireEvent.click(screen.getByRole('radio', { name: '#EF4444' }))
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+    await waitFor(async () => {
+      const saved = await getStorage().getWaypoint('w1')
+      expect(saved).toMatchObject({ icon: 'local_parking', color: '#EF4444' })
+    })
+
+    act(() => useUiStore.getState().editCurrent())
+    fireEvent.click(screen.getByRole('radio', { name: /category default \(/i }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Category default' }))
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+    await waitFor(async () => {
+      const saved = await getStorage().getWaypoint('w1')
+      expect(saved).toMatchObject({ icon: null, color: null })
+    })
   })
 
   it('edit assigns a tag and persists it', async () => {

@@ -8,6 +8,9 @@ import { queryElevation } from '../../map/terrain'
 import { WAYPOINT_CATEGORIES } from '../../types'
 import type { WaypointCategory } from '../../types'
 import { TagPicker } from '../../components/TagPicker/TagPicker'
+import type { WaypointIcon } from '../../icons/waypointIcons'
+import { isValidHex } from '../../utils/format'
+import { WaypointStyleFields } from './WaypointStyleFields'
 import { debug } from '../../utils/debug'
 
 // Waypoint creation form. Reads the seeded lat/lng from panel.draft (set by
@@ -37,6 +40,8 @@ export function WaypointCreate(): JSX.Element {
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState<WaypointCategory>('poi')
   const [elevation, setElevation] = useState<string>('')
+  const [icon, setIcon] = useState<WaypointIcon | null>(null)
+  const [color, setColor] = useState<string>('')
   const [tags, setTags] = useState<string[]>([])
 
   // Autofill elevation from the DEM when the map is available. queryTerrain-
@@ -54,7 +59,8 @@ export function WaypointCreate(): JSX.Element {
     return <div className={styles.subtle}>Waypoint placement not active.</div>
   }
 
-  const canSave = name.trim().length > 0 && seedLat !== null && seedLng !== null
+  const colorOk = color === '' || isValidHex(color)
+  const canSave = name.trim().length > 0 && seedLat !== null && seedLng !== null && colorOk
 
   const onSave = async () => {
     if (!canSave || seedLat === null || seedLng === null) return
@@ -70,8 +76,8 @@ export function WaypointCreate(): JSX.Element {
         lng: seedLng,
         elevation_m: elevNum,
         category,
-        color: null,
-        icon: null,
+        color: color === '' ? null : color,
+        icon,
         tags,
       })
       openEntity('waypoint', wp.id)
@@ -126,6 +132,16 @@ export function WaypointCreate(): JSX.Element {
             placeholder="optional"
           />
         </label>
+      </section>
+
+      <section className={shared.section}>
+        <WaypointStyleFields
+          category={category}
+          icon={icon}
+          color={color}
+          onIconChange={setIcon}
+          onColorChange={setColor}
+        />
       </section>
 
       <section className={shared.section}>
