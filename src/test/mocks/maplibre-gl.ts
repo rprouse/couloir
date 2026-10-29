@@ -49,6 +49,10 @@ export class MockMap {
   easeTo = vi.fn()
   removeImage = vi.fn()
   queryTerrainElevation = vi.fn((): number | null => null)
+  getCenter = vi.fn(() => ({ lng: -115.063, lat: 49.504 }))
+  getBearing = vi.fn(() => 0)
+  terrain: { exaggeration: number; getElevationForLngLatZoom: (...args: unknown[]) => number } | null = null
+  transform = { tileZoom: 11 }
   once = vi.fn((event: string, handler: (...args: unknown[]) => void) => {
     const wrapped = (...args: unknown[]) => {
       this.off(event, wrapped)
@@ -89,6 +93,7 @@ export class MockMarker {
 export const Marker = vi.fn().mockImplementation((opts?: Record<string, unknown>) => new MockMarker(opts))
 
 export const NavigationControl = vi.fn().mockImplementation(() => ({}))
+export const ScaleControl = vi.fn().mockImplementation(() => ({}))
 export const __mocks__ = { MockMap, MockMarker }
 
 export const Map = vi.fn().mockImplementation(() => new MockMap())
@@ -96,4 +101,4 @@ export const Map = vi.fn().mockImplementation(() => new MockMap())
 export const addProtocol = vi.fn()
 export const removeProtocol = vi.fn()
 
-export default { Map, NavigationControl, Marker, addProtocol, removeProtocol }
+export default { Map, NavigationControl, ScaleControl, Marker, addProtocol, removeProtocol }

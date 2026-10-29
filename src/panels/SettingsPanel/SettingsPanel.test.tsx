@@ -97,6 +97,17 @@ describe('SettingsPanel', () => {
     expect(screen.getByText('40%')).toBeInTheDocument()
   })
 
+  it('turns the navigation aid off and on', async () => {
+    const user = userEvent.setup()
+    render(<SettingsPanel />)
+    const box = screen.getByRole('checkbox', { name: /centre crosshair and position readout/i })
+    expect(box).toBeChecked()
+    await user.click(box)
+    expect(useUiStore.getState().navigationAidEnabled).toBe(false)
+    await user.click(box)
+    expect(useUiStore.getState().navigationAidEnabled).toBe(true)
+  })
+
   it('says where the library is stored', () => {
     render(<SettingsPanel />)
     expect(screen.getByText(/stored on your couloir server/i)).toBeInTheDocument()
