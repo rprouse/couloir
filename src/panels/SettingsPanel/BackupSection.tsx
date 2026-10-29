@@ -34,6 +34,7 @@ export function BackupSection(): JSX.Element {
         waypoints: useWaypointsStore.getState().waypoints,
         photos: usePhotosStore.getState().photos,
         tags: useTagsStore.getState().tags,
+        atesAreas: useAtesAreasStore.getState().areas,
       }),
     })
 

@@ -48,6 +48,10 @@ export async function readBackup(chunks: AsyncIterable<Uint8Array>): Promise<Par
   for (const key of ['routes', 'tracks', 'waypoints', 'photos', 'tags', 'entity_tags'] as const) {
     if (!Array.isArray(bundle[key])) throw new BackupFormatError(`The backup's metadata is missing "${key}".`)
   }
+  // Optional: v1 backups predate ATES areas.
+  if (bundle.ates_areas !== undefined && !Array.isArray(bundle.ates_areas)) {
+    throw new BackupFormatError(`The backup's metadata has an invalid "ates_areas".`)
+  }
 
   const photos = new Map<string, Blob>()
   const thumbs = new Map<string, Blob>()

@@ -43,5 +43,6 @@ export function summarizeBundle(b: ExportBundle): string {
   return [
     part(b.routes.length, 'route'), part(b.tracks.length, 'track'),
     part(b.waypoints.length, 'waypoint'), part(b.photos.length, 'photo'), part(b.tags.length, 'tag'),
+    ...(b.ates_areas?.length ? [part(b.ates_areas.length, 'ATES area')] : []),
   ].join(', ')
 }

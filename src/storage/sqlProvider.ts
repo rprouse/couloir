@@ -366,12 +366,13 @@ export class SqlStorageProvider implements StorageProvider {
     photos: Map<string, Blob>
     thumbs: Map<string, Blob>
   }> {
-    const [routes, tracks, waypoints, photos, tags] = await Promise.all([
+    const [routes, tracks, waypoints, photos, tags, ates_areas] = await Promise.all([
       this.getRoutes(),
       this.getTracks(),
       this.getWaypoints(),
       this.getPhotos(),
       this.getTags(),
+      this.getAtesAreas(),
     ])
 
     const junctionRows = await this.db.all(
@@ -394,6 +395,7 @@ export class SqlStorageProvider implements StorageProvider {
       photos,
       tags,
       entity_tags,
+      ates_areas,
     }
 
     const photoBlobs = new Map<string, Blob>()
@@ -419,7 +421,7 @@ export class SqlStorageProvider implements StorageProvider {
     // Pull current updated_at for every entity in the bundle so we can decide
     // insert-vs-update-vs-skip without making N round-trips.
     const currentUpdatedAt = async (
-      table: 'routes' | 'tracks' | 'waypoints' | 'photos',
+      table: 'routes' | 'tracks' | 'waypoints' | 'photos' | 'ates_areas',
       ids: string[],
     ): Promise<Map<string, string>> => {
       const result = new Map<string, string>()
@@ -437,12 +439,14 @@ export class SqlStorageProvider implements StorageProvider {
       return result
     }
 
+    const atesAreas = bundle.ates_areas ?? []  // absent from v1 bundles
     const [
       currentRoutes,
       currentTracks,
       currentWaypoints,
       currentPhotos,
       currentTags,
+      currentAtesAreas,
     ] = await Promise.all([
       currentUpdatedAt('routes', bundle.routes.map(r => r.id)),
       currentUpdatedAt('tracks', bundle.tracks.map(t => t.id)),
@@ -453,6 +457,7 @@ export class SqlStorageProvider implements StorageProvider {
         `SELECT id FROM tags WHERE id IN (${bundle.tags.map(() => '?').join(',') || 'NULL'})`,
         bundle.tags.map(t => t.id),
       ),
+      currentUpdatedAt('ates_areas', atesAreas.map(a => a.id)),
     ])
     const existingTagIds = new Set(currentTags.map(r => r.id as string))
 
@@ -528,6 +533,18 @@ export class SqlStorageProvider implements StorageProvider {
                 created_at, updated_at
               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         params: this.photoToRow(p),
+      })
+    }
+
+    // ATES areas — same newer-wins rule as entities.
+    for (const a of atesAreas) {
+      const existingTs = currentAtesAreas.get(a.id)
+      if (existingTs !== undefined && a.updated_at <= existingTs) continue
+      ops.push({
+        sql: `INSERT OR REPLACE INTO ates_areas (
+                id, name, source_filename, geojson, imported_at, updated_at
+              ) VALUES (?, ?, ?, ?, ?, ?)`,
+        params: this.atesAreaToRow(a),
       })
     }
 

@@ -117,7 +117,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 
 - [x] [12.1 KMZ parser](#task-121---kmz-parser)
 - [x] [12.2 ATES area storage](#task-122---ates-area-storage)
-- [ ] [12.3 ATES areas in backups](#task-123---ates-areas-in-backups)
+- [x] [12.3 ATES areas in backups](#task-123---ates-areas-in-backups)
 - [ ] [12.4 ATES map layer](#task-124---ates-map-layer)
 - [ ] [12.5 ATES controls, legend and area management](#task-125---ates-controls-legend-and-area-management)
 - [ ] [12.6 Docs](#task-126---docs)

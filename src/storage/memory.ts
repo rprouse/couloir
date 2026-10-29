@@ -209,12 +209,13 @@ export class InMemoryStorageProvider implements StorageProvider {
     photos: Map<string, Blob>
     thumbs: Map<string, Blob>
   }> {
-    const [routes, tracks, waypoints, photos, tags] = await Promise.all([
+    const [routes, tracks, waypoints, photos, tags, ates_areas] = await Promise.all([
       this.getRoutes(),
       this.getTracks(),
       this.getWaypoints(),
       this.getPhotos(),
       this.getTags(),
+      this.getAtesAreas(),
     ])
 
     const entity_tags: EntityTagRow[] = []
@@ -245,6 +246,7 @@ export class InMemoryStorageProvider implements StorageProvider {
       photos,
       tags,
       entity_tags,
+      ates_areas,
     }
 
     return {
@@ -293,6 +295,14 @@ export class InMemoryStorageProvider implements StorageProvider {
       const existing = this.photos.get(p.id)
       if (!existing || isNewer(p.updated_at, existing.updated_at)) {
         this.photos.set(p.id, JSON.parse(JSON.stringify(p)) as Photo)
+      }
+    }
+
+    // ATES areas (absent from v1 bundles).
+    for (const a of bundle.ates_areas ?? []) {
+      const existing = this.atesAreas.get(a.id)
+      if (!existing || isNewer(a.updated_at, existing.updated_at)) {
+        this.atesAreas.set(a.id, structuredClone(a))
       }
     }
 

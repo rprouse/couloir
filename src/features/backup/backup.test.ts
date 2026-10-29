@@ -4,6 +4,8 @@ import { writeBackup, estimateBackupBytes, backupFilename, type BackupSink } fro
 import { readBackup, BackupFormatError } from './readBackup'
 import { prepareImport } from './prepareImport'
 import type { Photo, Route } from '../../types'
+import { BUNDLE_VERSION } from '../../types'
+import { buildAtesArea } from '../../storage/contract'
 
 const ts = '2026-02-14T12:00:00.000Z'
 const route: Route = {
@@ -24,6 +26,7 @@ async function seeded(): Promise<InMemoryStorageProvider> {
   await s.saveTag({ id: 't1', name: 'Steep', color: '#EF4444', created_at: ts })
   await s.saveRoute(route)
   await s.savePhoto(photo, new Blob(['full']), new Blob(['thumb']))
+  await s.saveAtesArea(buildAtesArea())
   return s
 }
 
@@ -52,7 +55,7 @@ describe('backup', () => {
   it('round-trips entities, tags, blobs and thumbnails into an empty store', async () => {
     const sink = memorySink()
     const manifest = await writeBackup(await seeded(), sink)
-    expect(manifest).toMatchObject({ bundle_version: 1, photo_count: 1 })
+    expect(manifest).toMatchObject({ bundle_version: BUNDLE_VERSION, photo_count: 1 })
 
     const parsed = await readBackup(iterate(sink.chunks))
     const prepared = await prepareImport(parsed, fakeThumb)
@@ -64,6 +67,7 @@ describe('backup', () => {
     expect(await target.getTags()).toHaveLength(1)
     expect(await (await target.getPhotoBlob('p1'))!.text()).toBe('full')
     expect(await (await target.getPhotoThumb('p1'))!.text()).toBe('thumb')
+    expect(await target.getAtesAreas()).toEqual([buildAtesArea()])
     expect(fakeThumb).not.toHaveBeenCalled()
   })
 
@@ -125,10 +129,31 @@ describe('backup', () => {
 
   it('rejects a backup from a newer version', async () => {
     const zip = zipSync({
-      'manifest.json': strToU8(JSON.stringify({ bundle_version: 2, app_version: 'x', exported_at: ts, photo_count: 0, total_size_bytes: 0 })),
+      'manifest.json': strToU8(JSON.stringify({ bundle_version: BUNDLE_VERSION + 1, app_version: 'x', exported_at: ts, photo_count: 0, total_size_bytes: 0 })),
       'metadata.json': strToU8('{}'),
     })
     await expect(readBackup(iterate([zip]))).rejects.toThrow(/newer version/)
+  })
+
+  it('restores a v1 backup, which has no ATES areas', async () => {
+    const zip = zipSync({
+      'manifest.json': strToU8(JSON.stringify({ bundle_version: 1, app_version: 'x', exported_at: ts, photo_count: 0, total_size_bytes: 0 })),
+      'metadata.json': strToU8(JSON.stringify({ bundle_version: 1, app_version: 'x', exported_at: ts, routes: [route], tracks: [], waypoints: [], photos: [], tags: [], entity_tags: [] })),
+    })
+    const prepared = await prepareImport(await readBackup(iterate([zip])), fakeThumb)
+    const target = new InMemoryStorageProvider()
+    await target.init()
+    await target.importAll(prepared.bundle, prepared.photos, prepared.thumbs)
+    expect((await target.getRoute('r1'))?.name).toBe('Lone Tree')
+    expect(await target.getAtesAreas()).toEqual([])
+  })
+
+  it('rejects metadata whose ates_areas is not a list', async () => {
+    const zip = zipSync({
+      'manifest.json': strToU8(JSON.stringify({ bundle_version: BUNDLE_VERSION, app_version: 'x', exported_at: ts, photo_count: 0, total_size_bytes: 0 })),
+      'metadata.json': strToU8(JSON.stringify({ bundle_version: BUNDLE_VERSION, app_version: 'x', exported_at: ts, routes: [], tracks: [], waypoints: [], photos: [], tags: [], entity_tags: [], ates_areas: {} })),
+    })
+    await expect(readBackup(iterate([zip]))).rejects.toThrow(/ates_areas/)
   })
 
   it('rejects a ZIP that is not a Couloir backup', async () => {

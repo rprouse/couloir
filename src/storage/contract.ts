@@ -1,5 +1,6 @@
 import type { StorageProvider } from './interface'
 import type { AtesArea, Photo, Route, Tag, Track, Waypoint } from '../types'
+import { BUNDLE_VERSION } from '../types'
 
 // Behaviour every StorageProvider must share, run against each implementation
 // from its own test file:
@@ -499,8 +500,9 @@ export function storageContract(name: string, options: StorageContractOptions): 
     describe('backup', () => {
       it('exports an empty bundle for a fresh store', async () => {
         const { bundle, photos, thumbs } = await storage.exportAll()
-        expect(bundle.bundle_version).toBe(1)
+        expect(bundle.bundle_version).toBe(BUNDLE_VERSION)
         expect(bundle.routes).toEqual([])
+        expect(bundle.ates_areas).toEqual([])
         expect(bundle.entity_tags).toEqual([])
         expect(photos.size).toBe(0)
         expect(thumbs.size).toBe(0)
@@ -556,6 +558,41 @@ export function storageContract(name: string, options: StorageContractOptions): 
         const fresh = await open()
         await fresh.importAll(bundle, exported.photos, exported.thumbs)
         expect((await fresh.getWaypoint('wp-1'))?.icon).toBeNull()
+      })
+
+      it('round-trips ATES areas through export+import', async () => {
+        const area = buildAtesArea()
+        await storage.saveAtesArea(area)
+        const exported = await storage.exportAll()
+        expect(exported.bundle.ates_areas).toEqual([area])
+
+        const fresh = await open()
+        await fresh.importAll(exported.bundle, exported.photos, exported.thumbs)
+        expect(await fresh.getAtesAreas()).toEqual([area])
+      })
+
+      it('imports a v1 bundle (no ates_areas key) without touching existing areas', async () => {
+        const { ates_areas: _ates, ...v1 } = (await storage.exportAll()).bundle
+        const fresh = await open()
+        await fresh.saveAtesArea(buildAtesArea())
+        await fresh.importAll({ ...v1, bundle_version: 1 }, new Map(), new Map())
+        expect(await fresh.getAtesAreas()).toEqual([buildAtesArea()])
+      })
+
+      it('importAll replaces an ATES area only when the bundle copy is newer', async () => {
+        const fresh = await open()
+        await fresh.saveAtesArea(buildAtesArea({ id: 'a', name: 'Local newer', updated_at: '2026-05-06T13:00:00.000Z' }))
+        await fresh.saveAtesArea(buildAtesArea({ id: 'b', name: 'Local stale', updated_at: '2026-05-06T12:00:00.000Z' }))
+        const exported = await storage.exportAll()
+        const bundle = {
+          ...exported.bundle,
+          ates_areas: [
+            buildAtesArea({ id: 'a', name: 'Bundle stale', updated_at: '2026-05-06T12:00:00.000Z' }),
+            buildAtesArea({ id: 'b', name: 'Bundle newer', updated_at: '2026-05-06T13:00:00.000Z' }),
+          ],
+        }
+        await fresh.importAll(bundle, new Map(), new Map())
+        expect((await fresh.getAtesAreas()).map((a) => a.name)).toEqual(['Bundle newer', 'Local newer'])
       })
 
       it('importAll is idempotent — running it twice changes nothing', async () => {

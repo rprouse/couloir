@@ -205,6 +205,8 @@ export interface ExportBundle {
   photos: Photo[]
   tags: Tag[]
   entity_tags: EntityTagRow[]
+  // Bundle v2 (Phase 12). Absent from v1 bundles, which restore with no areas.
+  ates_areas?: AtesArea[]
 }
 
 export interface EntityTagRow {
@@ -316,6 +318,6 @@ export const APP_VERSION = '0.0.1'
 
 // Backup ZIP format (src/features/backup). Bump BUNDLE_VERSION only for
 // breaking changes to metadata.json; readers reject newer versions.
-export const BUNDLE_VERSION = 1
+export const BUNDLE_VERSION = 2   // v2: ates_areas
 export const BACKUP_MANIFEST_FILE = 'manifest.json'
 export const BACKUP_METADATA_FILE = 'metadata.json'

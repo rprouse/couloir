@@ -238,14 +238,14 @@ couloir/
 
 **Files:** `src/types/index.ts`, `sqlProvider.ts`, `memory.ts`, `http.ts`, `contract.ts`, `src/features/backup/*`, `server/app.ts`
 
-- [ ] **Step 12.3.1: Contract tests first:**
+- [x] **Step 12.3.1: Contract tests first:**
   - `exportAll` carries `ates_areas` and `bundle_version: 2` (update the existing `toBe(1)` assertion)
   - `importAll` of a bundle with no `ates_areas` key (a version 1 bundle, built by destructuring and cast through `unknown` with a comment) leaves existing areas alone
   - an imported area replaces the stored one only when its `updated_at` is newer
 
-- [ ] **Step 12.3.2:** Add `ates_areas?: AtesArea[]` to `ExportBundle`. It's optional because version 1 bundles don't have it. Set `BUNDLE_VERSION = 2`. Implement it in `exportAll`/`importAll` for the SQL and in-memory providers, inside the existing transaction. `HttpStorageProvider.exportAll` builds the bundle from the list endpoints, so add `getAtesAreas()` there. `readBackup` already refuses `bundle_version > BUNDLE_VERSION`. Add a test that a version 1 ZIP still restores.
+- [x] **Step 12.3.2:** Add `ates_areas?: AtesArea[]` to `ExportBundle`. It's optional because version 1 bundles don't have it. Set `BUNDLE_VERSION = 2`. Implement it in `exportAll`/`importAll` for the SQL and in-memory providers, inside the existing transaction. `HttpStorageProvider.exportAll` builds the bundle from the list endpoints, so add `getAtesAreas()` there. `readBackup` already refuses `bundle_version > BUNDLE_VERSION`. Add a test that a version 1 ZIP still restores. The ZIP is written by `writeBackup` (not `exportAll`), so it reads `getAtesAreas()` too; `readBackup` rejects a non-array `ates_areas`, and `summarizeBundle` and the size estimate count ATES areas.
 
-- [ ] **Step 12.3.3:** `npm test`, `npm run typecheck`. Commit `feat: include ATES areas in ZIP backups (bundle v2)`.
+- [x] **Step 12.3.3:** `npm test`, `npm run typecheck`. Commit `feat: include ATES areas in ZIP backups (bundle v2)`.
 
 ## Task 12.4 — ATES map layer
 

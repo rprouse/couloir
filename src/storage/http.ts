@@ -251,12 +251,13 @@ export class HttpStorageProvider implements StorageProvider {
     photos: Map<string, Blob>
     thumbs: Map<string, Blob>
   }> {
-    const [routes, tracks, waypoints, photos, tags] = await Promise.all([
+    const [routes, tracks, waypoints, photos, tags, ates_areas] = await Promise.all([
       this.getRoutes(),
       this.getTracks(),
       this.getWaypoints(),
       this.getPhotos(),
       this.getTags(),
+      this.getAtesAreas(),
     ])
 
     const bundle: ExportBundle = {
@@ -271,6 +272,7 @@ export class HttpStorageProvider implements StorageProvider {
       entity_tags: entityTagRows([
         ['route', routes], ['track', tracks], ['waypoint', waypoints], ['photo', photos],
       ]),
+      ates_areas,
     }
 
     const photoBlobs = new Map<string, Blob>()
