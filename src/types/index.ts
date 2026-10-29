@@ -236,11 +236,6 @@ export const TECHNICAL_DIFFICULTY_LABELS: Record<TechnicalDifficulty, string> = 
 // 0.14 m/s ≈ 0.5 km/h. Tuned for backcountry skinning. See DATA-MODEL.md.
 export const MOVING_SPEED_THRESHOLD_M_S = 0.14
 
-export const PHOTO_CLUSTER = {
-  clusterMaxZoom: 13,
-  clusterRadius: 50,
-} as const
-
 // Photo re-encoding (src/utils/image.ts). The full-size cap keeps a 24 MP
 // phone photo around 2-3 MB on the server while leaving plenty of zoom detail.
 export const PHOTO_MAX_EDGE_PX = 4096

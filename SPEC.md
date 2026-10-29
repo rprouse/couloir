@@ -53,7 +53,7 @@ All four data types are rendered as distinct map layers. Each layer can be toggl
 - Routes - rendered as colored polylines with direction indicators
 - Tracks - rendered as colored polylines, visually distinct from routes
 - Waypoints - rendered as categorized icons/markers
-- Photos - rendered as small thumbnail pins on the map
+- Photos - rendered as small blue dots on the map, with a direction arrow when zoomed in
 
 ### Routes
 
@@ -96,8 +96,8 @@ All four data types are rendered as distinct map layers. Each layer can be toggl
 - Placement: if the photo has EXIF GPS, the map flies there and the pin is dropped at that position. Without EXIF GPS, the photo's thumbnail follows the cursor and the user clicks the map where the photo was taken.
 - The pin is draggable while the photo is being created or edited; coordinates can also be typed in edit mode. In view mode the position is locked.
 - Add name, description, bearing (0-359°, direction camera was pointing — prefilled from EXIF when available), tags. The capture date is also prefilled from EXIF.
-- Thumbnail visible as a map pin at the photo's location. At low zoom levels, photo pins are clustered (count badges); thumbnails appear when zoomed in.
-- Click photo pin to open photo viewer with full image and metadata.
+- Shown as a small blue dot at the photo's location (no clustering). From zoom 14, a photo with a bearing also shows a small arrow pointing the way the camera faced.
+- Click photo dot to open photo viewer with full image and metadata.
 - Edit metadata and reposition the pin (drag it in edit mode, or type coordinates).
 - Delete photo and blob.
 
