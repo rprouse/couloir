@@ -234,13 +234,13 @@ couloir/
 
 Run `npm run dev` with a real Maptiler key and drive it with Playwright.
 
-- [ ] Existing waypoints (no overrides) show their category's new pictogram in the category colour
-- [ ] Set a waypoint to Parking + a red swatch: the map updates immediately, with no reload
-- [ ] A custom hex colour shows on the map (the Phase 4 colour override now visibly works)
-- [ ] Switch basemap (topo → satellite → topo): every waypoint icon comes back
-- [ ] Icons are crisp at 2× device pixel ratio and readable on satellite imagery
-- [ ] Create a new waypoint with Cabin + teal; reload; it persists
-- [ ] Export a ZIP, re-import it, and the overrides survive. A pre-Phase-10 ZIP (if one is to hand) imports with category icons.
-- [ ] The picker fits at 375 px with no horizontal scroll, and is keyboard-navigable
-- [ ] Drag-to-reposition still works on an overridden waypoint
-- [ ] No console errors
+- [x] Existing waypoints (no overrides) show their category's new pictogram in the category colour
+- [x] Set a waypoint to Parking + a red swatch: the map updates immediately, with no reload
+- [x] A custom hex colour shows on the map (the Phase 4 colour override now visibly works)
+- [x] Switch basemap (topo → satellite → topo): every waypoint icon comes back
+- [x] Icons are crisp at 2× device pixel ratio and readable on satellite imagery
+- [x] Create a new waypoint with Cabin + teal; reload; it persists
+- [x] Export a ZIP, re-import it, and the overrides survive. A pre-Phase-10 ZIP (if one is to hand) imports with category icons.
+- [x] The picker fits at 375 px with no horizontal scroll, and is keyboard-navigable
+- [x] Drag-to-reposition still works on an overridden waypoint
+- [x] No console errors
