@@ -29,9 +29,18 @@ describe('buildWaypointsGeoJson', () => {
     expect(fc.features[0].geometry.type).toBe('Point')
   })
 
-  it('exposes id and category as feature properties', () => {
-    const fc = buildWaypointsGeoJson([baseWaypoint({ id: 'a', category: 'cliff_band' })])
-    expect(fc.features[0].properties).toEqual({ id: 'a', category: 'cliff_band' })
+  it('exposes id, category and the category-default image id', () => {
+    const fc = buildWaypointsGeoJson([baseWaypoint({ id: 'a', category: 'summit' })])
+    expect(fc.features[0].properties).toEqual({
+      id: 'a',
+      category: 'summit',
+      image: 'wp:landscape:FBBF24',
+    })
+  })
+
+  it('uses the icon and colour overrides in the image id', () => {
+    const fc = buildWaypointsGeoJson([baseWaypoint({ icon: 'cabin', color: '#ef4444' })])
+    expect(fc.features[0].properties.image).toBe('wp:cabin:EF4444')
   })
 
   it('orders coordinates as [lng, lat]', () => {

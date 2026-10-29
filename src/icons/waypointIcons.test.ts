@@ -4,6 +4,9 @@ import {
   iconLabel,
   iconPath,
   isWaypointIcon,
+  parseWaypointImageId,
+  resolveWaypointStyle,
+  waypointImageId,
 } from './waypointIcons'
 import { SYMBOL_PATHS } from './symbolPaths'
 import { WAYPOINT_CATEGORIES } from '../types'
@@ -60,6 +63,37 @@ describe('WAYPOINT_SWATCHES', () => {
     expect(new Set(WAYPOINT_SWATCHES).size).toBe(WAYPOINT_SWATCHES.length)
     for (const hex of WAYPOINT_SWATCHES) {
       expect(isValidHex(hex)).toBe(true)
+    }
+  })
+})
+
+describe('resolveWaypointStyle', () => {
+  it('falls back to the category icon and colour', () => {
+    expect(resolveWaypointStyle({ category: 'summit', icon: null, color: null }))
+      .toEqual({ icon: 'landscape', color: '#FBBF24' })
+  })
+
+  it('prefers the overrides and upper-cases the hex', () => {
+    expect(resolveWaypointStyle({ category: 'summit', icon: 'cabin', color: '#ef4444' }))
+      .toEqual({ icon: 'cabin', color: '#EF4444' })
+  })
+})
+
+describe('waypoint image ids', () => {
+  it('encodes icon and colour', () => {
+    expect(waypointImageId('cabin', '#22c55e')).toBe('wp:cabin:22C55E')
+  })
+
+  it('round-trips every catalogue icon', () => {
+    for (const { key } of WAYPOINT_ICONS) {
+      expect(parseWaypointImageId(waypointImageId(key, '#14B8A6')))
+        .toEqual({ icon: key, color: '#14B8A6' })
+    }
+  })
+
+  it('ignores ids it did not make', () => {
+    for (const id of ['photo-placeholder', 'wp-summit', 'wp:nope:FFFFFF', 'wp:cabin:XYZ', 'wp:cabin:22C55E0']) {
+      expect(parseWaypointImageId(id)).toBeNull()
     }
   })
 })

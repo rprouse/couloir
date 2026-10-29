@@ -1,4 +1,6 @@
 import { SYMBOL_PATHS } from './symbolPaths'
+import { WAYPOINT_CATEGORIES } from '../types'
+import type { Waypoint } from '../types'
 
 export type WaypointIconGroup = 'Travel' | 'Shelter' | 'Terrain' | 'Safety' | 'General'
 
@@ -65,3 +67,29 @@ export const WAYPOINT_SWATCHES = [
   '#EF4444', '#F97316', '#FBBF24', '#22C55E', '#14B8A6',
   '#38BDF8', '#3B82F6', '#A78BFA', '#F472B6', '#334155',
 ] as const
+
+// The icon and colour a waypoint is drawn with: its own overrides, else its
+// category's defaults. The colour is normalised to upper-case #RRGGBB.
+export function resolveWaypointStyle(
+  w: Pick<Waypoint, 'category' | 'icon' | 'color'>,
+): { icon: WaypointIcon; color: string } {
+  const category = WAYPOINT_CATEGORIES[w.category] ?? WAYPOINT_CATEGORIES.other
+  return {
+    icon: w.icon ?? category.icon,
+    color: (w.color ?? category.color).toUpperCase(),
+  }
+}
+
+// MapLibre image ids for waypoint markers, e.g. 'wp:cabin:22C55E'. The map
+// draws each one on demand from its id (see WaypointsLayer).
+const IMAGE_ID_RE = /^wp:([a-z_]+):([0-9A-F]{6})$/
+
+export function waypointImageId(icon: WaypointIcon, color: string): string {
+  return `wp:${icon}:${color.replace('#', '').toUpperCase()}`
+}
+
+export function parseWaypointImageId(id: string): { icon: WaypointIcon; color: string } | null {
+  const match = IMAGE_ID_RE.exec(id)
+  if (!match || !isWaypointIcon(match[1])) return null
+  return { icon: match[1], color: `#${match[2]}` }
+}

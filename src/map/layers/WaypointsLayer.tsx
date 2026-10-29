@@ -4,10 +4,10 @@ import type { GeoJSONSource } from 'maplibre-gl'
 import { useMap } from '../../hooks/useMap'
 import { useWaypointsStore } from '../../store/waypoints'
 import { useUiStore } from '../../store/ui'
-import { WAYPOINT_CATEGORIES, type WaypointCategory } from '../../types'
 import { filterByTags } from '../../utils/tags'
 import { buildWaypointsGeoJson } from './waypointsLayerData'
-import { buildCategoryIcon } from './wpIcons'
+import { buildWaypointIcon } from './wpIcons'
+import { parseWaypointImageId } from '../../icons/waypointIcons'
 import {
   WAYPOINTS_SOURCE_ID,
   WAYPOINTS_SYMBOLS_LAYER_ID,
@@ -31,22 +31,25 @@ export function WaypointsLayer(): null {
     lng: number
   }>({ id: null, lat: 0, lng: 0 })
 
-  // Install source + layers on style.load. Register one ImageData per category
-  // before adding the symbol layer so the icon-image expression always
-  // resolves. Re-registering an image with the same name throws — guard with
+  // Install source + layers on style.load. Marker images are drawn on demand:
+  // each feature names its image ('wp:<icon>:<HEX>') and MapLibre asks for
+  // any it doesn't have via styleimagemissing. That covers every icon/colour
+  // mix and re-registers them after a basemap switch clears the style's
+  // images. Re-registering an image with the same name throws — guard with
   // hasImage.
   useEffect(() => {
     if (!map) return
 
+    const onImageMissing = (e: { id: string }) => {
+      const parsed = parseWaypointImageId(e.id)
+      if (!parsed || map.hasImage(e.id)) return
+      const { data, pixelRatio } = buildWaypointIcon(parsed.icon, parsed.color)
+      map.addImage(e.id, data, { pixelRatio })
+    }
+    map.on('styleimagemissing', onImageMissing)
+
     const install = () => {
       if (map.getSource(WAYPOINTS_SOURCE_ID)) return
-
-      for (const cat of Object.keys(WAYPOINT_CATEGORIES) as WaypointCategory[]) {
-        const name = `wp-${cat}`
-        if (!map.hasImage(name)) {
-          map.addImage(name, buildCategoryIcon(cat))
-        }
-      }
 
       const initialWaypoints = filterByTags(
         useWaypointsStore.getState().waypoints,
@@ -64,7 +67,7 @@ export function WaypointsLayer(): null {
         type: 'symbol',
         source: WAYPOINTS_SOURCE_ID,
         layout: {
-          'icon-image': ['concat', 'wp-', ['get', 'category']],
+          'icon-image': ['get', 'image'],
           'icon-size': 1,
           'icon-allow-overlap': true,
           visibility,
@@ -166,6 +169,7 @@ export function WaypointsLayer(): null {
     map.on('mousedown', WAYPOINTS_SYMBOLS_LAYER_ID, onMouseDown)
 
     return () => {
+      map.off('styleimagemissing', onImageMissing)
       map.off('style.load', install)
       map.off('click', WAYPOINTS_SYMBOLS_LAYER_ID, onClick)
       map.off('mouseenter', WAYPOINTS_SYMBOLS_LAYER_ID, onEnter)

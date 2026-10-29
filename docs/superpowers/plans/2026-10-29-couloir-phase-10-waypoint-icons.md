@@ -164,7 +164,7 @@ couloir/
 
 **Files:** `src/map/layers/layerStyles.ts`, `src/icons/waypointIcons.ts` (+ test), `src/map/layers/wpIcons.ts` (+ test), `src/map/layers/waypointsLayerData.ts` (+ test), `src/map/layers/WaypointsLayer.tsx` (+ test)
 
-- [ ] **Step 10.3.1: Style resolution and image ids, tests first** (in `waypointIcons.test.ts`):
+- [x] **Step 10.3.1: Style resolution and image ids, tests first** (in `waypointIcons.test.ts`):
 
   ```ts
   export function resolveWaypointStyle(
@@ -177,7 +177,7 @@ couloir/
 
   Cases: null icon or colour falls back to the category default, overrides win, lower-case hex is upper-cased, `parse(id(x)) === x` for every catalogue icon, and `parse` returns null for foreign ids (`'photo-placeholder'`, `'wp-summit'`, `'wp:nope:FFFFFF'`, `'wp:cabin:XYZ'`). These belong in `src/icons/` rather than the map layer because the panel badge (10.4) uses `resolveWaypointStyle` too. `Waypoint` is an `import type`, so there's no cycle at runtime.
 
-- [ ] **Step 10.3.2: Rewrite `wpIcons.ts`.** Replace `GLYPHS`, `categoryGlyph` and `buildCategoryIcon` with:
+- [x] **Step 10.3.2: Rewrite `wpIcons.ts`.** Replace `GLYPHS`, `categoryGlyph` and `buildCategoryIcon` with:
 
   ```ts
   // Disc in `color` with a white halo and a white Material Symbol glyph,
@@ -192,16 +192,16 @@ couloir/
 
   Tests: the returned size is `WAYPOINT_ICON_PX * WAYPOINT_ICON_PIXEL_RATIO` square, `pixelRatio` is 2, and a call never throws for any catalogue icon with any swatch.
 
-- [ ] **Step 10.3.3: GeoJSON carries the image id.** `buildWaypointsGeoJson` adds `image: waypointImageId(...Object.values(resolveWaypointStyle(w)))`, or the clearer destructured form. Keep `category` too. Test: an override waypoint gets `wp:cabin:EF4444`, a plain `summit` gets `wp:landscape:FBBF24`.
+- [x] **Step 10.3.3: GeoJSON carries the image id.** `buildWaypointsGeoJson` adds `image: waypointImageId(...Object.values(resolveWaypointStyle(w)))`, or the clearer destructured form. Keep `category` too. Test: an override waypoint gets `wp:cabin:EF4444`, a plain `summit` gets `wp:landscape:FBBF24`.
 
-- [ ] **Step 10.3.4: Layer wiring, tests first** (`WaypointsLayer.test.tsx`):
+- [x] **Step 10.3.4: Layer wiring, tests first** (`WaypointsLayer.test.tsx`):
   - `icon-image` is `['get', 'image']`
   - a `styleimagemissing` listener is registered before `addLayer`. Calling it with `{ id: 'wp:cabin:22C55E' }` calls `addImage('wp:cabin:22C55E', expect.anything(), { pixelRatio: 2 })`. Calling it with `{ id: 'photo-placeholder' }` does nothing, and it does nothing when `hasImage` returns true.
   - the listener is removed on unmount
 
   Then in `WaypointsLayer.tsx`: drop the per-category `addImage` loop, add an `onImageMissing` handler next to the other handlers, register it with `map.on('styleimagemissing', …)` at the top of the effect so it is in place before any `install()`, and `map.off` it in the cleanup. The handler is the only place waypoint images get created, so the photo layer's placeholder ids never reach it.
 
-- [ ] **Step 10.3.5:** `npm test`, `npm run typecheck`. Commit `feat: draw waypoint icons and colour overrides on the map`.
+- [x] **Step 10.3.5:** `npm test`, `npm run typecheck`. Commit `feat: draw waypoint icons and colour overrides on the map`.
 
 ## Task 10.4 — Icon and colour picker
 
