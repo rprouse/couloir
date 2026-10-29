@@ -3,6 +3,8 @@
 // SQLite schema in src/storage/migrations/1.sql is derived from these types.
 // ============================================================================
 
+import type { WaypointIcon } from '../icons/waypointIcons'
+
 export type EntityType = 'route' | 'track' | 'waypoint' | 'photo'
 
 export type ATES = 'simple' | 'challenging' | 'complex' | 'extreme'
@@ -203,17 +205,17 @@ export const TAG_PALETTE = [
 export const WAYPOINT_CATEGORIES: Record<WaypointCategory, {
   label: string
   color: string
-  icon: string
+  icon: WaypointIcon
 }> = {
-  entry_gate:  { label: 'Entry Gate',        color: '#22C55E', icon: 'gate' },
-  cliff_band:  { label: 'Cliff Band',        color: '#EF4444', icon: 'warning' },
-  rollover:    { label: 'Rollover',          color: '#F59E0B', icon: 'arrow-down' },
-  hazard:      { label: 'Hazard',            color: '#EF4444', icon: 'hazard' },
-  skin_track:  { label: 'Skin Track',        color: '#A78BFA', icon: 'track' },
-  cache:       { label: 'Cache',             color: '#60A5FA', icon: 'cache' },
-  summit:      { label: 'Summit',            color: '#FBBF24', icon: 'summit' },
-  poi:         { label: 'Point of Interest', color: '#94A3B8', icon: 'poi' },
-  other:       { label: 'Other',             color: '#94A3B8', icon: 'pin' },
+  entry_gate:  { label: 'Entry Gate',        color: '#22C55E', icon: 'fence' },
+  cliff_band:  { label: 'Cliff Band',        color: '#EF4444', icon: 'landslide' },
+  rollover:    { label: 'Rollover',          color: '#F59E0B', icon: 'arrow_downward' },
+  hazard:      { label: 'Hazard',            color: '#EF4444', icon: 'warning' },
+  skin_track:  { label: 'Skin Track',        color: '#A78BFA', icon: 'route' },
+  cache:       { label: 'Cache',             color: '#60A5FA', icon: 'backpack' },
+  summit:      { label: 'Summit',            color: '#FBBF24', icon: 'landscape' },
+  poi:         { label: 'Point of Interest', color: '#94A3B8', icon: 'star' },
+  other:       { label: 'Other',             color: '#94A3B8', icon: 'location_on' },
 }
 
 export const ATES_LABELS: Record<ATES, string> = {

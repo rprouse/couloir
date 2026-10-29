@@ -97,7 +97,16 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 ### Phase 9 — Aspect Overlay
 
 - [x] [9.1 Aspect overlay](#task-91---aspect-overlay)
-- [ ] [9.2 Browser QA](#task-92---browser-qa)
+- [x] [9.2 Browser QA](#task-92---browser-qa)
+
+### Phase 10 — Waypoint Icons and Colours  ·  Plan: [`2026-10-29-couloir-phase-10-waypoint-icons.md`](docs/superpowers/plans/2026-10-29-couloir-phase-10-waypoint-icons.md)
+
+- [x] [10.1 Icon catalogue](#task-101---icon-catalogue)
+- [ ] [10.2 Waypoint icon field](#task-102---waypoint-icon-field)
+- [ ] [10.3 Render icon and colour on the map](#task-103---render-icon-and-colour-on-the-map)
+- [ ] [10.4 Icon and colour picker](#task-104---icon-and-colour-picker)
+- [ ] [10.5 Docs](#task-105---docs)
+- [ ] [10.6 Browser QA](#task-106---browser-qa)
 
 ---
 
@@ -848,6 +857,54 @@ Check on a real map: a north-facing bowl shades red and a south face teal, the l
 
 **Acceptance criteria**:
 - Aspect colours match known terrain with no console errors
+
+---
+
+## Phase 10 - Waypoint Icons and Colours
+
+**Goal**: Each waypoint can have its own icon (parking, skier, camp, cabin, …) and colour, picked from a curated set of Material Symbols. Waypoints without overrides look like their category.
+
+### Task 10.1 - Icon catalogue
+
+Vendor about 28 Material Symbols (Rounded, filled, Apache 2.0) as SVG path data via a pinned fetch script. No icon package. Define the `WaypointIcon` catalogue, the colour swatches, and a real pictogram for each category.
+
+**Acceptance criteria**:
+- Every catalogue icon has path data and vice versa; licence file committed; no new dependency
+
+### Task 10.2 - Waypoint icon field
+
+Add a nullable `icon` column (migration 3) and `Waypoint.icon` across every storage provider. Unknown names read as `null`; pre-Phase-10 ZIP imports get `null`.
+
+**Acceptance criteria**:
+- Contract suite covers the icon round-trip, overwrite, export and legacy import
+
+### Task 10.3 - Render icon and colour on the map
+
+Draw a disc in the resolved colour with a white glyph, generated on demand through `styleimagemissing` (`wp:<icon>:<HEX>` ids, 2× pixel ratio). This also makes the existing colour override visible for the first time.
+
+**Acceptance criteria**:
+- Unit tests cover style resolution, image ids and the layer's image handler; overrides and category defaults both render
+
+### Task 10.4 - Icon and colour picker
+
+A shared `WaypointStyleFields` (icon grid with a category-default option, swatches plus custom hex) in the create and edit forms, and a badge in the waypoint view.
+
+**Acceptance criteria**:
+- Icon and colour can be set when creating and editing, and reset to the category default; fits at 375 px
+
+### Task 10.5 - Docs
+
+Update `DATA-MODEL.md`, `ARCHITECTURE.md`, `SPEC.md` and `AGENTS.md` for the icon field, `src/icons/` and the vendoring rule.
+
+**Acceptance criteria**:
+- Docs describe the icon field, catalogue, image ids and how to add an icon
+
+### Task 10.6 - Browser QA
+
+Check on a real map: overrides and defaults render, survive a basemap switch and a ZIP round-trip, and the picker works at 375 px.
+
+**Acceptance criteria**:
+- Icons and colours render crisply over topo and satellite, with no console errors
 
 ---
 
