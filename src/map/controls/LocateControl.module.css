@@ -1,0 +1,67 @@
+.slot {
+  /* Anchors the message beside the button. */
+  position: relative;
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text);
+}
+
+.button[data-status='locating'] {
+  color: var(--color-location);
+  animation: locating 1.2s ease-in-out infinite;
+}
+
+.button[data-status='tracking'] {
+  color: var(--color-location);
+}
+
+@keyframes locating {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.message {
+  position: absolute;
+  top: 0;
+  left: calc(100% + var(--space-sm));
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-hud-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  line-height: 19px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* The user's position: a white-ringed dot with a soft pulse, larger than the
+   photo dots so the two don't read as the same thing. */
+.dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-location);
+  border: 3px solid var(--color-marker-glyph);
+  box-shadow: 0 0 0 0 var(--color-location-halo), var(--shadow-md);
+  animation: pulse 2s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pulse {
+  to {
+    box-shadow: 0 0 0 14px transparent, var(--shadow-md);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button[data-status='locating'],
+  .dot {
+    animation: none;
+  }
+}
