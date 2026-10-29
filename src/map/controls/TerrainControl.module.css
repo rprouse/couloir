@@ -13,27 +13,41 @@
 }
 
 .toggle,
-.slider {
+.overlayRow {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
   font-size: 12px;
 }
 
-.slider input[type='range'] {
-  width: 120px;
+.segmented {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 
-.slider input[type='range']:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.value {
-  width: 32px;
-  text-align: right;
+.segment {
+  padding: 2px var(--space-sm);
+  background: transparent;
+  border: none;
   color: var(--color-text-dim);
-  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.segment:hover {
+  color: var(--color-text);
+}
+
+.segment[aria-pressed='true'] {
+  background: var(--color-bg-1);
+  color: var(--color-text);
+}
+
+.segment + .segment {
+  border-left: 1px solid var(--color-border);
 }
 
 .divider {
@@ -74,6 +88,23 @@
   border-radius: 2px;
   /* Outline separates the darker swatches from the dark panel. */
   outline: 1px solid var(--color-border);
+}
+
+.rose {
+  align-self: center;
+}
+
+.wedge {
+  /* Thin gaps between wedges, in the panel colour. */
+  stroke: var(--color-bg-2);
+  stroke-width: 1;
+}
+
+.roseLabel {
+  fill: var(--color-text-dim);
+  font-size: 9px;
+  text-anchor: middle;
+  dominant-baseline: central;
 }
 
 .hint,

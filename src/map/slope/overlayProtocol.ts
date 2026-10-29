@@ -1,13 +1,24 @@
 import type { GetResourceResponse, RequestParameters } from 'maplibre-gl'
-import { decodeTerrainRgb, metersPerPixel, slopeDegrees } from './slopeMath'
+import {
+  aspectFromGradient,
+  decodeTerrainRgb,
+  hornGradient,
+  metersPerPixel,
+  slopeFromGradient,
+  type Gradient,
+} from './slopeMath'
 import { colorizeSlope } from './slopeBands'
+import { colorizeAspect } from './aspectBands'
 import { terrainSourceUrl } from '../mapConfig'
 import { debug } from '../../utils/debug'
+import { TERRAIN_OVERLAYS, type TerrainOverlay } from '../../types'
 
-// Custom MapLibre protocol: slope://{z}/{x}/{y} → PNG tile shaded by slope
-// angle, computed from the matching Maptiler terrain-rgb tile.
-export const SLOPE_PROTOCOL = 'slope'
-export const SLOPE_TILE_URL = `${SLOPE_PROTOCOL}://{z}/{x}/{y}`
+// Custom MapLibre protocols, one per terrain overlay: slope://{z}/{x}/{y}
+// and aspect://{z}/{x}/{y} → PNG tile shaded from the matching Maptiler
+// terrain-rgb tile. The protocol name is the overlay name.
+export function overlayTileUrl(overlay: TerrainOverlay): string {
+  return `${overlay}://{z}/{x}/{y}`
+}
 
 export interface DecodedImage {
   rgba: Uint8ClampedArray
@@ -22,26 +33,35 @@ export interface TileCodec {
   encodePng(rgba: Uint8ClampedArray<ArrayBuffer>, width: number, height: number): Promise<ArrayBuffer>
 }
 
-export interface SlopeLoaderDeps {
+export interface OverlayLoaderDeps {
   fetchFn: typeof fetch
   codec: TileCodec
   getKey: () => string | null
 }
 
-export type SlopeLoader = (
+export type OverlayLoader = (
   params: RequestParameters,
   abortController: AbortController,
 ) => Promise<GetResourceResponse<ArrayBuffer>>
 
-const SLOPE_URL_RE = /^slope:\/\/(\d+)\/(\d+)\/(\d+)$/
-
-export function parseSlopeUrl(url: string): { z: number; x: number; y: number } | null {
-  const m = SLOPE_URL_RE.exec(url)
-  if (!m) return null
-  return { z: Number(m[1]), x: Number(m[2]), y: Number(m[3]) }
+const RENDERERS: Record<TerrainOverlay, (g: Gradient) => Uint8ClampedArray<ArrayBuffer>> = {
+  slope: (g) => colorizeSlope(slopeFromGradient(g)),
+  aspect: (g) => colorizeAspect(aspectFromGradient(g), slopeFromGradient(g)),
 }
 
-export function createSlopeLoader(deps: SlopeLoaderDeps): SlopeLoader {
+const OVERLAY_URL_RE = new RegExp(`^(${TERRAIN_OVERLAYS.join('|')})://(\\d+)/(\\d+)/(\\d+)$`)
+
+export function parseOverlayUrl(
+  url: string,
+): { overlay: TerrainOverlay; z: number; x: number; y: number } | null {
+  const m = OVERLAY_URL_RE.exec(url)
+  if (!m) return null
+  return { overlay: m[1] as TerrainOverlay, z: Number(m[2]), x: Number(m[3]), y: Number(m[4]) }
+}
+
+// One loader serves every overlay protocol so they share the tiles.json
+// lookup and the empty tile.
+export function createOverlayLoader(deps: OverlayLoaderDeps): OverlayLoader {
   const { fetchFn, codec, getKey } = deps
   // key → DEM tile URL template from tiles.json. A failed lookup is evicted so
   // the next tile retries instead of caching the failure.
@@ -78,11 +98,11 @@ export function createSlopeLoader(deps: SlopeLoaderDeps): SlopeLoader {
   }
 
   return async (params, abortController) => {
-    const coords = parseSlopeUrl(params.url)
-    if (!coords) throw new Error(`Malformed slope tile URL: ${params.url}`)
+    const coords = parseOverlayUrl(params.url)
+    if (!coords) throw new Error(`Malformed overlay tile URL: ${params.url}`)
     const key = getKey()
     if (!key) throw new Error('No Maptiler key set')
-    const { z, x, y } = coords
+    const { overlay, z, x, y } = coords
     const started = performance.now()
 
     const template = await templateFor(key)
@@ -96,16 +116,17 @@ export function createSlopeLoader(deps: SlopeLoaderDeps): SlopeLoader {
 
     const { rgba, width, height } = await codec.decode(await res.blob())
     const elevations = decodeTerrainRgb(rgba, width, height)
-    const slope = slopeDegrees(elevations, width, height, metersPerPixel(z, y, width))
-    const data = await codec.encodePng(colorizeSlope(slope), width, height)
-    debug('slope tile', `${z}/${x}/${y}`, `${(performance.now() - started).toFixed(1)}ms`)
+    const gradient = hornGradient(elevations, width, height, metersPerPixel(z, y, width))
+    const data = await codec.encodePng(RENDERERS[overlay](gradient), width, height)
+    debug(`${overlay} tile`, `${z}/${x}/${y}`, `${(performance.now() - started).toFixed(1)}ms`)
     return { data }
   }
 }
 
-export function registerSlopeProtocol(
-  addProtocol: (name: string, loader: SlopeLoader) => void,
-  deps: SlopeLoaderDeps,
+export function registerOverlayProtocols(
+  addProtocol: (name: string, loader: OverlayLoader) => void,
+  deps: OverlayLoaderDeps,
 ): void {
-  addProtocol(SLOPE_PROTOCOL, createSlopeLoader(deps))
+  const loader = createOverlayLoader(deps)
+  for (const overlay of TERRAIN_OVERLAYS) addProtocol(overlay, loader)
 }

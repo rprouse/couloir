@@ -1,6 +1,12 @@
 import type { RequestParameters } from 'maplibre-gl'
-import { createSlopeLoader, parseSlopeUrl, type TileCodec } from './slopeProtocol'
+import {
+  createOverlayLoader,
+  parseOverlayUrl,
+  registerOverlayProtocols,
+  type TileCodec,
+} from './overlayProtocol'
 import { SLOPE_BANDS } from './slopeBands'
+import { ASPECT_SECTORS } from './aspectBands'
 import { metersPerPixel } from './slopeMath'
 
 const TEMPLATE = 'https://dem.test/{z}/{x}/{y}.webp?key=K'
@@ -56,23 +62,37 @@ function fakeFetch(opts: { tileStatus?: number; tilesJsonStatus?: number[] } = {
 
 const params = (url = `slope://${Z}/${X}/${Y}`) => ({ url }) as RequestParameters
 
-describe('parseSlopeUrl', () => {
-  it('parses z/x/y', () => {
-    expect(parseSlopeUrl('slope://12/738/1397')).toEqual({ z: 12, x: 738, y: 1397 })
+describe('parseOverlayUrl', () => {
+  it('parses the overlay and z/x/y', () => {
+    expect(parseOverlayUrl('slope://12/738/1397')).toEqual({ overlay: 'slope', z: 12, x: 738, y: 1397 })
+    expect(parseOverlayUrl('aspect://12/738/1397')).toEqual({ overlay: 'aspect', z: 12, x: 738, y: 1397 })
   })
-  it.each(['slope://12/738', 'https://12/738/1397', 'slope://a/b/c', 'slope://12/738/1397.png'])(
-    'rejects %s',
-    (url) => {
-      expect(parseSlopeUrl(url)).toBeNull()
-    },
-  )
+  it.each([
+    'slope://12/738',
+    'https://12/738/1397',
+    'hillshade://12/738/1397',
+    'slope://a/b/c',
+    'slope://12/738/1397.png',
+  ])('rejects %s', (url) => {
+    expect(parseOverlayUrl(url)).toBeNull()
+  })
 })
 
-describe('createSlopeLoader', () => {
+describe('registerOverlayProtocols', () => {
+  it('registers one shared loader under every overlay name', () => {
+    const addProtocol = vi.fn()
+    const { codec } = fakeCodec(planeRgba(10))
+    registerOverlayProtocols(addProtocol, { fetchFn: fakeFetch() as unknown as typeof fetch, codec, getKey: () => 'K' })
+    expect(addProtocol.mock.calls.map(([name]) => name)).toEqual(['slope', 'aspect'])
+    expect(addProtocol.mock.calls[0][1]).toBe(addProtocol.mock.calls[1][1])
+  })
+})
+
+describe('createOverlayLoader', () => {
   it('fetches the DEM tile from the tiles.json template, passing the abort signal', async () => {
     const fetchFn = fakeFetch()
     const { codec } = fakeCodec(planeRgba(32))
-    const load = createSlopeLoader({ fetchFn: fetchFn as unknown as typeof fetch, codec, getKey: () => 'K' })
+    const load = createOverlayLoader({ fetchFn: fetchFn as unknown as typeof fetch, codec, getKey: () => 'K' })
     const abort = new AbortController()
     const res = await load(params(), abort)
     expect(res.data).toBeInstanceOf(ArrayBuffer)
@@ -83,7 +103,7 @@ describe('createSlopeLoader', () => {
 
   it('colours the computed slope with the matching band', async () => {
     const { codec, encodePng } = fakeCodec(planeRgba(32))
-    const load = createSlopeLoader({ fetchFn: fakeFetch() as unknown as typeof fetch, codec, getKey: () => 'K' })
+    const load = createOverlayLoader({ fetchFn: fakeFetch() as unknown as typeof fetch, codec, getKey: () => 'K' })
     await load(params(), new AbortController())
     const [rgba, w, h] = encodePng.mock.calls[0]
     expect([w, h]).toEqual([W, W])
@@ -93,11 +113,33 @@ describe('createSlopeLoader', () => {
     }
   })
 
+  it('colours aspect tiles by the direction the slope faces', async () => {
+    // planeRgba rises to the east, so the slope faces west.
+    const { codec, encodePng } = fakeCodec(planeRgba(32))
+    const load = createOverlayLoader({ fetchFn: fakeFetch() as unknown as typeof fetch, codec, getKey: () => 'K' })
+    await load(params(`aspect://${Z}/${X}/${Y}`), new AbortController())
+    const [rgba] = encodePng.mock.calls[0]
+    const west = ASPECT_SECTORS.find((s) => s.label === 'W')!
+    const expected = [1, 3, 5].map((i) => parseInt(west.color.slice(i, i + 2), 16))
+    for (let p = 0; p < W * W; p++) {
+      expect(Array.from(rgba.slice(p * 4, p * 4 + 4))).toEqual([...expected, 255])
+    }
+  })
+
+  it('shares the tiles.json lookup across overlays', async () => {
+    const fetchFn = fakeFetch()
+    const { codec } = fakeCodec(planeRgba(10))
+    const load = createOverlayLoader({ fetchFn: fetchFn as unknown as typeof fetch, codec, getKey: () => 'K' })
+    await load(params(), new AbortController())
+    await load(params(`aspect://${Z}/${X}/${Y}`), new AbortController())
+    expect(fetchFn.mock.calls.filter(([u]) => u.includes('tiles.json'))).toHaveLength(1)
+  })
+
   it('fetches tiles.json once per key and again when the key changes', async () => {
     const fetchFn = fakeFetch()
     let key = 'K1'
     const { codec } = fakeCodec(planeRgba(10))
-    const load = createSlopeLoader({ fetchFn: fetchFn as unknown as typeof fetch, codec, getKey: () => key })
+    const load = createOverlayLoader({ fetchFn: fetchFn as unknown as typeof fetch, codec, getKey: () => key })
     await load(params(), new AbortController())
     await load(params(), new AbortController())
     key = 'K2'
@@ -111,14 +153,14 @@ describe('createSlopeLoader', () => {
   it('retries tiles.json after a failed lookup', async () => {
     const fetchFn = fakeFetch({ tilesJsonStatus: [500] })
     const { codec } = fakeCodec(planeRgba(10))
-    const load = createSlopeLoader({ fetchFn: fetchFn as unknown as typeof fetch, codec, getKey: () => 'K' })
+    const load = createOverlayLoader({ fetchFn: fetchFn as unknown as typeof fetch, codec, getKey: () => 'K' })
     await expect(load(params(), new AbortController())).rejects.toThrow(/tiles\.json returned 500/)
     await expect(load(params(), new AbortController())).resolves.toHaveProperty('data')
   })
 
   it.each([404, 204])('returns a transparent 1×1 tile when the DEM tile is %i', async (status) => {
     const { codec, encodePng } = fakeCodec(planeRgba(10))
-    const load = createSlopeLoader({
+    const load = createOverlayLoader({
       fetchFn: fakeFetch({ tileStatus: status }) as unknown as typeof fetch,
       codec,
       getKey: () => 'K',
@@ -130,7 +172,7 @@ describe('createSlopeLoader', () => {
 
   it('rejects on other DEM errors', async () => {
     const { codec } = fakeCodec(planeRgba(10))
-    const load = createSlopeLoader({
+    const load = createOverlayLoader({
       fetchFn: fakeFetch({ tileStatus: 500 }) as unknown as typeof fetch,
       codec,
       getKey: () => 'K',
@@ -141,9 +183,9 @@ describe('createSlopeLoader', () => {
   it('rejects without a key or with a malformed URL', async () => {
     const { codec } = fakeCodec(planeRgba(10))
     const fetchFn = fakeFetch() as unknown as typeof fetch
-    const noKey = createSlopeLoader({ fetchFn, codec, getKey: () => null })
+    const noKey = createOverlayLoader({ fetchFn, codec, getKey: () => null })
     await expect(noKey(params(), new AbortController())).rejects.toThrow(/key/i)
-    const load = createSlopeLoader({ fetchFn, codec, getKey: () => 'K' })
+    const load = createOverlayLoader({ fetchFn, codec, getKey: () => 'K' })
     await expect(load(params('slope://nope'), new AbortController())).rejects.toThrow(/Malformed/)
   })
 })

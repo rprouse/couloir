@@ -1,4 +1,11 @@
-import { decodeTerrainRgb, metersPerPixel, slopeDegrees, tileCenterLat } from './slopeMath'
+import {
+  aspectFromGradient,
+  decodeTerrainRgb,
+  hornGradient,
+  metersPerPixel,
+  slopeDegrees,
+  tileCenterLat,
+} from './slopeMath'
 
 // Encodes an elevation (m) as terrain-rgb, the inverse of decodeTerrainRgb.
 function encode(elevM: number): [number, number, number] {
@@ -73,5 +80,28 @@ describe('slopeDegrees', () => {
     const sd = slopeDegrees(plane(W, H, (x, y) => x * rise + y * rise), W, H, CELL)
     const expected = (Math.atan(Math.SQRT2 * tanDeg(35)) * 180) / Math.PI
     sd.forEach((v) => expect(v).toBeCloseTo(expected, 2))
+  })
+})
+
+describe('aspectFromGradient', () => {
+  const W = 6
+  const H = 5
+  const aspect = (f: (x: number, y: number) => number) =>
+    aspectFromGradient(hornGradient(plane(W, H, f), W, H, 10))
+
+  // Image x runs east and y runs south; each plane falls towards `facing`.
+  it.each([
+    ['N', 0, (_x: number, y: number) => y * 5],
+    ['E', 90, (x: number) => -x * 5],
+    ['S', 180, (_x: number, y: number) => -y * 5],
+    ['W', 270, (x: number) => x * 5],
+    ['NE', 45, (x: number, y: number) => y * 5 - x * 5],
+    ['SW', 225, (x: number, y: number) => x * 5 - y * 5],
+  ])('a plane falling to the %s faces %i° at every pixel', (_name, deg, f) => {
+    aspect(f).forEach((v) => expect(v).toBeCloseTo(deg, 2))
+  })
+
+  it('is NaN on flat ground', () => {
+    aspect(() => 1500).forEach((v) => expect(v).toBeNaN())
   })
 })

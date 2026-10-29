@@ -94,6 +94,11 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [8.9 Data migration and end-to-end QA](#task-89---data-migration-and-end-to-end-qa)
 - [x] [8.10 Docs](#task-810---docs)
 
+### Phase 9 — Aspect Overlay
+
+- [x] [9.1 Aspect overlay](#task-91---aspect-overlay)
+- [ ] [9.2 Browser QA](#task-92---browser-qa)
+
 ---
 
 ## Phase 1 - Project Shell
@@ -825,13 +830,34 @@ Update `ARCHITECTURE.md`, `DATA-MODEL.md`, `AGENTS.md`, `SPEC.md` and the backlo
 
 ---
 
+## Phase 9 - Aspect Overlay
+
+**Goal**: Shade terrain by the direction it faces, from the same DEM tiles and pipeline as the slope overlay, and slim down the map's terrain control.
+
+### Task 9.1 - Aspect overlay
+
+Compute aspect from the shared Horn gradient, colour it in eight compass sectors (transparent below 12°), and serve it over an `aspect://` protocol sharing the slope loader. Replace the slope switch with an Off / Slope / Aspect picker and a compass-rose legend. Move the overlay opacity slider to Settings and drop the exaggeration slider from the map control (Settings already has it).
+
+**Acceptance criteria**:
+- Unit tests cover aspect bearings, sector colouring, the shared loader and the overlay picker
+- Only one overlay shows at a time; the choice and opacity persist
+
+### Task 9.2 - Browser QA
+
+Check on a real map: a north-facing bowl shades red and a south face teal, the legend matches, switching overlays and basemaps works, the control fits at 375 px.
+
+**Acceptance criteria**:
+- Aspect colours match known terrain with no console errors
+
+---
+
 ## Post-MVP Backlog
 
 These are confirmed future features, not part of the MVP:
 
 - Bearing cone / FOV footprint visualization for photo pins
 - ~~Slope angle shading overlay (derived from Maptiler DEM)~~ → Phase 7
-- Aspect shading layer
+- ~~Aspect shading layer~~ → Phase 9
 - Offline use in the field: cache library data (`/api` GETs) and map tiles (Workbox), or local-first sync if editing offline matters
 - ~~Cloud sync via PowerSync or ElectricSQL~~ → superseded by Phase 8 (self-hosted server)
 - ~~Photo blob sync to S3 / MinIO~~ → superseded by Phase 8 (photos as files on the server)

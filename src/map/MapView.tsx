@@ -9,7 +9,7 @@ import { createTileErrorMonitor, type TileErrorMonitor } from './errors/tileErro
 import { BasemapControl } from './controls/BasemapControl'
 import { TerrainControl } from './controls/TerrainControl'
 import { setMap } from '../hooks/useMap'
-import { SlopeLayer } from './layers/SlopeLayer'
+import { TerrainOverlayLayer } from './layers/TerrainOverlayLayer'
 import { RoutesLayer } from './layers/RoutesLayer'
 import { TracksLayer } from './layers/TracksLayer'
 import { WaypointsLayer } from './layers/WaypointsLayer'
@@ -152,7 +152,8 @@ export function MapView() {
       <div ref={containerRef} className={styles.canvas} data-testid="map-canvas" />
       <BasemapControl />
       <TerrainControl />
-      <SlopeLayer />
+      <TerrainOverlayLayer overlay="slope" />
+      <TerrainOverlayLayer overlay="aspect" />
       <RoutesLayer />
       <TracksLayer />
       <WaypointsLayer />

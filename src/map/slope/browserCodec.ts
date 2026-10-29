@@ -1,4 +1,4 @@
-import type { TileCodec } from './slopeProtocol'
+import type { TileCodec } from './overlayProtocol'
 
 // Real-browser codec. colorSpaceConversion/premultiplyAlpha 'none' are
 // required: any colour management would corrupt the encoded elevations.

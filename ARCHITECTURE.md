@@ -83,15 +83,16 @@ couloir/
 │   │   │   ├── TracksLayer.tsx
 │   │   │   ├── WaypointsLayer.tsx
 │   │   │   ├── PhotosLayer.tsx
-│   │   │   └── SlopeLayer.tsx  # Raster slope overlay (slope:// tiles)
+│   │   │   └── TerrainOverlayLayer.tsx # Raster slope/aspect overlay (slope://, aspect:// tiles)
 │   │   ├── slope/
-│   │   │   ├── slopeMath.ts    # terrain-rgb decode, ground resolution, Horn slope
+│   │   │   ├── slopeMath.ts    # terrain-rgb decode, ground resolution, Horn gradient, slope, aspect
 │   │   │   ├── slopeBands.ts   # Avalanche angle bands + RGBA colouring
-│   │   │   ├── slopeProtocol.ts # slope:// MapLibre protocol (DEM fetch → PNG)
+│   │   │   ├── aspectBands.ts  # Eight compass sectors + RGBA colouring
+│   │   │   ├── overlayProtocol.ts # slope:// and aspect:// MapLibre protocols (DEM fetch → PNG)
 │   │   │   └── browserCodec.ts # createImageBitmap / OffscreenCanvas decode+encode
 │   │   ├── controls/
-│   │   │   ├── TerrainControl.tsx # 3D terrain + slope overlay toggles
-│   │   │   ├── SlopeLegend.tsx
+│   │   │   ├── TerrainControl.tsx # 3D terrain switch + Off/Slope/Aspect overlay picker
+│   │   │   ├── OverlayLegend.tsx  # Slope bands or aspect compass rose
 │   │   │   └── BasemapControl.tsx
 │   │   └── mapConfig.ts       # Maptiler styles, source definitions
 │   ├── panels/
@@ -284,18 +285,19 @@ map.setTerrain({
 
 The map will not initialize if no API key is set. The app shows the settings panel with a prompt to enter the key.
 
-### Slope Overlay
+### Terrain Overlays
 
-Slope-angle shading is computed in the browser from the same terrain-rgb tiles as 3D terrain. No third-party slope tiles are involved.
+Slope-angle and aspect shading are computed in the browser from the same terrain-rgb tiles as 3D terrain. No third-party slope tiles are involved. At most one overlay shows at a time: two opaque colour schemes on top of each other are unreadable.
 
-- `main.tsx` registers a MapLibre custom protocol, `slope://{z}/{x}/{y}` (`src/map/slope/slopeProtocol.ts`). The handler reads the Maptiler key live from the settings store.
+- `main.tsx` registers two MapLibre custom protocols, `slope://{z}/{x}/{y}` and `aspect://{z}/{x}/{y}` (`src/map/slope/overlayProtocol.ts`). Both use one loader, so they share the `tiles.json` lookup. The handler reads the Maptiler key live from the settings store.
 - For each tile, it looks up the DEM tile URL template from `terrain-rgb-v2/tiles.json`. This is fetched once per key and cached; a failed lookup is dropped from the cache so the next tile retries. It then fetches the matching DEM tile, using MapLibre's abort signal.
 - Decode: `elevation = -10000 + (R·65536 + G·256 + B) · 0.1`. `createImageBitmap` is called with `colorSpaceConversion: 'none'` so colour management can't alter the encoded elevations.
-- Slope: Horn's 3×3 method. Ground pixel size comes from the tile's centre latitude. Pixels past the tile edge are linearly extrapolated, so seams stay minimal without fetching neighbouring tiles.
+- Gradient: Horn's 3×3 method, computed once per tile; slope and aspect both derive from it. Ground pixel size comes from the tile's centre latitude. Pixels past the tile edge are linearly extrapolated, so seams stay minimal without fetching neighbouring tiles.
 - Colours (`SLOPE_BANDS`): 12–24° green, 25–29° yellow, 30–34° orange, 35–39° red, 40–44° purple, 45°+ blue. Below 12° is transparent. The colours are literal hex because they're painted into pixels.
+- Aspect is the compass bearing the slope faces (downhill direction), coloured in eight 45° sectors (`ASPECT_SECTORS`): N red, NE orange, E yellow, SE green, S teal, SW blue, W violet, NW magenta. Pixels flatter than 12° (`ASPECT_MIN_SLOPE_DEG`, the first slope band) are transparent. The legend is a compass rose.
 - DEM 404/204 returns a transparent tile, so it doesn't trip the tile-error monitor. Other HTTP errors are thrown and count toward the banner.
-- `SlopeLayer` adds a `raster` source (`tileSize` 512, minzoom 10, maxzoom 14; MapLibre stretches tiles above that). Its layer goes before the first layer that is either a basemap `symbol` layer or a Couloir layer, so it sits under the labels and under our own data. The layer is always installed; toggling only changes `visibility`.
-- Off by default, since every slope tile costs a Maptiler request. The on/off state and opacity are saved in `localStorage` (`couloir_slope_enabled`, `couloir_slope_opacity`).
+- `TerrainOverlayLayer` (one instance per overlay) adds a `raster` source (`tileSize` 512, minzoom 10, maxzoom 14; MapLibre stretches tiles above that). Its layer goes before the first layer that is either a basemap `symbol` layer or a Couloir layer, so it sits under the labels and under our own data. The layer is always installed; toggling only changes `visibility`.
+- Off by default, since every overlay tile costs a Maptiler request. The map control picks Off / Slope / Aspect; the shared opacity is set in Settings. Both are saved in `localStorage` (`couloir_terrain_overlay`, `couloir_overlay_opacity`).
 - Accuracy: the DEM is roughly 30 m, so short steep features (cliff bands, rolls, gully walls) read lower than reality. The legend says so.
 
 ### Error handling
@@ -315,7 +317,7 @@ The error banner is dismissable but reappears if errors continue.
 Zustand is used for all application state. The store is divided into slices:
 
 - **routes, tracks, waypoints, photos, tags**: mirror the storage layer. Each slice loads on app startup, and mutations call through to the storage provider then update local state.
-- **ui**: panel state, placement state, layer visibility toggles, active basemap, terrain exaggeration, slope overlay on/off and opacity, error banner state.
+- **ui**: panel state, placement state, layer visibility toggles, active basemap, terrain exaggeration, terrain overlay choice (off/slope/aspect) and its opacity, error banner state.
 
 ### Panel and placement state
 
@@ -436,8 +438,10 @@ RoutesLayer    → source: 'routes-source'    → layer: 'routes-line'
 TracksLayer    → source: 'tracks-source'    → layer: 'tracks-line'
 WaypointsLayer → source: 'waypoints-source' → layer: 'waypoints-symbols'
 
-SlopeLayer     → source: 'slope-source' (raster, slope://{z}/{x}/{y}) → layer: 'slope-raster'
-                 (inserted beneath basemap labels and all Couloir layers; see Slope Overlay)
+TerrainOverlayLayer (one per overlay)
+               → source: 'slope-source' (raster, slope://{z}/{x}/{y}) → layer: 'slope-raster'
+               → source: 'aspect-source' (raster, aspect://{z}/{x}/{y}) → layer: 'aspect-raster'
+                 (inserted beneath basemap labels and all Couloir layers; see Terrain Overlays)
 
 PhotosLayer    → source: 'photos-source' (cluster: true, clusterMaxZoom: 13, clusterRadius: 50)
                  ├── 'photos-clusters'      (circle layer, filter ['has', 'point_count'])

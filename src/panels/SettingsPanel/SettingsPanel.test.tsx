@@ -88,6 +88,15 @@ describe('SettingsPanel', () => {
     expect(useUiStore.getState().terrainExaggeration).toBe(2)
   })
 
+  it('updates the terrain overlay opacity through the slider', () => {
+    render(<SettingsPanel />)
+    fireEvent.change(screen.getByRole('slider', { name: /overlay opacity/i }), {
+      target: { value: '0.4' },
+    })
+    expect(useUiStore.getState().overlayOpacity).toBe(0.4)
+    expect(screen.getByText('40%')).toBeInTheDocument()
+  })
+
   it('says where the library is stored', () => {
     render(<SettingsPanel />)
     expect(screen.getByText(/stored on your couloir server/i)).toBeInTheDocument()

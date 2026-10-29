@@ -3,13 +3,12 @@ import { act } from 'react'
 import { __mocks__ } from '../../test/mocks/maplibre-gl'
 import { setMap } from '../../hooks/useMap'
 import { useUiStore } from '../../store/ui'
-import { SlopeLayer } from './SlopeLayer'
-import { SLOPE_TILE_URL } from '../slope/slopeProtocol'
-import { DEM_MAX_ZOOM, DEM_TILE_SIZE, SLOPE_MIN_ZOOM } from './layerStyles'
+import { TerrainOverlayLayer } from './TerrainOverlayLayer'
+import { DEM_MAX_ZOOM, DEM_TILE_SIZE, OVERLAY_MIN_ZOOM } from './layerStyles'
 
 type Layer = { id: string; type: string }
 
-describe('SlopeLayer', () => {
+describe('TerrainOverlayLayer', () => {
   let map: InstanceType<typeof __mocks__.MockMap>
   beforeEach(() => {
     localStorage.clear()
@@ -22,12 +21,12 @@ describe('SlopeLayer', () => {
   const withStyleLayers = (layers: Layer[]) => map.getStyle.mockReturnValue({ layers })
 
   it('adds a raster source over the slope protocol and a hidden raster layer', () => {
-    render(<SlopeLayer />)
+    render(<TerrainOverlayLayer overlay="slope" />)
     expect(map.addSource).toHaveBeenCalledWith('slope-source', {
       type: 'raster',
-      tiles: [SLOPE_TILE_URL],
+      tiles: ['slope://{z}/{x}/{y}'],
       tileSize: DEM_TILE_SIZE,
-      minzoom: SLOPE_MIN_ZOOM,
+      minzoom: OVERLAY_MIN_ZOOM,
       maxzoom: DEM_MAX_ZOOM,
     })
     const [layer] = map.addLayer.mock.calls[0] as [Record<string, unknown>]
@@ -35,15 +34,15 @@ describe('SlopeLayer', () => {
       id: 'slope-raster',
       type: 'raster',
       source: 'slope-source',
-      minzoom: SLOPE_MIN_ZOOM,
+      minzoom: OVERLAY_MIN_ZOOM,
       paint: { 'raster-opacity': 0.6, 'raster-fade-duration': 0 },
       layout: { visibility: 'none' },
     })
   })
 
-  it('installs visible with the stored opacity when enabled', () => {
-    useUiStore.setState({ slopeEnabled: true, slopeOpacity: 0.8 })
-    render(<SlopeLayer />)
+  it('installs visible with the stored opacity when it is the chosen overlay', () => {
+    useUiStore.setState({ terrainOverlay: 'slope', overlayOpacity: 0.8 })
+    render(<TerrainOverlayLayer overlay="slope" />)
     const [layer] = map.addLayer.mock.calls[0] as [Record<string, unknown>]
     expect(layer).toMatchObject({
       paint: { 'raster-opacity': 0.8 },
@@ -58,7 +57,7 @@ describe('SlopeLayer', () => {
       { id: 'place-labels', type: 'symbol' },
       { id: 'routes-line', type: 'line' },
     ])
-    render(<SlopeLayer />)
+    render(<TerrainOverlayLayer overlay="slope" />)
     expect(map.addLayer.mock.calls[0][1]).toBe('place-labels')
   })
 
@@ -68,27 +67,44 @@ describe('SlopeLayer', () => {
       { id: 'routes-glow', type: 'line' },
       { id: 'waypoints-symbols', type: 'symbol' },
     ])
-    render(<SlopeLayer />)
+    render(<TerrainOverlayLayer overlay="slope" />)
     expect(map.addLayer.mock.calls[0][1]).toBe('routes-glow')
   })
 
   it('appends on top when there is nothing to go under', () => {
     withStyleLayers([{ id: 'background', type: 'background' }])
-    render(<SlopeLayer />)
+    render(<TerrainOverlayLayer overlay="slope" />)
     expect(map.addLayer.mock.calls[0][1]).toBeUndefined()
   })
 
-  it('applies toggle and opacity changes to the existing layer', () => {
+  it('applies overlay and opacity changes to the existing layer', () => {
     map.getLayer.mockReturnValue({} as never)
-    render(<SlopeLayer />)
-    act(() => useUiStore.getState().toggleSlope())
-    expect(map.setLayoutProperty).toHaveBeenCalledWith('slope-raster', 'visibility', 'visible')
-    act(() => useUiStore.getState().setSlopeOpacity(0.3))
+    render(<TerrainOverlayLayer overlay="slope" />)
+    act(() => useUiStore.getState().setTerrainOverlay('slope'))
+    expect(map.setLayoutProperty).toHaveBeenLastCalledWith('slope-raster', 'visibility', 'visible')
+    act(() => useUiStore.getState().setOverlayOpacity(0.3))
     expect(map.setPaintProperty).toHaveBeenCalledWith('slope-raster', 'raster-opacity', 0.3)
+    act(() => useUiStore.getState().setTerrainOverlay('aspect'))
+    expect(map.setLayoutProperty).toHaveBeenLastCalledWith('slope-raster', 'visibility', 'none')
+  })
+
+  it('installs the aspect overlay on its own source and layer', () => {
+    useUiStore.setState({ terrainOverlay: 'aspect' })
+    render(<TerrainOverlayLayer overlay="aspect" />)
+    expect(map.addSource).toHaveBeenCalledWith(
+      'aspect-source',
+      expect.objectContaining({ tiles: ['aspect://{z}/{x}/{y}'] }),
+    )
+    const [layer] = map.addLayer.mock.calls[0] as [Record<string, unknown>]
+    expect(layer).toMatchObject({
+      id: 'aspect-raster',
+      source: 'aspect-source',
+      layout: { visibility: 'visible' },
+    })
   })
 
   it('reinstalls after a style swap without duplicating the source', () => {
-    render(<SlopeLayer />)
+    render(<TerrainOverlayLayer overlay="slope" />)
     expect(map.addSource).toHaveBeenCalledTimes(1)
     // Style still holds the source: style.load must not add it again.
     map.getSource.mockReturnValue({} as never)
