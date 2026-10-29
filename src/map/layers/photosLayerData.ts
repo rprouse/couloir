@@ -3,16 +3,13 @@ import type { Photo } from '../../types'
 interface PointFeature {
   type: 'Feature'
   geometry: { type: 'Point'; coordinates: [number, number] }
-  properties: { id: string; icon: string }
+  // bearing is omitted when unknown, so the arrow layer can filter on 'has'.
+  properties: { id: string; bearing?: number }
 }
 
 interface FeatureCollection {
   type: 'FeatureCollection'
   features: PointFeature[]
-}
-
-export function photoIconName(photoId: string): string {
-  return `photo-${photoId}`
 }
 
 export function buildPhotosGeoJson(photos: Photo[]): FeatureCollection {
@@ -21,7 +18,7 @@ export function buildPhotosGeoJson(photos: Photo[]): FeatureCollection {
     features: photos.map((p) => ({
       type: 'Feature',
       geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
-      properties: { id: p.id, icon: photoIconName(p.id) },
+      properties: p.bearing === null ? { id: p.id } : { id: p.id, bearing: p.bearing },
     })),
   }
 }

@@ -447,10 +447,10 @@ TerrainOverlayLayer (one per overlay)
                → source: 'aspect-source' (raster, aspect://{z}/{x}/{y}) → layer: 'aspect-raster'
                  (inserted beneath basemap labels and all Couloir layers; see Terrain Overlays)
 
-PhotosLayer    → source: 'photos-source' (cluster: true, clusterMaxZoom: 13, clusterRadius: 50)
-                 ├── 'photos-clusters'      (circle layer, filter ['has', 'point_count'])
-                 ├── 'photos-cluster-count' (text layer, shows point_count)
-                 └── 'photos-thumbnails'    (symbol layer, filter ['!', ['has', 'point_count']])
+PhotosLayer    → source: 'photos-source' (unclustered)
+                 ├── 'photos-arrows' (symbol layer, minzoom 14, filter ['has', 'bearing'],
+                 │                    'photo-arrow' image rotated by bearing, map-aligned)
+                 └── 'photos-dots'   (circle layer, blue with white ring, radius grows with zoom)
 ```
 
 Each layer uses a GeoJSON source. When data changes in the Zustand store, the layer updates the source data via `map.getSource(id).setData(geojson)`.

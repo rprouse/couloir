@@ -334,12 +334,6 @@ export const MAP_DEFAULTS = {
 
 export type Basemap = 'satellite' | 'outdoor' | 'winter'
 
-// Photo clustering defaults (used by the MapLibre photos source)
-export const PHOTO_CLUSTER = {
-  clusterMaxZoom: 13,
-  clusterRadius: 50,
-}
-
 // Photo re-encoding (src/utils/image.ts). The full-size cap keeps a 24 MP
 // phone photo around 2-3 MB on the server while leaving plenty of zoom detail.
 export const PHOTO_MAX_EDGE_PX = 4096
@@ -367,7 +361,7 @@ The elevation profile is derived from the Z coordinates at render time — no se
 
 **Multi-segment GPX tracks**: trackpoints from all `<trkseg>` elements are concatenated into a single `LineString` for storage and rendering. `duration_s` and `moving_time_s` are computed across all trackpoints.
 
-Waypoints and photos are rendered from individual coordinate fields (`lat`, `lng`) rather than GeoJSON, assembled into a GeoJSON `FeatureCollection` by the layer components at render time. Photos are clustered at their position (see `PHOTO_CLUSTER` constants).
+Waypoints and photos are rendered from individual coordinate fields (`lat`, `lng`) rather than GeoJSON, assembled into a GeoJSON `FeatureCollection` by the layer components at render time. Photos are not clustered; a photo's `bearing` rides along as a feature property (omitted when null) to rotate its direction arrow.
 
 ---
 

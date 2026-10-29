@@ -99,6 +99,11 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [9.1 Aspect overlay](#task-91---aspect-overlay)
 - [x] [9.2 Browser QA](#task-92---browser-qa)
 
+### Phase 11 — Photo Markers
+
+- [x] [11.1 Dots and bearing arrows](#task-111---dots-and-bearing-arrows)
+- [x] [11.2 Browser QA](#task-112---browser-qa)
+
 ### Phase 10 — Waypoint Icons and Colours  ·  Plan: [`2026-10-29-couloir-phase-10-waypoint-icons.md`](docs/superpowers/plans/2026-10-29-couloir-phase-10-waypoint-icons.md)
 
 - [x] [10.1 Icon catalogue](#task-101---icon-catalogue)
@@ -905,6 +910,26 @@ Check on a real map: overrides and defaults render, survive a basemap switch and
 
 **Acceptance criteria**:
 - Icons and colours render crisply over topo and satellite, with no console errors
+
+---
+
+## Phase 11 - Photo Markers
+
+**Goal**: Photos stop covering the map with 48 px thumbnails. Each photo is a small blue dot; zoomed in, a photo with a bearing shows which way the camera faced.
+
+### Task 11.1 - Dots and bearing arrows
+
+Replace the clustered thumbnail layers with an unclustered `photos-dots` circle layer (blue, white ring, radius growing from zoom 10 to 14) and a `photos-arrows` symbol layer (from zoom 14, only features with a `bearing`) drawing one generated arrowhead image rotated by the bearing and aligned to the map. Drop thumbnail decoding from the layer and the `PHOTO_CLUSTER` constants.
+
+**Acceptance criteria**:
+- Unit tests cover the bearing property, the layer specs, the arrow image and click-to-open
+
+### Task 11.2 - Browser QA
+
+**Acceptance criteria**:
+- Zoomed out: small blue dots, no clusters or thumbnails
+- From zoom 14: arrows point the photo's bearing, stay correct when the map is rotated or pitched, and photos without a bearing have none
+- Clicking a dot opens the photo; arrows and dots survive a basemap switch
 
 ---
 

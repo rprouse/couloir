@@ -30,30 +30,24 @@ export const WAYPOINT_ICON_PIXEL_RATIO = 2
 export const PHOTO_PIN_COLOR = '#F472B6'
 
 export const PHOTOS_SOURCE_ID = 'photos-source'
-export const PHOTOS_CLUSTERS_LAYER_ID = 'photos-clusters'
-export const PHOTOS_CLUSTER_COUNT_LAYER_ID = 'photos-cluster-count'
-export const PHOTOS_THUMBNAILS_LAYER_ID = 'photos-thumbnails'
-export const PHOTOS_LAYER_IDS = [
-  PHOTOS_CLUSTERS_LAYER_ID,
-  PHOTOS_CLUSTER_COUNT_LAYER_ID,
-  PHOTOS_THUMBNAILS_LAYER_ID,
-] as const
+// Bearing arrows sit beneath the dots so the dot covers the arrow's base.
+export const PHOTOS_ARROWS_LAYER_ID = 'photos-arrows'
+export const PHOTOS_DOTS_LAYER_ID = 'photos-dots'
+export const PHOTOS_LAYER_IDS = [PHOTOS_ARROWS_LAYER_ID, PHOTOS_DOTS_LAYER_ID] as const
 
-// Thumbnail icons are drawn at PHOTO_ICON_PIXEL_RATIO× and registered with
-// that pixelRatio, so they render at PHOTO_ICON_PX CSS pixels and stay crisp
-// on high-DPI screens.
-export const PHOTO_ICON_PX = 48
-export const PHOTO_ICON_PIXEL_RATIO = 2
-export const PHOTO_PLACEHOLDER_ICON = 'photo-placeholder'
+// Every photo is a small blue dot that grows slightly as you zoom in. From
+// PHOTO_ARROW_MIN_ZOOM, photos with a bearing also show an arrow pointing the
+// way the camera faced. Literal hex: map paint can't read CSS properties.
+export const PHOTO_DOT_COLOR = '#3B82F6'
+export const PHOTO_ARROW_MIN_ZOOM = 14
+export const PHOTO_DOT_RADIUS = { minZoom: 10, min: 3.5, max: 6 } as const
+export const PHOTO_DOT_STROKE = { min: 1.5, max: 2 } as const
 
-// Cluster circles step from light to deep blue as the count grows.
-export const PHOTO_CLUSTER_STEPS = {
-  colors: ['#60A5FA', '#3B82F6', '#1D4ED8'] as const,
-  radii: [16, 20, 26] as const,
-  thresholds: [10, 50] as const,
-}
-// Maptiler styles serve this glyph stack; the count label needs a font.
-export const PHOTO_CLUSTER_FONT = ['Noto Sans Bold']
+// The arrow image is centred on the dot and rotated by the photo's bearing.
+// Drawn at PHOTO_ARROW_PIXEL_RATIO× and registered with that pixelRatio.
+export const PHOTO_ARROW_ICON = 'photo-arrow'
+export const PHOTO_ARROW_PX = 32
+export const PHOTO_ARROW_PIXEL_RATIO = 2
 
 // Terrain overlays (slope angle, aspect): one raster source + layer each.
 export const OVERLAY_SOURCE_IDS: Record<TerrainOverlay, string> = {
