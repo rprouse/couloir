@@ -97,49 +97,52 @@ describe('ui store — basemap', () => {
   })
 })
 
-describe('ui store — slope overlay', () => {
+describe('ui store — terrain overlay', () => {
   beforeEach(() => {
     localStorage.clear()
     useUiStore.setState(useUiStore.getInitialState())
   })
 
-  it('defaults to off with opacity 0.6', () => {
-    const initial = useUiStore.getInitialState()
-    expect(initial.slopeEnabled).toBe(false)
-    expect(initial.slopeOpacity).toBe(0.6)
+  it('defaults to no overlay at 60% opacity', () => {
+    const initial = useUiStore.getState()
+    expect(initial.terrainOverlay).toBeNull()
+    expect(initial.overlayOpacity).toBe(0.6)
   })
 
-  it('toggles and persists the enabled flag', () => {
-    useUiStore.getState().toggleSlope()
-    expect(useUiStore.getState().slopeEnabled).toBe(true)
-    expect(localStorage.getItem('couloir_slope_enabled')).toBe('true')
-    useUiStore.getState().toggleSlope()
-    expect(localStorage.getItem('couloir_slope_enabled')).toBe('false')
+  it('switches between overlays and persists the choice', () => {
+    useUiStore.getState().setTerrainOverlay('slope')
+    expect(useUiStore.getState().terrainOverlay).toBe('slope')
+    expect(localStorage.getItem('couloir_terrain_overlay')).toBe('slope')
+    useUiStore.getState().setTerrainOverlay('aspect')
+    expect(localStorage.getItem('couloir_terrain_overlay')).toBe('aspect')
+    useUiStore.getState().setTerrainOverlay(null)
+    expect(useUiStore.getState().terrainOverlay).toBeNull()
+    expect(localStorage.getItem('couloir_terrain_overlay')).toBeNull()
   })
 
   it('clamps and persists opacity', () => {
-    useUiStore.getState().setSlopeOpacity(0.05)
-    expect(useUiStore.getState().slopeOpacity).toBe(0.2)
-    useUiStore.getState().setSlopeOpacity(4)
-    expect(useUiStore.getState().slopeOpacity).toBe(1)
-    useUiStore.getState().setSlopeOpacity(0.45)
-    expect(localStorage.getItem('couloir_slope_opacity')).toBe('0.45')
+    useUiStore.getState().setOverlayOpacity(0.05)
+    expect(useUiStore.getState().overlayOpacity).toBe(0.2)
+    useUiStore.getState().setOverlayOpacity(4)
+    expect(useUiStore.getState().overlayOpacity).toBe(1)
+    useUiStore.getState().setOverlayOpacity(0.45)
+    expect(localStorage.getItem('couloir_overlay_opacity')).toBe('0.45')
   })
 
   it('hydrates both values from localStorage', () => {
-    localStorage.setItem('couloir_slope_enabled', 'true')
-    localStorage.setItem('couloir_slope_opacity', '0.8')
+    localStorage.setItem('couloir_terrain_overlay', 'aspect')
+    localStorage.setItem('couloir_overlay_opacity', '0.8')
     useUiStore.getState().hydrateFromStorage()
-    expect(useUiStore.getState().slopeEnabled).toBe(true)
-    expect(useUiStore.getState().slopeOpacity).toBe(0.8)
+    expect(useUiStore.getState().terrainOverlay).toBe('aspect')
+    expect(useUiStore.getState().overlayOpacity).toBe(0.8)
   })
 
   it('ignores garbage values during hydration', () => {
-    localStorage.setItem('couloir_slope_enabled', 'yes')
-    localStorage.setItem('couloir_slope_opacity', 'lots')
+    localStorage.setItem('couloir_terrain_overlay', 'hillshade')
+    localStorage.setItem('couloir_overlay_opacity', 'lots')
     useUiStore.getState().hydrateFromStorage()
-    expect(useUiStore.getState().slopeEnabled).toBe(false)
-    expect(useUiStore.getState().slopeOpacity).toBe(0.6)
+    expect(useUiStore.getState().terrainOverlay).toBeNull()
+    expect(useUiStore.getState().overlayOpacity).toBe(0.6)
   })
 })
 

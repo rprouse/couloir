@@ -1,3 +1,5 @@
+import type { TerrainOverlay } from '../../types'
+
 export const ROUTE_LINE_WIDTH = 3
 export const ROUTE_LINE_GLOW_WIDTH = 7
 export const ROUTE_LINE_GLOW_OPACITY = 0.25
@@ -51,16 +53,23 @@ export const PHOTO_CLUSTER_STEPS = {
 // Maptiler styles serve this glyph stack; the count label needs a font.
 export const PHOTO_CLUSTER_FONT = ['Noto Sans Bold']
 
-export const SLOPE_SOURCE_ID = 'slope-source'
-export const SLOPE_LAYER_ID = 'slope-raster'
+// Terrain overlays (slope angle, aspect): one raster source + layer each.
+export const OVERLAY_SOURCE_IDS: Record<TerrainOverlay, string> = {
+  slope: 'slope-source',
+  aspect: 'aspect-source',
+}
+export const OVERLAY_LAYER_IDS: Record<TerrainOverlay, string> = {
+  slope: 'slope-raster',
+  aspect: 'aspect-raster',
+}
 // Below this a DEM pixel covers ≥ ~50 m and slope values are meaningless.
-export const SLOPE_MIN_ZOOM = 10
+export const OVERLAY_MIN_ZOOM = 10
 // Maptiler terrain-rgb-v2: pixel size of one tile and deepest zoom served.
 export const DEM_TILE_SIZE = 512
 export const DEM_MAX_ZOOM = 14
 
-// Every layer Couloir draws on top of the basemap. The slope overlay is
-// inserted beneath all of these.
+// Every layer Couloir draws on top of the basemap. The terrain
+// overlays are inserted beneath all of these.
 export const COULOIR_OVERLAY_LAYER_IDS: readonly string[] = [
   ROUTES_GLOW_LAYER_ID,
   ROUTES_LINE_LAYER_ID,

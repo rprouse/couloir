@@ -14,7 +14,7 @@ Couloir is **self-hosted and single-user**. A small server, one Docker container
 - **Recon photos:** add a JPEG or PNG. EXIF GPS pins it where it was taken; without GPS, you click the map. Bearing, altitude and capture time are prefilled from EXIF. Photos are re-encoded (max 4096 px) with all EXIF stripped before storage. They show as clustered thumbnails, with a full-window viewer. HEIC is rejected with instructions for switching an iPhone to JPEG.
 - **Tags:** colour-coded tags shared across all entity types, a tag picker in every form, management in Settings, and per-layer tag filters.
 - **Search:** across names and descriptions of everything, grouped by type. Clicking a result flies the map there.
-- **Slope angle overlay:** avalanche-band shading computed in the browser from Maptiler's terrain tiles.
+- **Slope angle and aspect overlays:** avalanche-band or compass-direction shading computed in the browser from Maptiler's terrain tiles.
 - **Backup:** the server snapshots its database daily and keeps two weeks of snapshots. You can also export everything (metadata, photos, thumbnails) to a single ZIP; Chrome and Edge stream it straight to disk. Restore is additive and idempotent, and missing thumbnails are regenerated.
 - **Installable PWA** when served over HTTPS (for example with Tailscale). Over plain HTTP on the LAN everything else still works.
 - **Mobile layout:** below 640 px the sidebar and detail panel become bottom sheets.

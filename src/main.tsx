@@ -13,7 +13,7 @@ import { useTagsStore } from './store/tags'
 import { useUiStore } from './store/ui'
 import { useSettingsStore } from './store/settings'
 import { installDevConsole } from './dev/devConsole'
-import { registerSlopeProtocol } from './map/slope/slopeProtocol'
+import { registerOverlayProtocols } from './map/slope/overlayProtocol'
 import { browserCodec } from './map/slope/browserCodec'
 
 async function bootstrap(): Promise<void> {
@@ -38,8 +38,9 @@ async function bootstrap(): Promise<void> {
   void usePhotosStore.getState().load()
   void useTagsStore.getState().load()
 
-  // slope:// tiles read the key live, so a key change needs no re-register.
-  registerSlopeProtocol(maplibregl.addProtocol, {
+  // slope:// and aspect:// tiles read the key live, so a key change needs no
+  // re-register.
+  registerOverlayProtocols(maplibregl.addProtocol, {
     fetchFn: fetch.bind(globalThis),
     codec: browserCodec,
     getKey: () => useSettingsStore.getState().maptilerKey,

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { TerrainControl } from './TerrainControl'
 import { useUiStore } from '../../store/ui'
@@ -6,6 +6,7 @@ import { act } from 'react'
 import { __mocks__ } from '../../test/mocks/maplibre-gl'
 import { setMap } from '../../hooks/useMap'
 import { SLOPE_BANDS } from '../slope/slopeBands'
+import { ASPECT_SECTORS } from '../slope/aspectBands'
 
 describe('TerrainControl', () => {
   beforeEach(() => {
@@ -13,10 +14,11 @@ describe('TerrainControl', () => {
     useUiStore.setState(useUiStore.getInitialState())
   })
 
-  it('renders an enabled toggle and the slider value', () => {
+  it('renders an enabled terrain toggle and no sliders', () => {
     render(<TerrainControl />)
     expect(screen.getByRole('switch', { name: /3d terrain/i })).toBeChecked()
-    expect(screen.getByRole('slider', { name: /exaggeration/i })).toHaveValue('1.5')
+    // Exaggeration and opacity live in Settings.
+    expect(screen.queryByRole('slider')).toBeNull()
   })
 
   it('toggles terrain on click', async () => {
@@ -27,68 +29,61 @@ describe('TerrainControl', () => {
     expect(useUiStore.getState().terrainEnabled).toBe(false)
   })
 
-  it('updates exaggeration on slider change', () => {
-    render(<TerrainControl />)
-    fireEvent.change(screen.getByRole('slider', { name: /exaggeration/i }), {
-      target: { value: '2.5' },
-    })
-    expect(screen.getByRole('slider', { name: /exaggeration/i })).toHaveValue('2.5')
-    expect(useUiStore.getState().terrainExaggeration).toBe(2.5)
-  })
-
-  it('disables the slider when terrain is off', () => {
-    useUiStore.setState({ terrainEnabled: false })
-    render(<TerrainControl />)
-    expect(screen.getByRole('slider', { name: /exaggeration/i })).toBeDisabled()
-  })
-
-  describe('slope overlay', () => {
+  describe('terrain overlay', () => {
     afterEach(() => act(() => setMap(null)))
 
-    it('renders an unchecked slope switch and toggles the store', async () => {
+    it('starts with Off pressed and switches between overlays', async () => {
       const user = userEvent.setup()
       render(<TerrainControl />)
-      const toggle = screen.getByRole('switch', { name: /slope angle/i })
-      expect(toggle).not.toBeChecked()
-      await user.click(toggle)
-      expect(useUiStore.getState().slopeEnabled).toBe(true)
+      const group = screen.getByRole('group', { name: /overlay/i })
+      expect(group).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Off' })).toHaveAttribute('aria-pressed', 'true')
+
+      await user.click(screen.getByRole('button', { name: 'Slope' }))
+      expect(useUiStore.getState().terrainOverlay).toBe('slope')
+      expect(screen.getByRole('button', { name: 'Slope' })).toHaveAttribute('aria-pressed', 'true')
+
+      await user.click(screen.getByRole('button', { name: 'Aspect' }))
+      expect(useUiStore.getState().terrainOverlay).toBe('aspect')
+      expect(screen.getByRole('button', { name: 'Slope' })).toHaveAttribute('aria-pressed', 'false')
+
+      await user.click(screen.getByRole('button', { name: 'Off' }))
+      expect(useUiStore.getState().terrainOverlay).toBeNull()
     })
 
-    it('disables the opacity slider while slope is off', () => {
+    it('shows no legend while the overlay is off', () => {
       render(<TerrainControl />)
-      expect(screen.getByRole('slider', { name: /slope opacity/i })).toBeDisabled()
-    })
-
-    it('updates opacity on slider change', () => {
-      useUiStore.setState({ slopeEnabled: true })
-      render(<TerrainControl />)
-      fireEvent.change(screen.getByRole('slider', { name: /slope opacity/i }), {
-        target: { value: '0.4' },
-      })
-      expect(useUiStore.getState().slopeOpacity).toBe(0.4)
-      expect(screen.getByText('40%')).toBeInTheDocument()
-    })
-
-    it('shows the legend and caveat only while slope is on', () => {
-      const { rerender } = render(<TerrainControl />)
       expect(screen.queryByRole('list', { name: /slope angle legend/i })).toBeNull()
-      act(() => useUiStore.setState({ slopeEnabled: true }))
-      rerender(<TerrainControl />)
+      expect(screen.queryByRole('img', { name: /aspect legend/i })).toBeNull()
+    })
+
+    it('shows the slope bands and caveat for the slope overlay', () => {
+      useUiStore.setState({ terrainOverlay: 'slope' })
+      render(<TerrainControl />)
       const legend = screen.getByRole('list', { name: /slope angle legend/i })
       expect(legend.querySelectorAll('li')).toHaveLength(SLOPE_BANDS.length)
       expect(screen.getByText(/not a substitute for field assessment/i)).toBeInTheDocument()
     })
 
-    it('hints to zoom in below the minimum slope zoom, updating on zoomend', () => {
+    it('shows the compass rose and caveat for the aspect overlay', () => {
+      useUiStore.setState({ terrainOverlay: 'aspect' })
+      render(<TerrainControl />)
+      const rose = screen.getByRole('img', { name: /aspect legend/i })
+      expect(rose.querySelectorAll('path')).toHaveLength(ASPECT_SECTORS.length)
+      expect(screen.queryByRole('list', { name: /slope angle legend/i })).toBeNull()
+      expect(screen.getByText(/not a substitute for field assessment/i)).toBeInTheDocument()
+    })
+
+    it('hints to zoom in below the minimum overlay zoom, updating on zoomend', () => {
       const map = new __mocks__.MockMap()
       map.getZoom.mockReturnValue(8)
       act(() => setMap(map as never))
-      useUiStore.setState({ slopeEnabled: true })
+      useUiStore.setState({ terrainOverlay: 'aspect' })
       render(<TerrainControl />)
-      expect(screen.getByText(/zoom in to see slope/i)).toBeInTheDocument()
+      expect(screen.getByText(/zoom in to see aspect/i)).toBeInTheDocument()
       map.getZoom.mockReturnValue(12)
       act(() => map.emit('zoomend'))
-      expect(screen.queryByText(/zoom in to see slope/i)).toBeNull()
+      expect(screen.queryByText(/zoom in to see aspect/i)).toBeNull()
     })
   })
 })

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import styles from './SettingsPanel.module.css'
 import { useSettingsStore } from '../../store/settings'
-import { useUiStore } from '../../store/ui'
+import { OVERLAY_OPACITY_MAX, OVERLAY_OPACITY_MIN, useUiStore } from '../../store/ui'
 import { APP_VERSION } from '../../types'
 import { TagManager } from './TagManager'
 import { BackupSection } from './BackupSection'
@@ -15,6 +15,8 @@ export function SettingsPanel() {
   const hasServerKey = useSettingsStore((s) => s.serverMaptilerKey !== null)
   const terrainExaggeration = useUiStore((s) => s.terrainExaggeration)
   const setTerrainExaggeration = useUiStore((s) => s.setTerrainExaggeration)
+  const overlayOpacity = useUiStore((s) => s.overlayOpacity)
+  const setOverlayOpacity = useUiStore((s) => s.setOverlayOpacity)
 
   const [draft, setDraft] = useState('')
   const [editing, setEditing] = useState(false)
@@ -116,6 +118,19 @@ export function SettingsPanel() {
             onChange={(e) => setTerrainExaggeration(Number(e.target.value))}
           />
           <span className={styles.subtle}>{terrainExaggeration.toFixed(1)}×</span>
+        </label>
+        <label className={styles.field}>
+          <span>Slope and aspect overlay opacity</span>
+          <input
+            type="range"
+            aria-label="Overlay opacity"
+            min={OVERLAY_OPACITY_MIN}
+            max={OVERLAY_OPACITY_MAX}
+            step={0.05}
+            value={overlayOpacity}
+            onChange={(e) => setOverlayOpacity(Number(e.target.value))}
+          />
+          <span className={styles.subtle}>{Math.round(overlayOpacity * 100)}%</span>
         </label>
       </section>
 

@@ -1,16 +1,23 @@
 import { create } from 'zustand'
-import type { Basemap, EntityDraft, EntityType, PendingPhoto } from '../types'
+import {
+  TERRAIN_OVERLAYS,
+  type Basemap,
+  type EntityDraft,
+  type EntityType,
+  type PendingPhoto,
+  type TerrainOverlay,
+} from '../types'
 
 const TERRAIN_KEY  = 'couloir_terrain_exaggeration'
 const BASEMAP_KEY  = 'couloir_basemap'
-const SLOPE_ENABLED_KEY = 'couloir_slope_enabled'
-const SLOPE_OPACITY_KEY = 'couloir_slope_opacity'
+const TERRAIN_OVERLAY_KEY = 'couloir_terrain_overlay'
+const OVERLAY_OPACITY_KEY = 'couloir_overlay_opacity'
 const VALID_BASEMAPS: ReadonlySet<Basemap> = new Set(['satellite', 'outdoor', 'winter'])
 const MIN = 1
 const MAX = 3
-export const SLOPE_OPACITY_MIN = 0.2
-export const SLOPE_OPACITY_MAX = 1
-const SLOPE_OPACITY_DEFAULT = 0.6
+export const OVERLAY_OPACITY_MIN = 0.2
+export const OVERLAY_OPACITY_MAX = 1
+const OVERLAY_OPACITY_DEFAULT = 0.6
 
 export type SidebarTab = 'layers' | 'search' | 'settings'
 export type LayerKey = 'routes' | 'tracks' | 'waypoints' | 'photos'
@@ -63,15 +70,16 @@ interface UiState {
   clearTagFilter: (layer: LayerKey) => void
   pruneTagFromFilters: (tagId: string) => void
 
-  // Phase 7 — slope overlay (both persisted; off by default to spare quota)
-  slopeEnabled: boolean
-  slopeOpacity: number
-  toggleSlope: () => void
-  setSlopeOpacity: (value: number) => void
+  // Phase 7/9 — terrain overlay: slope angle or aspect, one at a time (both
+  // persisted; off by default to spare quota). Opacity is shared.
+  terrainOverlay: TerrainOverlay | null
+  overlayOpacity: number
+  setTerrainOverlay: (overlay: TerrainOverlay | null) => void
+  setOverlayOpacity: (value: number) => void
 }
 
 const clamp = (n: number) => Math.max(MIN, Math.min(MAX, n))
-const clampOpacity = (n: number) => Math.max(SLOPE_OPACITY_MIN, Math.min(SLOPE_OPACITY_MAX, n))
+const clampOpacity = (n: number) => Math.max(OVERLAY_OPACITY_MIN, Math.min(OVERLAY_OPACITY_MAX, n))
 
 // The in-flight photo's preview object URL is owned by this store: whichever
 // transition drops the last reference to a pending photo revokes its URL.
@@ -137,14 +145,14 @@ export const useUiStore = create<UiState>((set, get) => {
       if (rawBasemap && VALID_BASEMAPS.has(rawBasemap as Basemap)) {
         set({ activeBasemap: rawBasemap as Basemap })
       }
-      const rawSlopeEnabled = localStorage.getItem(SLOPE_ENABLED_KEY)
-      if (rawSlopeEnabled === 'true' || rawSlopeEnabled === 'false') {
-        set({ slopeEnabled: rawSlopeEnabled === 'true' })
+      const rawOverlay = localStorage.getItem(TERRAIN_OVERLAY_KEY)
+      if (rawOverlay && TERRAIN_OVERLAYS.includes(rawOverlay as TerrainOverlay)) {
+        set({ terrainOverlay: rawOverlay as TerrainOverlay })
       }
-      const rawSlopeOpacity = localStorage.getItem(SLOPE_OPACITY_KEY)
-      if (rawSlopeOpacity !== null) {
-        const n = Number(rawSlopeOpacity)
-        if (Number.isFinite(n)) set({ slopeOpacity: clampOpacity(n) })
+      const rawOpacity = localStorage.getItem(OVERLAY_OPACITY_KEY)
+      if (rawOpacity !== null) {
+        const n = Number(rawOpacity)
+        if (Number.isFinite(n)) set({ overlayOpacity: clampOpacity(n) })
       }
     },
 
@@ -217,18 +225,18 @@ export const useUiStore = create<UiState>((set, get) => {
         },
       })),
 
-    // ----- Phase 7 fields: slope overlay -----
-    slopeEnabled: false,
-    slopeOpacity: SLOPE_OPACITY_DEFAULT,
-    toggleSlope: () => {
-      const next = !get().slopeEnabled
-      localStorage.setItem(SLOPE_ENABLED_KEY, String(next))
-      set({ slopeEnabled: next })
+    // ----- Phase 7/9 fields: terrain overlay -----
+    terrainOverlay: null,
+    overlayOpacity: OVERLAY_OPACITY_DEFAULT,
+    setTerrainOverlay: (overlay) => {
+      if (overlay === null) localStorage.removeItem(TERRAIN_OVERLAY_KEY)
+      else localStorage.setItem(TERRAIN_OVERLAY_KEY, overlay)
+      set({ terrainOverlay: overlay })
     },
-    setSlopeOpacity: (value) => {
+    setOverlayOpacity: (value) => {
       const next = clampOpacity(value)
-      localStorage.setItem(SLOPE_OPACITY_KEY, String(next))
-      set({ slopeOpacity: next })
+      localStorage.setItem(OVERLAY_OPACITY_KEY, String(next))
+      set({ overlayOpacity: next })
     },
   }
 })
