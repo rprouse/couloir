@@ -9,6 +9,7 @@ import { createTileErrorMonitor, type TileErrorMonitor } from './errors/tileErro
 import { BasemapControl } from './controls/BasemapControl'
 import { TerrainControl } from './controls/TerrainControl'
 import { NavigationAid } from './controls/NavigationAid'
+import { LocateControl } from './controls/LocateControl'
 import { setMap } from '../hooks/useMap'
 import { TerrainOverlayLayer } from './layers/TerrainOverlayLayer'
 import { RoutesLayer } from './layers/RoutesLayer'
@@ -155,6 +156,7 @@ export function MapView() {
       <BasemapControl />
       <TerrainControl />
       <NavigationAid />
+      <LocateControl />
       <TerrainOverlayLayer overlay="slope" />
       <TerrainOverlayLayer overlay="aspect" />
       <RoutesLayer />

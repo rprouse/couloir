@@ -99,6 +99,7 @@ couloir/
 │   │   │   ├── TerrainControl.tsx # 3D terrain switch + Off/Slope/Aspect overlay picker
 │   │   │   ├── OverlayLegend.tsx  # Slope bands or aspect compass rose
 │   │   │   ├── NavigationAid.tsx  # Centre crosshair + lat/lng, elevation, bearing readout
+│   │   │   ├── LocateControl.tsx  # GPS toggle: centre on the user once, then a moving dot
 │   │   │   └── BasemapControl.tsx
 │   │   ├── navigation.ts      # Reads the map centre for NavigationAid
 │   │   └── mapConfig.ts       # Maptiler styles, source definitions

@@ -19,6 +19,9 @@
   --color-hud-active: rgba(14, 16, 20, 0.6);
   --color-crosshair: rgba(255, 255, 255, 0.75);
   --color-crosshair-halo: rgba(0, 0, 0, 0.8);
+  /* The user's GPS position. */
+  --color-location: #2563eb;
+  --color-location-halo: rgba(37, 99, 235, 0.5);
 
   --space-xs: 4px;
   --space-sm: 8px;
