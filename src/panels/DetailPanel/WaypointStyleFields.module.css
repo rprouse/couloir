@@ -1,0 +1,124 @@
+.preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.group h3 {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-dim);
+}
+
+.iconGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.groupLabel {
+  font-size: 11px;
+  color: var(--color-text-dim);
+}
+
+.iconGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: var(--space-xs);
+}
+
+.option,
+.swatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--color-bg-2);
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.option {
+  width: 100%;
+  height: 40px;
+}
+
+.defaultOption {
+  width: 40px;
+}
+
+.option[aria-checked='true'],
+.swatch[aria-checked='true'],
+.customActive {
+  border-color: var(--color-accent);
+}
+
+.option:focus-visible,
+.swatch:focus-visible {
+  outline: 2px solid var(--color-accent-cool);
+  outline-offset: 1px;
+}
+
+.swatchRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+.swatchFill {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+.defaultSwatch .swatchFill {
+  /* Marks the category-default swatch apart from the presets. */
+  box-shadow: inset 0 0 0 2px var(--color-bg-2), inset 0 0 0 4px var(--color-text-dim);
+}
+
+.customRow {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.colorInput {
+  width: 40px;
+  height: 36px;
+  padding: 2px;
+  background: var(--color-bg-2);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.hexInput {
+  flex: 1;
+  min-width: 0;
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.error {
+  color: var(--color-danger);
+  font-size: 12px;
+}

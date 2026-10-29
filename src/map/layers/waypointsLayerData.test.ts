@@ -11,6 +11,7 @@ const baseWaypoint = (over: Partial<Waypoint> = {}): Waypoint => ({
   elevation_m: 1500,
   category: 'summit',
   color: null,
+  icon: null,
   tags: [],
   created_at: '2026-01-01T00:00:00.000Z',
   updated_at: '2026-01-01T00:00:00.000Z',
@@ -28,9 +29,18 @@ describe('buildWaypointsGeoJson', () => {
     expect(fc.features[0].geometry.type).toBe('Point')
   })
 
-  it('exposes id and category as feature properties', () => {
-    const fc = buildWaypointsGeoJson([baseWaypoint({ id: 'a', category: 'cliff_band' })])
-    expect(fc.features[0].properties).toEqual({ id: 'a', category: 'cliff_band' })
+  it('exposes id, category and the category-default image id', () => {
+    const fc = buildWaypointsGeoJson([baseWaypoint({ id: 'a', category: 'summit' })])
+    expect(fc.features[0].properties).toEqual({
+      id: 'a',
+      category: 'summit',
+      image: 'wp:landscape:FBBF24',
+    })
+  })
+
+  it('uses the icon and colour overrides in the image id', () => {
+    const fc = buildWaypointsGeoJson([baseWaypoint({ icon: 'cabin', color: '#ef4444' })])
+    expect(fc.features[0].properties.image).toBe('wp:cabin:EF4444')
   })
 
   it('orders coordinates as [lng, lat]', () => {

@@ -17,11 +17,13 @@ export const TRACKS_LINE_LAYER_ID = 'tracks-line'
 export const WAYPOINTS_SOURCE_ID = 'waypoints-source'
 export const WAYPOINTS_SYMBOLS_LAYER_ID = 'waypoints-symbols'
 
-// Pixel size of the generated category icon images (square). Tuned so that
-// icons remain readable over satellite/topo basemaps without dominating the
-// viewport. The MapLibre symbol layer renders them at this nominal size with
-// icon-size: 1.0.
+// CSS pixel size of the generated waypoint marker images (square). Tuned so
+// that icons remain readable over satellite/topo basemaps without dominating
+// the viewport. They are drawn at WAYPOINT_ICON_PIXEL_RATIO× and registered
+// with that pixelRatio, so they render at this size and stay crisp on
+// high-DPI screens.
 export const WAYPOINT_ICON_PX = 32
+export const WAYPOINT_ICON_PIXEL_RATIO = 2
 
 // Draggable pin shown while a photo is created or edited. A literal hex
 // because maplibregl.Marker paints it into an SVG fill attribute.

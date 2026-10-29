@@ -82,6 +82,7 @@ All four data types are rendered as distinct map layers. Each layer can be toggl
 - Create by clicking on the map
 - Category picker: Entry Gate, Cliff Band, Rollover, Hazard, Skin Track, Cache, Summit, Point of Interest, Other
 - Each category has a distinct icon and default color
+- Optional per-waypoint icon (parking, skier, camp, cabin, … from a curated set of Material Symbols) and colour (preset swatches or a custom hex), each falling back to the category's
 - Name, description, elevation (auto-filled from terrain if available), tags
 - Click waypoint on map to open detail panel
 - Edit all fields

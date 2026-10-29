@@ -14,4 +14,9 @@ describe('MIGRATIONS', () => {
       expect(sql).toMatch(new RegExp(`DROP COLUMN ${col}\\b`, 'i'))
     }
   })
+
+  it('migration 3 adds the nullable waypoint icon column', () => {
+    const sql = MIGRATIONS.find((m) => m.version === 3)?.sql ?? ''
+    expect(sql).toMatch(/ALTER TABLE waypoints ADD COLUMN icon TEXT\s*;/i)
+  })
 })

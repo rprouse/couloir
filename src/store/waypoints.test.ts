@@ -12,6 +12,7 @@ const baseInput = {
   elevation_m: 1500,
   category: 'summit' as const,
   color: null,
+  icon: null,
   tags: [],
 } satisfies Omit<Waypoint, 'id' | 'created_at' | 'updated_at'>
 

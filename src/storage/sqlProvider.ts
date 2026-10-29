@@ -9,6 +9,7 @@ import type {
   Waypoint,
 } from '../types'
 import { APP_VERSION, BUNDLE_VERSION } from '../types'
+import { isWaypointIcon } from '../icons/waypointIcons'
 import type { StorageProvider } from './interface'
 import { ensureSchema } from './schema'
 import type { SqlBackend, SqlOp, SqlRow, SqlValue } from './sqlBackend'
@@ -165,9 +166,9 @@ export class SqlStorageProvider implements StorageProvider {
         sql: `INSERT OR REPLACE INTO waypoints (
                 id, user_id, name, description,
                 lat, lng, elevation_m,
-                category, color,
+                category, color, icon,
                 created_at, updated_at
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         params: this.waypointToRow(waypoint),
       },
       ...this.replaceTagsOps('waypoint', waypoint.id, waypoint.tags),
@@ -485,9 +486,9 @@ export class SqlStorageProvider implements StorageProvider {
         sql: `INSERT OR REPLACE INTO waypoints (
                 id, user_id, name, description,
                 lat, lng, elevation_m,
-                category, color,
+                category, color, icon,
                 created_at, updated_at
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         params: this.waypointToRow(w),
       })
     }
@@ -603,6 +604,8 @@ export class SqlStorageProvider implements StorageProvider {
       w.id, w.user_id, w.name, w.description,
       w.lat, w.lng, w.elevation_m,
       w.category, w.color,
+      // ?? null: bundles exported before migration 3 have no icon key.
+      w.icon ?? null,
       w.created_at, w.updated_at,
     ]
   }
@@ -618,6 +621,7 @@ export class SqlStorageProvider implements StorageProvider {
       elevation_m: row.elevation_m === null ? null : Number(row.elevation_m),
       category:    row.category as Waypoint['category'],
       color:       (row.color as string | null) ?? null,
+      icon:        isWaypointIcon(row.icon) ? row.icon : null,
       tags,
       created_at:  row.created_at as string,
       updated_at:  row.updated_at as string,

@@ -2,7 +2,7 @@
 import { mkdtemp, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { storageContract, buildRoute } from '../src/storage/contract'
+import { storageContract, buildRoute, buildWaypoint } from '../src/storage/contract'
 import { SchemaVersionError } from '../src/storage/errors'
 import { SCHEMA_VERSION } from '../src/storage/migrations'
 import { SqlStorageProvider } from '../src/storage/sqlProvider'
@@ -54,6 +54,15 @@ describe('NodeSqlBackend', () => {
     await second.init()
     expect((await second.getRoute('route-1'))?.name).toBe('Test Route')
     await second.close()
+  })
+
+  it('reads an unknown waypoint icon name as null', async () => {
+    const db = await backend()
+    const storage = new SqlStorageProvider(db)
+    await storage.init()
+    await storage.saveWaypoint(buildWaypoint({ icon: 'cabin' }))
+    await db.run(`UPDATE waypoints SET icon = 'not_an_icon' WHERE id = 'wp-1'`)
+    expect((await storage.getWaypoint('wp-1'))?.icon).toBeNull()
   })
 
   it('records the schema version and lays out the data directory', async () => {

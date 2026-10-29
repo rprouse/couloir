@@ -35,7 +35,7 @@ describe('WaypointCreate', () => {
   it('saves a waypoint with the seeded lat/lng and selected category', async () => {
     render(<WaypointCreate />)
     fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Summit Hut' } })
-    fireEvent.change(screen.getByLabelText(/category/i), { target: { value: 'summit' } })
+    fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'summit' } })
     fireEvent.click(screen.getByRole('button', { name: /save/i }))
     await waitFor(() => {
       expect(useWaypointsStore.getState().waypoints).toHaveLength(1)
@@ -50,6 +50,31 @@ describe('WaypointCreate', () => {
       entityType: 'waypoint',
       entityId: stored[0].id,
     })
+  })
+
+  it('saves the picked icon and colour', async () => {
+    render(<WaypointCreate />)
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Elk Lakes Cabin' } })
+    fireEvent.click(screen.getByRole('radio', { name: 'Cabin' }))
+    fireEvent.click(screen.getByRole('radio', { name: '#14B8A6' }))
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+    await waitFor(() => expect(useWaypointsStore.getState().waypoints).toHaveLength(1))
+    expect(useWaypointsStore.getState().waypoints[0]).toMatchObject({ icon: 'cabin', color: '#14B8A6' })
+  })
+
+  it('saves no overrides when the defaults are kept', async () => {
+    render(<WaypointCreate />)
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Summit Hut' } })
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+    await waitFor(() => expect(useWaypointsStore.getState().waypoints).toHaveLength(1))
+    expect(useWaypointsStore.getState().waypoints[0]).toMatchObject({ icon: null, color: null })
+  })
+
+  it('disables Save while the custom colour is not a valid hex', () => {
+    render(<WaypointCreate />)
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Summit Hut' } })
+    fireEvent.change(screen.getByLabelText('Hex colour'), { target: { value: '#12' } })
+    expect(screen.getByRole('button', { name: /save/i })).toBeDisabled()
   })
 
   it('returns the panel to idle on Cancel without writing to storage', () => {

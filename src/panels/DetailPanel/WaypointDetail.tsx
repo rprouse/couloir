@@ -5,6 +5,10 @@ import { useWaypointsStore } from '../../store/waypoints'
 import { useUiStore } from '../../store/ui'
 import { WAYPOINT_CATEGORIES } from '../../types'
 import type { Waypoint, WaypointCategory } from '../../types'
+import type { WaypointIcon } from '../../icons/waypointIcons'
+import { iconLabel, resolveWaypointStyle } from '../../icons/waypointIcons'
+import { WaypointBadge } from '../../icons/WaypointBadge'
+import { WaypointStyleFields } from './WaypointStyleFields'
 import { formatElevationM, isValidHex } from '../../utils/format'
 import { TagPills } from './TagPills'
 import { TagPicker } from '../../components/TagPicker/TagPicker'
@@ -39,11 +43,15 @@ function WaypointView({ wp }: { wp: Waypoint }): JSX.Element {
   }
 
   const elevation = wp.elevation_m === null ? '—' : formatElevationM(wp.elevation_m)
+  const marker = resolveWaypointStyle(wp)
 
   return (
     <>
       <div className={styles.header}>
-        <h2 className={styles.heading}>{wp.name}</h2>
+        <div className={shared.row}>
+          <WaypointBadge icon={marker.icon} color={marker.color} size={28} label={iconLabel(marker.icon)} />
+          <h2 className={styles.heading}>{wp.name}</h2>
+        </div>
         <div className={styles.actions}>
           <button type="button" onClick={() => editCurrent()}>Edit</button>
           <ConfirmDelete onConfirm={handleDelete} />
@@ -85,6 +93,7 @@ function WaypointEdit({ wp }: { wp: Waypoint }): JSX.Element {
     wp.elevation_m === null ? '' : String(wp.elevation_m),
   )
   const [color, setColor] = useState<string>(wp.color ?? '')
+  const [icon, setIcon] = useState<WaypointIcon | null>(wp.icon)
   const [tags, setTags] = useState<string[]>(wp.tags)
 
   // Re-sync local state if the underlying waypoint is replaced upstream
@@ -95,6 +104,7 @@ function WaypointEdit({ wp }: { wp: Waypoint }): JSX.Element {
     setCategory(wp.category)
     setElevation(wp.elevation_m === null ? '' : String(wp.elevation_m))
     setColor(wp.color ?? '')
+    setIcon(wp.icon)
     setTags(wp.tags)
   }, [wp.id, wp.updated_at])
 
@@ -112,6 +122,7 @@ function WaypointEdit({ wp }: { wp: Waypoint }): JSX.Element {
         category,
         elevation_m: elevNum,
         color: color === '' ? null : color,
+        icon,
         tags,
       })
       openEntity('waypoint', wp.id)
@@ -166,23 +177,16 @@ function WaypointEdit({ wp }: { wp: Waypoint }): JSX.Element {
             placeholder="optional"
           />
         </label>
-        <label className={shared.field}>
-          <span>Color override</span>
-          <div className={shared.row}>
-            <input
-              type="color"
-              value={color === '' ? WAYPOINT_CATEGORIES[category].color : color}
-              onChange={(e) => setColor(e.target.value)}
-            />
-            <input
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              aria-invalid={!colorOk}
-              placeholder="leave blank to use category default"
-            />
-          </div>
-          {!colorOk && <span className={styles.subtle}>Use #RRGGBB hex.</span>}
-        </label>
+      </section>
+
+      <section className={shared.section}>
+        <WaypointStyleFields
+          category={category}
+          icon={icon}
+          color={color}
+          onIconChange={setIcon}
+          onColorChange={setColor}
+        />
       </section>
 
       <section className={shared.section}>
