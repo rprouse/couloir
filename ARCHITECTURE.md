@@ -64,7 +64,7 @@ couloir/
 │   │   ├── memory.ts          # InMemoryStorageProvider (used by tests)
 │   │   ├── contract.ts        # storageContract(): the shared suite every provider passes
 │   │   └── migrations/
-│   │       ├── 1.sql, 2.sql   # Schema migrations (the source of truth)
+│   │       ├── 1.sql … 3.sql  # Schema migrations (the source of truth)
 │   │       └── index.ts       # MIGRATIONS list + SCHEMA_VERSION constant
 │   ├── dev/
 │   │   └── devConsole.ts      # window.__couloir helper, dev-only
@@ -76,12 +76,17 @@ couloir/
 │   │   ├── photos.ts          # Photo slice
 │   │   ├── tags.ts            # Tag slice
 │   │   └── ui.ts              # Panel state, placement state, layer toggles, etc.
+│   ├── icons/
+│   │   ├── waypointIcons.ts   # Waypoint icon catalogue, swatches, style resolution, marker image ids
+│   │   ├── symbolPaths.ts     # GENERATED Material Symbols path data (scripts/fetch-material-symbols.mjs)
+│   │   ├── WaypointBadge.tsx  # The waypoint marker as a DOM element (panels)
+│   │   └── LICENSE-material-symbols.txt
 │   ├── map/
 │   │   ├── MapView.tsx        # MapLibre GL JS wrapper
 │   │   ├── layers/
 │   │   │   ├── RoutesLayer.tsx
 │   │   │   ├── TracksLayer.tsx
-│   │   │   ├── WaypointsLayer.tsx
+│   │   │   ├── WaypointsLayer.tsx # + wpIcons.ts: draws marker images on demand
 │   │   │   ├── PhotosLayer.tsx
 │   │   │   └── TerrainOverlayLayer.tsx # Raster slope/aspect overlay (slope://, aspect:// tiles)
 │   │   ├── slope/
@@ -109,7 +114,6 @@ couloir/
 │   ├── components/
 │   │   ├── ElevationProfile/  # Recharts elevation chart
 │   │   ├── TagPicker/
-│   │   ├── IconPicker/
 │   │   └── FileDropzone/
 │   ├── hooks/
 │   │   ├── useStorage.ts      # Storage provider hook
@@ -450,6 +454,10 @@ PhotosLayer    → source: 'photos-source' (cluster: true, clusterMaxZoom: 13, c
 ```
 
 Each layer uses a GeoJSON source. When data changes in the Zustand store, the layer updates the source data via `map.getSource(id).setData(geojson)`.
+
+Waypoint markers are drawn on demand. Each feature carries an `image` property naming its marker as `wp:<icon>:<HEX>` (e.g. `wp:cabin:22C55E`), from `resolveWaypointStyle()`: the waypoint's own `icon`/`color`, else its category's. The symbol layer's `icon-image` is `['get', 'image']`. When MapLibre meets an image it doesn't have, it fires `styleimagemissing`, and `WaypointsLayer` parses the id and registers a disc in that colour with the white Material Symbol glyph (`buildWaypointIcon`, drawn at 2× with `pixelRatio: 2`). Ids it didn't make are ignored. That covers every icon/colour combination without pre-registering them, and restores them after a basemap switch clears the style's images.
+
+Waypoint icons are vendored Material Symbols (Rounded, filled, Apache 2.0), not an npm package. `scripts/fetch-material-symbols.mjs` downloads the chosen symbols from a pinned `google/material-design-icons` commit and writes their SVG path data to `src/icons/symbolPaths.ts`. The same paths draw the map markers (canvas `Path2D`) and the panel badges and picker (inline SVG).
 
 Photo thumbnails are placed at the photo's position (`lat`/`lng`). Photo thumbnail icons are fetched from the server on demand, framed on a canvas, and registered as `photo-{id}`; until ready, a `photo-placeholder` tile is shown via `['coalesce', ['image', ['get','icon']], ['image','photo-placeholder']]`. Cluster click eases to `getClusterExpansionZoom`.
 

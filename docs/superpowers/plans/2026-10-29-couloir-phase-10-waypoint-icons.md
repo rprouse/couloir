@@ -224,11 +224,11 @@ couloir/
 
 ## Task 10.5 — Docs
 
-- [ ] **Step 10.5.1: `DATA-MODEL.md`.** Add `icon` to the `Waypoint` interface and the `waypoints` table, update the `WAYPOINT_CATEGORIES` snippet to the Material Symbol keys, and note migration 3.
-- [ ] **Step 10.5.2: `ARCHITECTURE.md`.** Add `src/icons/` to the folder tree. Under Map Layer Architecture, describe the `wp:<icon>:<HEX>` image ids generated on demand by `styleimagemissing`.
-- [ ] **Step 10.5.3: `SPEC.md`.** Waypoints get a per-waypoint icon (curated Material Symbols) and colour, both defaulting to the category.
-- [ ] **Step 10.5.4: `AGENTS.md`.** Under Key Conventions: waypoint icons are vendored Material Symbols in `src/icons/`; add one by editing the catalogue and the fetch script and re-running it, and never add an icon package.
-- [ ] **Step 10.5.5:** Commit `docs: waypoint icons and colours`.
+- [x] **Step 10.5.1: `DATA-MODEL.md`.** Add `icon` to the `Waypoint` interface and the `waypoints` table, update the `WAYPOINT_CATEGORIES` snippet to the Material Symbol keys, and note migration 3.
+- [x] **Step 10.5.2: `ARCHITECTURE.md`.** Add `src/icons/` to the folder tree. Under Map Layer Architecture, describe the `wp:<icon>:<HEX>` image ids generated on demand by `styleimagemissing`.
+- [x] **Step 10.5.3: `SPEC.md`.** Waypoints get a per-waypoint icon (curated Material Symbols) and colour, both defaulting to the category.
+- [x] **Step 10.5.4: `AGENTS.md`.** Under Key Conventions: waypoint icons are vendored Material Symbols in `src/icons/`; add one by editing the catalogue and the fetch script and re-running it, and never add an icon package.
+- [x] **Step 10.5.5:** Commit `docs: waypoint icons and colours`.
 
 ## Task 10.6 — Browser QA
 

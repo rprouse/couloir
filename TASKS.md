@@ -105,7 +105,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [10.2 Waypoint icon field](#task-102---waypoint-icon-field)
 - [x] [10.3 Render icon and colour on the map](#task-103---render-icon-and-colour-on-the-map)
 - [x] [10.4 Icon and colour picker](#task-104---icon-and-colour-picker)
-- [ ] [10.5 Docs](#task-105---docs)
+- [x] [10.5 Docs](#task-105---docs)
 - [ ] [10.6 Browser QA](#task-106---browser-qa)
 
 ---

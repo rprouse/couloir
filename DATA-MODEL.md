@@ -79,7 +79,8 @@ export interface Waypoint {
   lng: number
   elevation_m: number | null
   category: WaypointCategory
-  color: string | null  // overrides category default if set
+  color: string | null       // overrides the category colour if set
+  icon: WaypointIcon | null  // Material Symbol name; overrides the category icon if set
   tags: string[]
   created_at: string
   updated_at: string
@@ -218,6 +219,7 @@ CREATE TABLE waypoints (
   elevation_m   REAL,
   category      TEXT NOT NULL DEFAULT 'poi',
   color         TEXT,
+  icon          TEXT,                        -- added by migration 3
   created_at    TEXT NOT NULL,
   updated_at    TEXT NOT NULL
 );
@@ -274,22 +276,28 @@ export const DEFAULTS = {
   track: { color: '#2A7BE0' },   // sky blue
 }
 
-// Default color and icon per waypoint category
+// Default color and icon per waypoint category. A waypoint's own `icon` and
+// `color` override these; null means "use the category's".
 export const WAYPOINT_CATEGORIES: Record<WaypointCategory, {
   label: string
   color: string
-  icon: string   // icon identifier for map symbol
+  icon: WaypointIcon   // Material Symbol name from the catalogue in src/icons/waypointIcons.ts
 }> = {
-  entry_gate:  { label: 'Entry Gate',        color: '#22C55E', icon: 'gate' },
-  cliff_band:  { label: 'Cliff Band',        color: '#EF4444', icon: 'warning' },
-  rollover:    { label: 'Rollover',          color: '#F59E0B', icon: 'arrow-down' },
-  hazard:      { label: 'Hazard',            color: '#EF4444', icon: 'hazard' },
-  skin_track:  { label: 'Skin Track',        color: '#A78BFA', icon: 'track' },
-  cache:       { label: 'Cache',             color: '#60A5FA', icon: 'cache' },
-  summit:      { label: 'Summit',            color: '#FBBF24', icon: 'summit' },
-  poi:         { label: 'Point of Interest', color: '#94A3B8', icon: 'poi' },
-  other:       { label: 'Other',             color: '#94A3B8', icon: 'pin' },
+  entry_gate:  { label: 'Entry Gate',        color: '#22C55E', icon: 'fence' },
+  cliff_band:  { label: 'Cliff Band',        color: '#EF4444', icon: 'landslide' },
+  rollover:    { label: 'Rollover',          color: '#F59E0B', icon: 'arrow_downward' },
+  hazard:      { label: 'Hazard',            color: '#EF4444', icon: 'warning' },
+  skin_track:  { label: 'Skin Track',        color: '#A78BFA', icon: 'route' },
+  cache:       { label: 'Cache',             color: '#60A5FA', icon: 'backpack' },
+  summit:      { label: 'Summit',            color: '#FBBF24', icon: 'landscape' },
+  poi:         { label: 'Point of Interest', color: '#94A3B8', icon: 'star' },
+  other:       { label: 'Other',             color: '#94A3B8', icon: 'location_on' },
 }
+
+// WaypointIcon (src/icons/waypointIcons.ts) is the union of the ~29 curated
+// Material Symbol names in WAYPOINT_ICONS: skiing, ski touring, parking,
+// camp, cabin, hut, summit, warning, … grouped Travel / Shelter / Terrain /
+// Safety / General for the picker. Unknown names read back as null.
 
 // ATES (Avalanche Terrain Exposure Scale) display labels
 export const ATES_LABELS: Record<ATES, string> = {
@@ -395,6 +403,8 @@ If the DB version is **greater** than the build's `SCHEMA_VERSION`, the server t
 Initial schema is migration `1.sql`. Future schema changes are numbered sequentially.
 
 Migration `2.sql` (Phase 5) collapses the photo subject/camera split into a single position: rows with `camera_lat`/`camera_lng` adopt them as `lat`/`lng` (and `camera_elevation_m` as `elevation_m`), then the three `camera_*` columns are dropped.
+
+Migration `3.sql` (Phase 10) adds the nullable `waypoints.icon` column. Existing rows get `NULL` and keep their category icon; ZIP bundles exported before it carry no `icon` key and import as `NULL`.
 
 ---
 
