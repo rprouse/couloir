@@ -74,7 +74,7 @@ couloir/
 │   │   ├── http.ts                                     12.2, 12.3
 │   │   └── contract.ts                                 12.2, 12.3
 │   ├── store/
-│   │   ├── data.ts (or wherever entity lists live)     12.2 (atesAreas slice)
+│   │   ├── atesAreas.ts / .test.ts                     12.2 (useAtesAreasStore)
 │   │   └── ui.ts (+ test)                              12.4 (atesEnabled, atesOpacity)
 │   ├── features/ates/
 │   │   ├── atesImport.ts / .test.ts                    12.2
@@ -181,7 +181,7 @@ couloir/
 
 **Files:** `src/storage/migrations/4.sql`, `index.ts`, `index.test.ts`, `src/storage/interface.ts`, `sqlProvider.ts` (+ test), `memory.ts`, `http.ts`, `contract.ts`, `server/app.ts` (+ test), `src/features/ates/atesImport.ts` / `.test.ts`, the data store, `src/dev/devConsole.ts`
 
-- [ ] **Step 12.2.1: Migration test first**, then `4.sql` and `SCHEMA_VERSION = 4`:
+- [x] **Step 12.2.1: Migration test first**, then `4.sql` and `SCHEMA_VERSION = 4`:
 
   ```sql
   -- Migration 4: ATES terrain ratings imported from Avalanche Canada KMZ
@@ -196,7 +196,7 @@ couloir/
   );
   ```
 
-- [ ] **Step 12.2.2: Interface.** Add to `StorageProvider`:
+- [x] **Step 12.2.2: Interface.** Add to `StorageProvider`:
 
   ```ts
   // ATES areas (Phase 12)
@@ -206,21 +206,21 @@ couloir/
   deleteAtesArea(id: string): Promise<void>
   ```
 
-- [ ] **Step 12.2.3: Contract tests** (a new `ATES areas` block in `contract.ts`):
+- [x] **Step 12.2.3: Contract tests** (a new `ATES areas` block in `contract.ts`):
   - save then list round-trips the geometry exactly
   - saving the same id again replaces the row
   - `deleteAtesArea` removes it
   - deleting an unknown id is a no-op
   - areas list in name order
 
-- [ ] **Step 12.2.4: Implement in every provider.**
+- [x] **Step 12.2.4: Implement in every provider.**
   - `SqlStorageProvider`: `INSERT OR REPLACE`, with `JSON.stringify`/`JSON.parse` for `geojson`, and `ORDER BY name COLLATE NOCASE`.
   - `InMemoryStorageProvider`: a `Map`, storing a `structuredClone` so callers can't mutate stored geometry.
   - `HttpStorageProvider`: `GET /api/ates-areas`, `PUT /api/ates-areas/:id` and `DELETE /api/ates-areas/:id`.
   - `server/app.ts`: the matching routes, using `idParam`, `jsonBody` and `entityFor` like waypoints, and the same id validation.
   - Check that the server accepts a body of about 300 KB. Add a server test that PUTs a 300 KB area.
 
-- [ ] **Step 12.2.5: Import orchestration, tests first** (`src/features/ates/atesImport.ts`, run against `InMemoryStorageProvider`):
+- [x] **Step 12.2.5: Import orchestration, tests first** (`src/features/ates/atesImport.ts`, run against `InMemoryStorageProvider`):
 
   ```ts
   export async function importAtesKmz(
@@ -230,9 +230,9 @@ couloir/
 
   It reads `file.arrayBuffer()`, then runs `readKmz` and `parseAtesKml`. It looks for an existing area with the same name (case-insensitive). If there is one, it keeps that area's `id` and `imported_at`. Otherwise it creates the area with `newId()` and the time now. Then it saves the area. Tests cover a fresh import, re-importing the same name (id kept, geometry replaced, `replaced: true`), and a non-KMZ file throwing `AtesImportError`.
 
-- [ ] **Step 12.2.6: Data store.** Add an `atesAreas: AtesArea[]` slice next to routes, tracks and the rest. It loads at startup with them and has `importAtesArea`/`deleteAtesArea` actions that refresh it. `devConsole.ts`: `listAll` includes ATES areas.
+- [x] **Step 12.2.6: Data store.** Each entity has its own Zustand store, so add `src/store/atesAreas.ts` (`useAtesAreasStore`: `areas`, `load`, `importFile`, `remove`). It loads at startup in `main.tsx` and again after a backup restore (`BackupSection`). `devConsole.ts`: `listAll` includes ATES areas.
 
-- [ ] **Step 12.2.7:** `npm test`, `npm run typecheck`. Commit `feat: store imported ATES areas (migration 4)`.
+- [x] **Step 12.2.7:** `npm test`, `npm run typecheck`. Commit `feat: store imported ATES areas (migration 4)`.
 
 ## Task 12.3 — ATES areas in backups
 

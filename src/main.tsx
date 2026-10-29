@@ -10,6 +10,7 @@ import { useTracksStore } from './store/tracks'
 import { useWaypointsStore } from './store/waypoints'
 import { usePhotosStore } from './store/photos'
 import { useTagsStore } from './store/tags'
+import { useAtesAreasStore } from './store/atesAreas'
 import { useUiStore } from './store/ui'
 import { useSettingsStore } from './store/settings'
 import { installDevConsole } from './dev/devConsole'
@@ -37,6 +38,7 @@ async function bootstrap(): Promise<void> {
   void useWaypointsStore.getState().load()
   void usePhotosStore.getState().load()
   void useTagsStore.getState().load()
+  void useAtesAreasStore.getState().load()
 
   // slope:// and aspect:// tiles read the key live, so a key change needs no
   // re-register.

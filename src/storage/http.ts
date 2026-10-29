@@ -1,4 +1,5 @@
 import type {
+  AtesArea,
   EntityTagRow,
   EntityType,
   ExportBundle,
@@ -225,6 +226,20 @@ export class HttpStorageProvider implements StorageProvider {
       `/api/entity-tags/${segment(entityType)}/${segment(entityId)}`,
       jsonInit('PUT', { tagIds }),
     )
+  }
+
+  // --- ATES areas ----------------------------------------------------------
+
+  getAtesAreas(): Promise<AtesArea[]> {
+    return this.getJson('/api/ates-areas')
+  }
+
+  async saveAtesArea(area: AtesArea): Promise<void> {
+    await this.send(`/api/ates-areas/${segment(area.id)}`, jsonInit('PUT', area))
+  }
+
+  async deleteAtesArea(id: string): Promise<void> {
+    await this.send(`/api/ates-areas/${segment(id)}`, { method: 'DELETE' })
   }
 
   // --- Backup ---------------------------------------------------------------

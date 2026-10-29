@@ -116,7 +116,7 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 ### Phase 12 — ATES Terrain Ratings  ·  Plan: [`2026-10-29-couloir-phase-12-ates-terrain.md`](docs/superpowers/plans/2026-10-29-couloir-phase-12-ates-terrain.md)
 
 - [x] [12.1 KMZ parser](#task-121---kmz-parser)
-- [ ] [12.2 ATES area storage](#task-122---ates-area-storage)
+- [x] [12.2 ATES area storage](#task-122---ates-area-storage)
 - [ ] [12.3 ATES areas in backups](#task-123---ates-areas-in-backups)
 - [ ] [12.4 ATES map layer](#task-124---ates-map-layer)
 - [ ] [12.5 ATES controls, legend and area management](#task-125---ates-controls-legend-and-area-management)

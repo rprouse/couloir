@@ -19,4 +19,12 @@ describe('MIGRATIONS', () => {
     const sql = MIGRATIONS.find((m) => m.version === 3)?.sql ?? ''
     expect(sql).toMatch(/ALTER TABLE waypoints ADD COLUMN icon TEXT\s*;/i)
   })
+
+  it('migration 4 creates the ates_areas table', () => {
+    const sql = MIGRATIONS.find((m) => m.version === 4)?.sql ?? ''
+    expect(sql).toMatch(/CREATE TABLE ates_areas\s*\(/i)
+    for (const col of ['id', 'name', 'source_filename', 'geojson', 'imported_at', 'updated_at']) {
+      expect(sql).toMatch(new RegExp(`\\b${col}\\s+TEXT`, 'i'))
+    }
+  })
 })

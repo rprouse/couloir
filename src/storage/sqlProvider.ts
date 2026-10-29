@@ -1,4 +1,5 @@
 import type {
+  AtesArea,
   EntityTagRow,
   EntityType,
   ExportBundle,
@@ -338,6 +339,26 @@ export class SqlStorageProvider implements StorageProvider {
     await this.db.tx(this.replaceTagsOps(entityType, entityId, tagIds))
   }
 
+  // --- ATES areas ----------------------------------------------------------
+
+  async getAtesAreas(): Promise<AtesArea[]> {
+    const rows = await this.db.all(`SELECT * FROM ates_areas ORDER BY name COLLATE NOCASE, id`)
+    return rows.map((r) => this.rowToAtesArea(r))
+  }
+
+  async saveAtesArea(area: AtesArea): Promise<void> {
+    await this.db.run(
+      `INSERT OR REPLACE INTO ates_areas (
+         id, name, source_filename, geojson, imported_at, updated_at
+       ) VALUES (?, ?, ?, ?, ?, ?)`,
+      this.atesAreaToRow(area),
+    )
+  }
+
+  async deleteAtesArea(id: string): Promise<void> {
+    await this.db.run(`DELETE FROM ates_areas WHERE id = ?`, [id])
+  }
+
   // --- Backup ---------------------------------------------------------------
 
   async exportAll(): Promise<{
@@ -657,6 +678,25 @@ export class SqlStorageProvider implements StorageProvider {
       tags,
       created_at:         row.created_at as string,
       updated_at:         row.updated_at as string,
+    }
+  }
+
+  private atesAreaToRow(a: AtesArea): SqlValue[] {
+    return [
+      a.id, a.name, a.source_filename,
+      JSON.stringify(a.geojson),
+      a.imported_at, a.updated_at,
+    ]
+  }
+
+  private rowToAtesArea(row: SqlRow): AtesArea {
+    return {
+      id:              row.id as string,
+      name:            row.name as string,
+      source_filename: row.source_filename as string,
+      geojson:         JSON.parse(row.geojson as string),
+      imported_at:     row.imported_at as string,
+      updated_at:      row.updated_at as string,
     }
   }
 

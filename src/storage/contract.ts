@@ -1,5 +1,5 @@
 import type { StorageProvider } from './interface'
-import type { Photo, Route, Tag, Track, Waypoint } from '../types'
+import type { AtesArea, Photo, Route, Tag, Track, Waypoint } from '../types'
 
 // Behaviour every StorageProvider must share, run against each implementation
 // from its own test file:
@@ -123,6 +123,36 @@ export function buildTag(overrides: Partial<Tag> = {}): Tag {
     name: 'Steep',
     color: '#FF8800',
     created_at: '2026-05-06T12:00:00.000Z',
+    ...overrides,
+  }
+}
+
+export function buildAtesArea(overrides: Partial<AtesArea> = {}): AtesArea {
+  const now = '2026-05-06T12:00:00.000Z'
+  return {
+    id: 'ates-1',
+    name: 'Test Basin',
+    source_filename: 'Test Basin.kmz',
+    geojson: {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[[-116.0, 49.5], [-115.99, 49.5], [-115.99, 49.51], [-116.0, 49.5]]],
+          },
+          properties: { kind: 'zone', ates: 'complex', description: 'Steep, open terrain.' },
+        },
+        {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [-115.995, 49.505] },
+          properties: { kind: 'decision_point', name: 'Col', description: '' },
+        },
+      ],
+    },
+    imported_at: now,
+    updated_at: now,
     ...overrides,
   }
 }
@@ -331,6 +361,46 @@ export function storageContract(name: string, options: StorageContractOptions): 
         expect(await storage.getWaypoint('wp-1')).toBeNull()
         await storage.saveWaypoint(buildWaypoint({ tags: [] }))
         expect((await storage.getWaypoint('wp-1'))?.tags).toEqual([])
+      })
+    })
+
+    describe('ATES areas', () => {
+      it('saves and lists an area round-trip, geometry included', async () => {
+        const area = buildAtesArea()
+        await storage.saveAtesArea(area)
+        expect(await storage.getAtesAreas()).toEqual([area])
+      })
+
+      it('replaces an area saved again with the same id', async () => {
+        await storage.saveAtesArea(buildAtesArea())
+        const updated = buildAtesArea({
+          name: 'Renamed',
+          geojson: { type: 'FeatureCollection', features: [] },
+          updated_at: '2026-06-01T00:00:00.000Z',
+        })
+        await storage.saveAtesArea(updated)
+        expect(await storage.getAtesAreas()).toEqual([updated])
+      })
+
+      it('deletes an area, and deleting an unknown id is a no-op', async () => {
+        await storage.saveAtesArea(buildAtesArea())
+        await storage.deleteAtesArea('ates-1')
+        await storage.deleteAtesArea('ates-missing')
+        expect(await storage.getAtesAreas()).toEqual([])
+      })
+
+      it('lists areas by name, ignoring case', async () => {
+        await storage.saveAtesArea(buildAtesArea({ id: 'a', name: 'tunnel Creek' }))
+        await storage.saveAtesArea(buildAtesArea({ id: 'b', name: 'Bow Summit' }))
+        await storage.saveAtesArea(buildAtesArea({ id: 'c', name: 'Rogers Pass' }))
+        expect((await storage.getAtesAreas()).map((a) => a.id)).toEqual(['b', 'c', 'a'])
+      })
+
+      it('does not share geometry with the caller', async () => {
+        const area = buildAtesArea()
+        await storage.saveAtesArea(area)
+        area.geojson.features.length = 0
+        expect((await storage.getAtesAreas())[0].geojson.features).toHaveLength(2)
       })
     })
 

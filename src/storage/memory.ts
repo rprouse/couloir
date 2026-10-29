@@ -1,4 +1,5 @@
 import type {
+  AtesArea,
   EntityTagRow,
   EntityType,
   ExportBundle,
@@ -27,6 +28,7 @@ export class InMemoryStorageProvider implements StorageProvider {
   private blobs = new Map<string, Blob>()
   private thumbs = new Map<string, Blob>()
   private tags = new Map<string, Tag>()
+  private atesAreas = new Map<string, AtesArea>()
   private entityTags = new Set<string>() // 'route|abc|tag1' style composite keys
 
   async init(): Promise<void> {
@@ -176,6 +178,28 @@ export class InMemoryStorageProvider implements StorageProvider {
     tagIds: string[],
   ): Promise<void> {
     this.replaceEntityTags(entityType, entityId, tagIds)
+  }
+
+  // --- ATES areas ----------------------------------------------------------
+
+  async getAtesAreas(): Promise<AtesArea[]> {
+    // Same order as SQL `ORDER BY name COLLATE NOCASE, id` (ASCII case-folding).
+    const key = (a: AtesArea) => [a.name.toLowerCase(), a.id]
+    return Array.from(this.atesAreas.values())
+      .map((a) => structuredClone(a))
+      .sort((a, b) => {
+        const [ka, kb] = [key(a), key(b)]
+        for (let i = 0; i < ka.length; i++) {
+          if (ka[i] !== kb[i]) return ka[i] < kb[i] ? -1 : 1
+        }
+        return 0
+      })
+  }
+  async saveAtesArea(area: AtesArea): Promise<void> {
+    this.atesAreas.set(area.id, structuredClone(area))
+  }
+  async deleteAtesArea(id: string): Promise<void> {
+    this.atesAreas.delete(id)
   }
 
   // --- Backup ---------------------------------------------------------------
