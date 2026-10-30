@@ -252,8 +252,8 @@ export type EntityDraft =
 // ============================================================================
 
 export const DEFAULTS = {
-  route: { color: '#E05C2A' },
-  track: { color: '#2A7BE0' },
+  route: { color: '#2A7BE0' },
+  track: { color: '#E05C2A' },
 } as const
 
 // Default colours offered for new tags, cycled in order.

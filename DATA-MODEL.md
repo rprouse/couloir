@@ -318,8 +318,8 @@ CREATE TABLE ates_areas (
 
 // Default colors per entity type
 export const DEFAULTS = {
-  route: { color: '#E05C2A' },   // burnt orange
-  track: { color: '#2A7BE0' },   // sky blue
+  route: { color: '#2A7BE0' },   // sky blue
+  track: { color: '#E05C2A' },   // burnt orange
 }
 
 // Default color and icon per waypoint category. A waypoint's own `icon` and
