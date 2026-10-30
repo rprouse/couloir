@@ -28,7 +28,7 @@ export function TerrainControl() {
   useEffect(() => {
     if (!map) return
     const el = document.createElement('div')
-    el.className = 'maplibregl-ctrl'
+    el.className = `maplibregl-ctrl ${styles.slot}`
     const control: maplibregl.IControl = {
       onAdd: () => el,
       onRemove: () => el.remove(),
