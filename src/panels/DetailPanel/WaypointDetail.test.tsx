@@ -7,6 +7,9 @@ import { setStorage, getStorage } from '../../storage/provider'
 import { InMemoryStorageProvider } from '../../storage/memory'
 import { WaypointDetail } from './WaypointDetail'
 import type { Waypoint } from '../../types'
+import { downloadText } from '../../utils/download'
+
+vi.mock('../../utils/download', () => ({ downloadText: vi.fn() }))
 
 const sample = (over: Partial<Waypoint> = {}): Waypoint => ({
   id: 'w1',
@@ -49,6 +52,16 @@ describe('WaypointDetail (view)', () => {
     setup(sample({ icon: 'cabin' }))
     render(<WaypointDetail waypointId="w1" mode="view" />)
     expect(screen.getByRole('img', { name: 'Cabin' })).toBeInTheDocument()
+  })
+
+  it('downloads the waypoint as GPX', () => {
+    render(<WaypointDetail waypointId="w1" mode="view" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Download GPX' }))
+    expect(downloadText).toHaveBeenCalledWith(
+      expect.stringContaining('<wpt lat="49.5" lon="-116">'),
+      'Summit-Hut.gpx',
+      'application/gpx+xml',
+    )
   })
 
   it('renders "—" for null elevation', () => {

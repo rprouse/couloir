@@ -1,6 +1,6 @@
-// Downloads the Material Symbols used as waypoint icons and writes their SVG
-// path data to src/icons/symbolPaths.ts. Run it after changing NAMES (and the
-// catalogue in src/icons/waypointIcons.ts):
+// Downloads the Material Symbols used as waypoint icons (and a few UI icons,
+// such as download) and writes their SVG path data to src/icons/symbolPaths.ts.
+// Run it after changing NAMES (and the catalogue in src/icons/waypointIcons.ts):
 //
 //   node scripts/fetch-material-symbols.mjs
 //
@@ -14,7 +14,7 @@ const VIEWBOX = '0 -960 960 960'
 
 const NAMES = [
   'arrow_downward', 'backpack', 'cabin', 'camping', 'cell_tower', 'cottage',
-  'dangerous', 'directions_car', 'downhill_skiing', 'emergency', 'fence', 'flag',
+  'dangerous', 'directions_car', 'download', 'downhill_skiing', 'emergency', 'fence', 'flag',
   'hiking', 'landscape', 'landslide', 'local_fire_department', 'local_parking',
   'location_on', 'nordic_walking', 'photo_camera', 'route', 'severe_cold',
   'sledding', 'snowing', 'snowshoeing', 'star', 'visibility', 'warning',

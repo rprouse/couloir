@@ -1,3 +1,4 @@
+import { UI_ICONS } from './uiIcons'
 import {
   WAYPOINT_ICONS,
   WAYPOINT_SWATCHES,
@@ -22,7 +23,7 @@ describe('WAYPOINT_ICONS', () => {
   })
 
   it('uses every vendored symbol (no orphans)', () => {
-    const keys = new Set<string>(WAYPOINT_ICONS.map((i) => i.key))
+    const keys = new Set<string>([...WAYPOINT_ICONS.map((i) => i.key), ...UI_ICONS])
     for (const name of Object.keys(SYMBOL_PATHS)) {
       expect(keys.has(name)).toBe(true)
     }

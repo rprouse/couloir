@@ -47,6 +47,14 @@
   background: var(--color-bg-0);
 }
 
+/* Square icon button, same height as the text buttons beside it. */
+.actions .iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-sm);
+}
+
 .close {
   align-self: flex-end;
   background: var(--color-danger);
