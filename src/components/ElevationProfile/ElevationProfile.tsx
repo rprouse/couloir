@@ -43,9 +43,11 @@ export function ElevationProfile({ geojson, height = 160 }: Props): JSX.Element 
               background: 'var(--color-bg-2)',
               border: '1px solid var(--color-border)',
             }}
-            formatter={(v: number, key: string) =>
-              key === 'elevationM' ? `${Math.round(v)} m` : `${v.toFixed(2)} km`
-            }
+            // The label is the hovered distance; the one value is the
+            // elevation, shown without a series name.
+            labelFormatter={(km: number) => `${km.toFixed(2)} km`}
+            formatter={(v: number) => [`${Math.round(v)} m`, '']}
+            separator=""
           />
           <Line
             type="monotone"
