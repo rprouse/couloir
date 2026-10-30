@@ -1,0 +1,66 @@
+/* MapLibre popup for a clicked ATES zone or decision point. The popup's own
+   elements are global class names, so they're reached through :global. */
+.popup :global(.maplibregl-popup-content) {
+  background: var(--color-bg-1);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-sm) var(--space-lg) var(--space-sm) var(--space-md);
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+
+.popup :global(.maplibregl-popup-close-button) {
+  color: var(--color-text-dim);
+  font-size: 16px;
+}
+
+.popup:global(.maplibregl-popup-anchor-bottom) :global(.maplibregl-popup-tip),
+.popup:global(.maplibregl-popup-anchor-bottom-left) :global(.maplibregl-popup-tip),
+.popup:global(.maplibregl-popup-anchor-bottom-right) :global(.maplibregl-popup-tip) {
+  border-top-color: var(--color-bg-1);
+}
+
+.popup:global(.maplibregl-popup-anchor-top) :global(.maplibregl-popup-tip),
+.popup:global(.maplibregl-popup-anchor-top-left) :global(.maplibregl-popup-tip),
+.popup:global(.maplibregl-popup-anchor-top-right) :global(.maplibregl-popup-tip) {
+  border-bottom-color: var(--color-bg-1);
+}
+
+.popup:global(.maplibregl-popup-anchor-left) :global(.maplibregl-popup-tip) {
+  border-right-color: var(--color-bg-1);
+}
+
+.popup:global(.maplibregl-popup-anchor-right) :global(.maplibregl-popup-tip) {
+  border-left-color: var(--color-bg-1);
+}
+
+.title {
+  font-weight: 600;
+  margin: 0 0 2px;
+}
+
+.classRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid var(--color-border);
+  flex: none;
+}
+
+.subtle {
+  color: var(--color-text-dim);
+}
+
+.description {
+  margin: var(--space-xs) 0 0;
+  color: var(--color-text-dim);
+  line-height: 1.4;
+}

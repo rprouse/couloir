@@ -3,7 +3,7 @@ import type { StorageProvider } from '../../storage/interface'
 import {
   APP_VERSION, BACKUP_MANIFEST_FILE, BACKUP_METADATA_FILE, BUNDLE_VERSION,
   type BackupManifest, type EntityTagRow, type EntityType, type ExportBundle,
-  type Photo, type Route, type Tag, type Track, type Waypoint,
+  type AtesArea, type Photo, type Route, type Tag, type Track, type Waypoint,
 } from '../../types'
 
 export interface BackupSink {
@@ -24,6 +24,7 @@ export function backupFilename(date: Date): string {
 // JSON. Slightly high, since metadata.json is deflated in the ZIP.
 export function estimateBackupBytes(data: {
   routes: Route[]; tracks: Track[]; waypoints: Waypoint[]; photos: Photo[]; tags: Tag[]
+  atesAreas?: AtesArea[]
 }): number {
   const photoBytes = data.photos.reduce((sum, p) => sum + p.file_size_bytes, 0)
   return photoBytes + data.photos.length * THUMB_ESTIMATE_BYTES + JSON.stringify(data).length
@@ -33,8 +34,9 @@ export function estimateBackupBytes(data: {
 // time, and each is flushed to the sink before the next is read, so memory
 // stays bounded by one photo regardless of library size.
 export async function writeBackup(storage: StorageProvider, sink: BackupSink): Promise<BackupManifest> {
-  const [routes, tracks, waypoints, photos, tags] = await Promise.all([
+  const [routes, tracks, waypoints, photos, tags, ates_areas] = await Promise.all([
     storage.getRoutes(), storage.getTracks(), storage.getWaypoints(), storage.getPhotos(), storage.getTags(),
+    storage.getAtesAreas(),
   ])
   const exportedAt = new Date().toISOString()
   const bundle: ExportBundle = {
@@ -48,6 +50,7 @@ export async function writeBackup(storage: StorageProvider, sink: BackupSink): P
       ...junctionRows('route', routes), ...junctionRows('track', tracks),
       ...junctionRows('waypoint', waypoints), ...junctionRows('photo', photos),
     ],
+    ates_areas,
   }
   const manifest: BackupManifest = {
     bundle_version: BUNDLE_VERSION,

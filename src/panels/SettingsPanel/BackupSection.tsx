@@ -6,6 +6,7 @@ import { useTracksStore } from '../../store/tracks'
 import { useWaypointsStore } from '../../store/waypoints'
 import { usePhotosStore } from '../../store/photos'
 import { useTagsStore } from '../../store/tags'
+import { useAtesAreasStore } from '../../store/atesAreas'
 import { backupFilename, estimateBackupBytes, writeBackup } from '../../features/backup/writeBackup'
 import { fileChunks, readBackup } from '../../features/backup/readBackup'
 import { prepareImport, summarizeBundle, type PreparedImport } from '../../features/backup/prepareImport'
@@ -33,6 +34,7 @@ export function BackupSection(): JSX.Element {
         waypoints: useWaypointsStore.getState().waypoints,
         photos: usePhotosStore.getState().photos,
         tags: useTagsStore.getState().tags,
+        atesAreas: useAtesAreasStore.getState().areas,
       }),
     })
 
@@ -72,6 +74,7 @@ export function BackupSection(): JSX.Element {
       await Promise.all([
         useRoutesStore.getState().load(), useTracksStore.getState().load(),
         useWaypointsStore.getState().load(), usePhotosStore.getState().load(), useTagsStore.getState().load(),
+        useAtesAreasStore.getState().load(),
       ])
       const notes = [
         prepared.regeneratedThumbs > 0 ? `${prepared.regeneratedThumbs} thumbnails rebuilt` : '',

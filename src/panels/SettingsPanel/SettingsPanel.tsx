@@ -5,6 +5,7 @@ import { OVERLAY_OPACITY_MAX, OVERLAY_OPACITY_MIN, useUiStore } from '../../stor
 import { APP_VERSION } from '../../types'
 import { TagManager } from './TagManager'
 import { BackupSection } from './BackupSection'
+import { AtesAreasSection } from './AtesAreasSection'
 
 const MAPTILER_KEYS_URL = 'https://cloud.maptiler.com/account/keys/'
 
@@ -142,6 +143,11 @@ export function SettingsPanel() {
           />
           <span>Show centre crosshair and position readout</span>
         </label>
+      </section>
+
+      <section className={styles.section}>
+        <h3>ATES areas</h3>
+        <AtesAreasSection />
       </section>
 
       <section className={styles.section}>

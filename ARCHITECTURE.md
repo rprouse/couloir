@@ -64,7 +64,7 @@ couloir/
 │   │   ├── memory.ts          # InMemoryStorageProvider (used by tests)
 │   │   ├── contract.ts        # storageContract(): the shared suite every provider passes
 │   │   └── migrations/
-│   │       ├── 1.sql … 3.sql  # Schema migrations (the source of truth)
+│   │       ├── 1.sql … 4.sql  # Schema migrations (the source of truth)
 │   │       └── index.ts       # MIGRATIONS list + SCHEMA_VERSION constant
 │   ├── dev/
 │   │   └── devConsole.ts      # window.__couloir helper, dev-only
@@ -75,6 +75,7 @@ couloir/
 │   │   ├── waypoints.ts       # Waypoint slice
 │   │   ├── photos.ts          # Photo slice
 │   │   ├── tags.ts            # Tag slice
+│   │   ├── atesAreas.ts       # Imported ATES areas: load, importFile, remove
 │   │   └── ui.ts              # Panel state, placement state, layer toggles, etc.
 │   ├── icons/
 │   │   ├── waypointIcons.ts   # Waypoint icon catalogue, swatches, style resolution, marker image ids
@@ -88,7 +89,8 @@ couloir/
 │   │   │   ├── TracksLayer.tsx
 │   │   │   ├── WaypointsLayer.tsx # + wpIcons.ts: draws marker images on demand
 │   │   │   ├── PhotosLayer.tsx
-│   │   │   └── TerrainOverlayLayer.tsx # Raster slope/aspect overlay (slope://, aspect:// tiles)
+│   │   │   ├── TerrainOverlayLayer.tsx # Raster slope/aspect overlay (slope://, aspect:// tiles)
+│   │   │   └── AtesLayer.tsx  # ATES zones + click popup; atesLayerData.ts, atesPopup.ts
 │   │   ├── slope/
 │   │   │   ├── slopeMath.ts    # terrain-rgb decode, ground resolution, Horn gradient, slope, aspect
 │   │   │   ├── slopeBands.ts   # Avalanche angle bands + RGBA colouring
@@ -98,6 +100,7 @@ couloir/
 │   │   ├── controls/
 │   │   │   ├── TerrainControl.tsx # 3D terrain switch + Off/Slope/Aspect overlay picker
 │   │   │   ├── OverlayLegend.tsx  # Slope bands or aspect compass rose
+│   │   │   ├── AtesLegend.tsx     # ATES class swatches + exposure-not-danger caveat
 │   │   │   ├── NavigationAid.tsx  # Centre crosshair + lat/lng, elevation, bearing readout
 │   │   │   ├── LocateControl.tsx  # GPS toggle: centre on the user once, then a moving dot
 │   │   │   └── BasemapControl.tsx
@@ -106,13 +109,14 @@ couloir/
 │   ├── panels/
 │   │   ├── LayerPanel/        # Layer toggles, item counts, filter by tag
 │   │   ├── DetailPanel/       # Route/track/waypoint/photo view/edit/create
-│   │   ├── SettingsPanel/     # API key, map defaults, export/import, tags
+│   │   ├── SettingsPanel/     # API key, map defaults, ATES areas, export/import, tags
 │   │   └── SearchPanel/       # Global search
 │   ├── features/
 │   │   ├── routes/            # Route import, form, list
 │   │   ├── tracks/            # Track import, form, list
 │   │   ├── waypoints/         # Waypoint creation, form
 │   │   ├── photos/            # Photo upload, EXIF processing, placement, viewer
+│   │   ├── ates/              # ATES KMZ import (atesImport.ts) and its toast/layer/framing (runAtesImport.ts)
 │   │   └── backup/            # ZIP backup read/write via fflate
 │   ├── components/
 │   │   ├── ElevationProfile/  # Recharts elevation chart
@@ -125,6 +129,7 @@ couloir/
 │   │   └── useEscapeKey.ts    # Global ESC handler with placement/edit/close precedence
 │   ├── utils/
 │   │   ├── gpx.ts             # GPX parser
+│   │   ├── atesKml.ts         # Avalanche Canada ATES KMZ/KML reader
 │   │   ├── exif.ts            # EXIF reading (orientation, GPS, bearing, altitude, date)
 │   │   ├── image.ts           # Re-encode JPEG with applied orientation, generate thumbnails
 │   │   ├── hash.ts            # SHA-256 of bytes (for source_hash); pure-JS fallback off HTTPS
@@ -182,6 +187,11 @@ export interface StorageProvider {
   setEntityTags(entityType: EntityType, entityId: string, tagIds: string[]): Promise<void>
   // Reads of tag arrays are baked into the entity getters above (the storage layer
   // hydrates `tags: string[]` from the entity_tags junction table).
+
+  // ATES areas (Phase 12): listed by name (case-insensitive) with full geometry; not tagged
+  getAtesAreas(): Promise<AtesArea[]>
+  saveAtesArea(area: AtesArea): Promise<void>   // insert or replace by id
+  deleteAtesArea(id: string): Promise<void>
 
   // Backup
   exportAll(): Promise<{ bundle: ExportBundle; photos: Map<string, Blob>; thumbs: Map<string, Blob> }>
@@ -241,6 +251,7 @@ One route per `StorageProvider` method. Writes return `204`; missing entities an
 | PUT | `/api/photos/:id` | new photo: multipart `photo` (JSON) + `full` + `thumb` |
 | PATCH | `/api/photos/:id` | metadata and tags only |
 | GET / PUT / DELETE | `/api/tags[/:id]` | |
+| GET / PUT / DELETE | `/api/ates-areas[/:id]` | list (with geometry) / upsert / delete |
 | PUT | `/api/entity-tags/:type/:id` | `{ tagIds }` |
 | POST | `/api/import` | backup restore: multipart `bundle` + `full:{id}` / `thumb:{id}` files |
 | GET | `/api/backup/db` | a fresh database snapshot as a download |
@@ -307,6 +318,16 @@ Slope-angle and aspect shading are computed in the browser from the same terrain
 - Off by default, since every overlay tile costs a Maptiler request. The map control picks Off / Slope / Aspect; the shared opacity is set in Settings. Both are saved in `localStorage` (`couloir_terrain_overlay`, `couloir_overlay_opacity`).
 - Accuracy: the DEM is roughly 30 m, so short steep features (cliff bands, rolls, gully walls) read lower than reality. The legend says so.
 
+### ATES Ratings
+
+Avalanche Canada's ATES ratings are imported from the per-area KMZ files its Trip Planner offers ("Download ATES data as KMZ", behind a usage and disclaimer dialog). Avalanche Canada has no public ATES API or tile service. Couloir only reads files the user downloads, and never calls Avalanche Canada's endpoints.
+
+- **Reading** (`src/utils/atesKml.ts`): `readKmz` unzips with `fflate` and takes `doc.kml` (or the first `.kml`); `parseAtesKml` reads it with `DOMParser`. Placemarks are typed by `styleUrl`: `area_styles` is the boundary, `zone_{green,blue,black}_style` are Simple/Challenging/Complex zones, `ates_line_*` are rated lines, plus `avalanche_path_styles`, `decision_point_styles`, `access_road_styles` (access routes) and `point_of_interest_{parking,cabin,destination,other}_styles` (points of interest; an unknown type becomes `other`). A zone whose style isn't recognised takes its class from the enclosing `Class N – …` folder (0 = non-avalanche, 4 = extreme); one with neither is skipped and counted. The KMZ's icons are dropped: points of interest are drawn as waypoint-style markers (`wp:<icon>:<HEX>` images, `ATES_POI_ICONS`). `MultiGeometry` becomes one feature per part; altitude is dropped.
+- **Import** (`src/features/ates`): `importAtesKmz` saves the area. Re-importing an area with the same name (ignoring case) replaces it in place, keeping its id and `imported_at`, because Avalanche Canada revises ratings. `runAtesImport` (from Settings or a `.kmz` dropped on the map) toasts each outcome, turns the layer on and frames the last area.
+- **Layer**: `AtesLayer` draws every area from one GeoJSON source (attribution "ATES ratings © Avalanche Canada"). Its layers are inserted before the first basemap `symbol` layer or Couloir entity layer, so they sit above the slope/aspect raster (which goes under all Couloir layers, ATES included) and below routes, tracks, waypoints and photos. Fill colours are fixed per class (`ATES_CLASS_COLORS`), not taken from the KML.
+- **Controls**: a separate ATES switch in the terrain control (shown once an area exists) with a legend of the classes present and the caveat that ATES rates exposure, not today's danger. Its fill opacity is set in Settings. Both are saved in `localStorage` (`couloir_ates_enabled`, default on; `couloir_ates_opacity`, default 0.45).
+- **Click**: one map-wide `click` handler. It does nothing in placement mode or when the layer is off, and stands aside when the click hit a route, track, waypoint or photo, whose own handlers open the entity. Otherwise it opens a MapLibre popup for what's under the cursor, preferring a point of interest, then a decision point, an access route and finally a zone (area, class, definition), built with `textContent` because the strings come from an imported file.
+
 ### Error handling
 
 API key and tile failures are surfaced explicitly rather than producing a silent dark map:
@@ -323,8 +344,8 @@ The error banner is dismissable but reappears if errors continue.
 
 Zustand is used for all application state. The store is divided into slices:
 
-- **routes, tracks, waypoints, photos, tags**: mirror the storage layer. Each slice loads on app startup, and mutations call through to the storage provider then update local state.
-- **ui**: panel state, placement state, layer visibility toggles, active basemap, terrain exaggeration, terrain overlay choice (off/slope/aspect) and its opacity, error banner state.
+- **routes, tracks, waypoints, photos, tags, atesAreas**: mirror the storage layer. Each slice loads on app startup, and mutations call through to the storage provider then update local state.
+- **ui**: panel state, placement state, layer visibility toggles, active basemap, terrain exaggeration, terrain overlay choice (off/slope/aspect) and its opacity, the ATES switch and its opacity, error banner state.
 
 ### Panel and placement state
 
@@ -450,6 +471,18 @@ TerrainOverlayLayer (one per overlay)
                → source: 'aspect-source' (raster, aspect://{z}/{x}/{y}) → layer: 'aspect-raster'
                  (inserted beneath basemap labels and all Couloir layers; see Terrain Overlays)
 
+AtesLayer      → source: 'ates-source' (every imported area; see ATES Ratings)
+                 ├── 'ates-fill'            (fill, zones, class colour, atesOpacity)
+                 ├── 'ates-outline'         (line, zones, light 1 px edge)
+                 ├── 'ates-area'            (line, area boundary, white dashed)
+                 ├── 'ates-access'          (line, access routes, yellow)
+                 ├── 'ates-paths'           (line, avalanche paths, red)
+                 ├── 'ates-path-arrows'     (symbol, line-center arrow pointing downslope)
+                 ├── 'ates-lines'           (line, rated lines, class colour)
+                 ├── 'ates-decision-points' (circle, amber)
+                 └── 'ates-poi'             (symbol, points of interest as wp: markers: parking green, hut blue, destination orange, other violet)
+                 (above the terrain overlays, beneath basemap labels and the entity layers)
+
 PhotosLayer    → source: 'photos-source' (unclustered)
                  ├── 'photos-arrows' (symbol layer, minzoom 14, filter ['has', 'bearing'],
                  │                    'photo-arrow' image rotated by bearing, map-aligned)
@@ -469,6 +502,7 @@ Click handlers:
 - Route / track / waypoint click → `openEntity(type, id)`.
 - Individual photo thumbnail click → `openEntity('photo', id)`.
 - Photo cluster click → ease the map to the cluster's expansion zoom (`getClusterExpansionZoom`), so the cluster splits naturally.
+- ATES zone, point of interest, decision point or access route click → popup, unless an entity layer was hit too (see ATES Ratings).
 
 ---
 
@@ -503,14 +537,14 @@ A backup is a single ZIP archive written via `fflate` (`src/features/backup`):
 ```
 couloir-backup-2026-05-05.zip
   manifest.json          — { bundle_version, app_version, exported_at, photo_count, total_size_bytes }
-  metadata.json          — ExportBundle (entities, tags, entity_tags rows, settings)
+  metadata.json          — ExportBundle (entities, tags, entity_tags rows, ATES areas)
   photos/{id}.jpg        — one full-size blob per photo
   photos/{id}_thumb.jpg  — one thumbnail per photo (regenerable on import if missing)
 ```
 
 **Export** builds `metadata.json` from the entity getters (`getRoutes()`, `getTags()`, …; the `entity_tags` rows are rebuilt from each entity's hydrated `tags`), then reads photos from storage one at a time and streams everything through `fflate.Zip`. JPEGs are stored, not deflated. The ZIP goes either to a File System Access writable (`showSaveFilePicker`, Chrome/Edge), so it streams straight to disk, or, in other browsers, into an in-memory `Blob` that downloads when the archive is complete.
 
-**Import** collects the picked file and reads it through the ZIP central directory with `fflate.unzipSync`, holding the extracted entries in memory because `importAll` takes `Map`s of every blob. It deliberately does not use the streaming `fflate.Unzip`: `fflate.Zip` writes every entry with a trailing data descriptor, and the streaming reader finds the end of such an entry by scanning for the descriptor's signature bytes, which can occur inside JPEG data and truncate a photo. Backups whose `bundle_version` is newer than `BUNDLE_VERSION` are rejected.
+**Import** collects the picked file and reads it through the ZIP central directory with `fflate.unzipSync`, holding the extracted entries in memory because `importAll` takes `Map`s of every blob. It deliberately does not use the streaming `fflate.Unzip`: `fflate.Zip` writes every entry with a trailing data descriptor, and the streaming reader finds the end of such an entry by scanning for the descriptor's signature bytes, which can occur inside JPEG data and truncate a photo. Backups whose `bundle_version` is newer than `BUNDLE_VERSION` are rejected. `BUNDLE_VERSION` is 2: version 2 added `ates_areas`, which version 1 backups lack (they restore with existing areas untouched).
 
 `StorageProvider.exportAll()` remains (the dev console's `window.__couloir.exportAll` uses it), but the backup UI doesn't. Restore does go through `importAll()`, which `HttpStorageProvider` sends as one multipart `POST /api/import`; the server applies it with `SqlStorageProvider.importAll`.
 
@@ -521,6 +555,8 @@ The Settings UI shows a pre-export size estimate ("Backup will be ~412 MB. Conti
 - If no row with this UUID exists → insert.
 - If a row with this UUID exists and the bundle's `updated_at` is newer → update.
 - Otherwise → skip.
+
+ATES areas follow the same newer-`updated_at`-wins rule.
 
 Thumbnails are regenerated from full-size blobs at import time if missing from the bundle (older bundles, or bundles where the user manually trimmed the archive).
 

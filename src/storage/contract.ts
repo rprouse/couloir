@@ -1,5 +1,6 @@
 import type { StorageProvider } from './interface'
-import type { Photo, Route, Tag, Track, Waypoint } from '../types'
+import type { AtesArea, Photo, Route, Tag, Track, Waypoint } from '../types'
+import { BUNDLE_VERSION } from '../types'
 
 // Behaviour every StorageProvider must share, run against each implementation
 // from its own test file:
@@ -123,6 +124,36 @@ export function buildTag(overrides: Partial<Tag> = {}): Tag {
     name: 'Steep',
     color: '#FF8800',
     created_at: '2026-05-06T12:00:00.000Z',
+    ...overrides,
+  }
+}
+
+export function buildAtesArea(overrides: Partial<AtesArea> = {}): AtesArea {
+  const now = '2026-05-06T12:00:00.000Z'
+  return {
+    id: 'ates-1',
+    name: 'Test Basin',
+    source_filename: 'Test Basin.kmz',
+    geojson: {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[[-116.0, 49.5], [-115.99, 49.5], [-115.99, 49.51], [-116.0, 49.5]]],
+          },
+          properties: { kind: 'zone', ates: 'complex', description: 'Steep, open terrain.' },
+        },
+        {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [-115.995, 49.505] },
+          properties: { kind: 'decision_point', name: 'Col', description: '' },
+        },
+      ],
+    },
+    imported_at: now,
+    updated_at: now,
     ...overrides,
   }
 }
@@ -334,6 +365,46 @@ export function storageContract(name: string, options: StorageContractOptions): 
       })
     })
 
+    describe('ATES areas', () => {
+      it('saves and lists an area round-trip, geometry included', async () => {
+        const area = buildAtesArea()
+        await storage.saveAtesArea(area)
+        expect(await storage.getAtesAreas()).toEqual([area])
+      })
+
+      it('replaces an area saved again with the same id', async () => {
+        await storage.saveAtesArea(buildAtesArea())
+        const updated = buildAtesArea({
+          name: 'Renamed',
+          geojson: { type: 'FeatureCollection', features: [] },
+          updated_at: '2026-06-01T00:00:00.000Z',
+        })
+        await storage.saveAtesArea(updated)
+        expect(await storage.getAtesAreas()).toEqual([updated])
+      })
+
+      it('deletes an area, and deleting an unknown id is a no-op', async () => {
+        await storage.saveAtesArea(buildAtesArea())
+        await storage.deleteAtesArea('ates-1')
+        await storage.deleteAtesArea('ates-missing')
+        expect(await storage.getAtesAreas()).toEqual([])
+      })
+
+      it('lists areas by name, ignoring case', async () => {
+        await storage.saveAtesArea(buildAtesArea({ id: 'a', name: 'tunnel Creek' }))
+        await storage.saveAtesArea(buildAtesArea({ id: 'b', name: 'Bow Summit' }))
+        await storage.saveAtesArea(buildAtesArea({ id: 'c', name: 'Rogers Pass' }))
+        expect((await storage.getAtesAreas()).map((a) => a.id)).toEqual(['b', 'c', 'a'])
+      })
+
+      it('does not share geometry with the caller', async () => {
+        const area = buildAtesArea()
+        await storage.saveAtesArea(area)
+        area.geojson.features.length = 0
+        expect((await storage.getAtesAreas())[0].geojson.features).toHaveLength(2)
+      })
+    })
+
     describe('photos', () => {
       it('saves a photo with both blobs', async () => {
         const photo = buildPhoto()
@@ -429,8 +500,9 @@ export function storageContract(name: string, options: StorageContractOptions): 
     describe('backup', () => {
       it('exports an empty bundle for a fresh store', async () => {
         const { bundle, photos, thumbs } = await storage.exportAll()
-        expect(bundle.bundle_version).toBe(1)
+        expect(bundle.bundle_version).toBe(BUNDLE_VERSION)
         expect(bundle.routes).toEqual([])
+        expect(bundle.ates_areas).toEqual([])
         expect(bundle.entity_tags).toEqual([])
         expect(photos.size).toBe(0)
         expect(thumbs.size).toBe(0)
@@ -486,6 +558,41 @@ export function storageContract(name: string, options: StorageContractOptions): 
         const fresh = await open()
         await fresh.importAll(bundle, exported.photos, exported.thumbs)
         expect((await fresh.getWaypoint('wp-1'))?.icon).toBeNull()
+      })
+
+      it('round-trips ATES areas through export+import', async () => {
+        const area = buildAtesArea()
+        await storage.saveAtesArea(area)
+        const exported = await storage.exportAll()
+        expect(exported.bundle.ates_areas).toEqual([area])
+
+        const fresh = await open()
+        await fresh.importAll(exported.bundle, exported.photos, exported.thumbs)
+        expect(await fresh.getAtesAreas()).toEqual([area])
+      })
+
+      it('imports a v1 bundle (no ates_areas key) without touching existing areas', async () => {
+        const { ates_areas: _ates, ...v1 } = (await storage.exportAll()).bundle
+        const fresh = await open()
+        await fresh.saveAtesArea(buildAtesArea())
+        await fresh.importAll({ ...v1, bundle_version: 1 }, new Map(), new Map())
+        expect(await fresh.getAtesAreas()).toEqual([buildAtesArea()])
+      })
+
+      it('importAll replaces an ATES area only when the bundle copy is newer', async () => {
+        const fresh = await open()
+        await fresh.saveAtesArea(buildAtesArea({ id: 'a', name: 'Local newer', updated_at: '2026-05-06T13:00:00.000Z' }))
+        await fresh.saveAtesArea(buildAtesArea({ id: 'b', name: 'Local stale', updated_at: '2026-05-06T12:00:00.000Z' }))
+        const exported = await storage.exportAll()
+        const bundle = {
+          ...exported.bundle,
+          ates_areas: [
+            buildAtesArea({ id: 'a', name: 'Bundle stale', updated_at: '2026-05-06T12:00:00.000Z' }),
+            buildAtesArea({ id: 'b', name: 'Bundle newer', updated_at: '2026-05-06T13:00:00.000Z' }),
+          ],
+        }
+        await fresh.importAll(bundle, new Map(), new Map())
+        expect((await fresh.getAtesAreas()).map((a) => a.name)).toEqual(['Bundle newer', 'Local newer'])
       })
 
       it('importAll is idempotent — running it twice changes nothing', async () => {

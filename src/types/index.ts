@@ -146,6 +146,63 @@ export interface PendingPhoto {
 }
 
 // ============================================================================
+// ATES terrain ratings (Phase 12) — imported from Avalanche Canada KMZ files
+// (src/utils/atesKml.ts). One AtesArea per downloaded area; its geometry is a
+// FeatureCollection with 2D [lng, lat] coordinates (ATES has no elevation).
+// ============================================================================
+
+// A zone rating. ATES (above) is the route rating; zones can also be Class 0.
+export type AtesClass = 'non_avalanche' | ATES
+export const ATES_CLASSES: readonly AtesClass[] = [
+  'non_avalanche', 'simple', 'challenging', 'complex', 'extreme',
+]
+export type LngLat = [number, number]
+
+interface AtesGeoFeature<G, P> {
+  type: 'Feature'
+  geometry: G
+  properties: P
+}
+export interface AtesPolygon { type: 'Polygon'; coordinates: LngLat[][] }  // outer ring, then holes
+export interface AtesLineString { type: 'LineString'; coordinates: LngLat[] }
+export interface AtesPoint { type: 'Point'; coordinates: LngLat }
+
+// Points of interest, from the KML's point_of_interest_{type}_styles.
+export type AtesPoiType = 'parking' | 'cabin' | 'destination' | 'other'
+export const ATES_POI_TYPES: readonly AtesPoiType[] = ['parking', 'cabin', 'destination', 'other']
+export const ATES_POI_LABELS: Record<AtesPoiType, string> = {
+  parking: 'Parking',
+  cabin: 'Hut, cabin or shelter',
+  destination: 'Destination',
+  other: 'Point of interest',
+}
+
+export type AtesFeature =
+  | AtesGeoFeature<AtesPolygon, { kind: 'zone'; ates: AtesClass; description: string }>
+  | AtesGeoFeature<AtesLineString, { kind: 'ates_line'; ates: AtesClass; name: string }>
+  | AtesGeoFeature<AtesPolygon, { kind: 'area' }>
+  | AtesGeoFeature<AtesLineString, { kind: 'avalanche_path'; name: string }>
+  | AtesGeoFeature<AtesPoint, { kind: 'decision_point'; name: string; description: string }>
+  | AtesGeoFeature<AtesLineString, { kind: 'access_route'; name: string; description: string }>
+  | AtesGeoFeature<AtesPoint, { kind: 'poi'; poi: AtesPoiType; name: string; description: string }>
+
+export type AtesFeatureKind = AtesFeature['properties']['kind']
+
+export interface AtesFeatureCollection {
+  type: 'FeatureCollection'
+  features: AtesFeature[]
+}
+
+export interface AtesArea {
+  id: string
+  name: string               // the KML Document name, e.g. 'Tunnel Creek South'
+  source_filename: string
+  geojson: AtesFeatureCollection
+  imported_at: string        // first import; kept when the area is re-imported
+  updated_at: string
+}
+
+// ============================================================================
 // Backup bundle — written as `metadata.json` inside the ZIP archive (Phase 6).
 // The Phase 2 storage layer returns this in-memory shape from `exportAll()`.
 // ============================================================================
@@ -160,6 +217,8 @@ export interface ExportBundle {
   photos: Photo[]
   tags: Tag[]
   entity_tags: EntityTagRow[]
+  // Bundle v2 (Phase 12). Absent from v1 bundles, which restore with no areas.
+  ates_areas?: AtesArea[]
 }
 
 export interface EntityTagRow {
@@ -226,6 +285,11 @@ export const ATES_LABELS: Record<ATES, string> = {
   extreme:     'Extreme (Class 4)',
 }
 
+export const ATES_CLASS_LABELS: Record<AtesClass, string> = {
+  non_avalanche: 'Non-avalanche (Class 0)',
+  ...ATES_LABELS,
+}
+
 export const TECHNICAL_DIFFICULTY_LABELS: Record<TechnicalDifficulty, string> = {
   easy:     'Easy',
   moderate: 'Moderate',
@@ -266,6 +330,6 @@ export const APP_VERSION = '0.0.1'
 
 // Backup ZIP format (src/features/backup). Bump BUNDLE_VERSION only for
 // breaking changes to metadata.json; readers reject newer versions.
-export const BUNDLE_VERSION = 1
+export const BUNDLE_VERSION = 2   // v2: ates_areas
 export const BACKUP_MANIFEST_FILE = 'manifest.json'
 export const BACKUP_METADATA_FILE = 'metadata.json'

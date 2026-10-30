@@ -1,4 +1,5 @@
 import type {
+  AtesArea,
   EntityTagRow,
   EntityType,
   ExportBundle,
@@ -338,6 +339,26 @@ export class SqlStorageProvider implements StorageProvider {
     await this.db.tx(this.replaceTagsOps(entityType, entityId, tagIds))
   }
 
+  // --- ATES areas ----------------------------------------------------------
+
+  async getAtesAreas(): Promise<AtesArea[]> {
+    const rows = await this.db.all(`SELECT * FROM ates_areas ORDER BY name COLLATE NOCASE, id`)
+    return rows.map((r) => this.rowToAtesArea(r))
+  }
+
+  async saveAtesArea(area: AtesArea): Promise<void> {
+    await this.db.run(
+      `INSERT OR REPLACE INTO ates_areas (
+         id, name, source_filename, geojson, imported_at, updated_at
+       ) VALUES (?, ?, ?, ?, ?, ?)`,
+      this.atesAreaToRow(area),
+    )
+  }
+
+  async deleteAtesArea(id: string): Promise<void> {
+    await this.db.run(`DELETE FROM ates_areas WHERE id = ?`, [id])
+  }
+
   // --- Backup ---------------------------------------------------------------
 
   async exportAll(): Promise<{
@@ -345,12 +366,13 @@ export class SqlStorageProvider implements StorageProvider {
     photos: Map<string, Blob>
     thumbs: Map<string, Blob>
   }> {
-    const [routes, tracks, waypoints, photos, tags] = await Promise.all([
+    const [routes, tracks, waypoints, photos, tags, ates_areas] = await Promise.all([
       this.getRoutes(),
       this.getTracks(),
       this.getWaypoints(),
       this.getPhotos(),
       this.getTags(),
+      this.getAtesAreas(),
     ])
 
     const junctionRows = await this.db.all(
@@ -373,6 +395,7 @@ export class SqlStorageProvider implements StorageProvider {
       photos,
       tags,
       entity_tags,
+      ates_areas,
     }
 
     const photoBlobs = new Map<string, Blob>()
@@ -398,7 +421,7 @@ export class SqlStorageProvider implements StorageProvider {
     // Pull current updated_at for every entity in the bundle so we can decide
     // insert-vs-update-vs-skip without making N round-trips.
     const currentUpdatedAt = async (
-      table: 'routes' | 'tracks' | 'waypoints' | 'photos',
+      table: 'routes' | 'tracks' | 'waypoints' | 'photos' | 'ates_areas',
       ids: string[],
     ): Promise<Map<string, string>> => {
       const result = new Map<string, string>()
@@ -416,12 +439,14 @@ export class SqlStorageProvider implements StorageProvider {
       return result
     }
 
+    const atesAreas = bundle.ates_areas ?? []  // absent from v1 bundles
     const [
       currentRoutes,
       currentTracks,
       currentWaypoints,
       currentPhotos,
       currentTags,
+      currentAtesAreas,
     ] = await Promise.all([
       currentUpdatedAt('routes', bundle.routes.map(r => r.id)),
       currentUpdatedAt('tracks', bundle.tracks.map(t => t.id)),
@@ -432,6 +457,7 @@ export class SqlStorageProvider implements StorageProvider {
         `SELECT id FROM tags WHERE id IN (${bundle.tags.map(() => '?').join(',') || 'NULL'})`,
         bundle.tags.map(t => t.id),
       ),
+      currentUpdatedAt('ates_areas', atesAreas.map(a => a.id)),
     ])
     const existingTagIds = new Set(currentTags.map(r => r.id as string))
 
@@ -507,6 +533,18 @@ export class SqlStorageProvider implements StorageProvider {
                 created_at, updated_at
               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         params: this.photoToRow(p),
+      })
+    }
+
+    // ATES areas — same newer-wins rule as entities.
+    for (const a of atesAreas) {
+      const existingTs = currentAtesAreas.get(a.id)
+      if (existingTs !== undefined && a.updated_at <= existingTs) continue
+      ops.push({
+        sql: `INSERT OR REPLACE INTO ates_areas (
+                id, name, source_filename, geojson, imported_at, updated_at
+              ) VALUES (?, ?, ?, ?, ?, ?)`,
+        params: this.atesAreaToRow(a),
       })
     }
 
@@ -657,6 +695,25 @@ export class SqlStorageProvider implements StorageProvider {
       tags,
       created_at:         row.created_at as string,
       updated_at:         row.updated_at as string,
+    }
+  }
+
+  private atesAreaToRow(a: AtesArea): SqlValue[] {
+    return [
+      a.id, a.name, a.source_filename,
+      JSON.stringify(a.geojson),
+      a.imported_at, a.updated_at,
+    ]
+  }
+
+  private rowToAtesArea(row: SqlRow): AtesArea {
+    return {
+      id:              row.id as string,
+      name:            row.name as string,
+      source_filename: row.source_filename as string,
+      geojson:         JSON.parse(row.geojson as string),
+      imported_at:     row.imported_at as string,
+      updated_at:      row.updated_at as string,
     }
   }
 

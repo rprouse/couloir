@@ -13,8 +13,36 @@
   min-width: 56px;
 }
 
-.sidebar[data-collapsed='true'] .tabLabel {
+.sidebar[data-collapsed='true'] .tabLabel,
+.sidebar[data-collapsed='true'] .brandTitle {
   display: none;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-md) var(--space-sm);
+}
+
+.sidebar[data-collapsed='true'] .brand {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.brandIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  flex: none;
+}
+
+.brandTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text);
 }
 
 .tabs {
@@ -99,6 +127,10 @@
        at the bottom with the content above it like a sheet. */
     flex-direction: column-reverse;
     padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .brand {
+    display: none;
   }
 
   .tabs {

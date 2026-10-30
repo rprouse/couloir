@@ -1,7 +1,7 @@
 import exifr from 'exifr'
 import type { StorageProvider } from '../storage/interface'
 import { newId } from '../utils/id'
-import type { Photo, Route, Track, Waypoint } from '../types'
+import type { AtesArea, Photo, Route, Track, Waypoint } from '../types'
 
 // Installs a `window.__couloir` helper for browser-console verification of
 // the storage layer. Tree-shaken out of production builds via the
@@ -145,14 +145,16 @@ export function installDevConsole(storage: StorageProvider): void {
       tracks: Track[]
       waypoints: Waypoint[]
       photos: Photo[]
+      atesAreas: AtesArea[]
     }> {
-      const [routes, tracks, waypoints, photos] = await Promise.all([
+      const [routes, tracks, waypoints, photos, atesAreas] = await Promise.all([
         storage.getRoutes(),
         storage.getTracks(),
         storage.getWaypoints(),
         storage.getPhotos(),
+        storage.getAtesAreas(),
       ])
-      return { routes, tracks, waypoints, photos }
+      return { routes, tracks, waypoints, photos, atesAreas }
     },
 
     // Expected to resolve undefined: stored JPEGs are re-encoded without EXIF.

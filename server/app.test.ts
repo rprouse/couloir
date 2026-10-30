@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { InMemoryStorageProvider } from '../src/storage/memory'
 import {
-  buildPhoto, buildRoute, buildTag, buildTrack, buildWaypoint,
+  buildAtesArea, buildPhoto, buildRoute, buildTag, buildTrack, buildWaypoint,
 } from '../src/storage/contract'
 import type { StorageProvider } from '../src/storage/interface'
 import { SCHEMA_VERSION } from '../src/storage/migrations'
@@ -97,6 +97,41 @@ describe('waypoints', () => {
     expect(await (await app.request('/api/waypoints')).json()).toEqual([wp])
     expect((await app.request('/api/waypoints/wp-1', { method: 'DELETE' })).status).toBe(204)
     expect((await app.request('/api/waypoints/wp-1')).status).toBe(404)
+  })
+})
+
+describe('ATES areas', () => {
+  it('round-trips an area through PUT, list and DELETE', async () => {
+    const area = buildAtesArea()
+    expect((await put('/api/ates-areas/ates-1', area)).status).toBe(204)
+    expect(await (await app.request('/api/ates-areas')).json()).toEqual([area])
+    expect((await app.request('/api/ates-areas/ates-1', { method: 'DELETE' })).status).toBe(204)
+    expect(await (await app.request('/api/ates-areas')).json()).toEqual([])
+  })
+
+  it('accepts an area the size of a real KMZ import', async () => {
+    // A real area (Tunnel Creek South) is ~235 KB of GeoJSON; send ~400 KB.
+    const ring: [number, number][] = Array.from({ length: 20000 }, (_, i) => [
+      -116 + i * 1e-6, 49.5 + i * 1e-6,
+    ])
+    const area = buildAtesArea({
+      geojson: {
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          geometry: { type: 'Polygon', coordinates: [ring] },
+          properties: { kind: 'zone', ates: 'simple', description: '' },
+        }],
+      },
+    })
+    expect(JSON.stringify(area).length).toBeGreaterThan(400_000)
+    expect((await put('/api/ates-areas/ates-1', area)).status).toBe(204)
+    expect((await storage.getAtesAreas())[0].geojson).toEqual(area.geojson)
+  })
+
+  it('rejects an unsafe id and a body id that differs from the URL', async () => {
+    expect((await put('/api/ates-areas/..%2Fx', buildAtesArea({ id: '../x' }))).status).toBe(400)
+    expect((await put('/api/ates-areas/other', buildAtesArea())).status).toBe(400)
   })
 })
 

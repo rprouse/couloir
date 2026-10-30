@@ -1,4 +1,5 @@
 import type {
+  AtesArea,
   EntityType,
   ExportBundle,
   Photo,
@@ -54,6 +55,13 @@ export interface StorageProvider {
     entityId: string,
     tagIds: string[],
   ): Promise<void>
+
+  // ATES areas (Phase 12): terrain ratings imported from Avalanche Canada KMZ
+  // files. Listed by name with full geometry; not tagged.
+  getAtesAreas(): Promise<AtesArea[]>
+  /** Insert or replace by id. */
+  saveAtesArea(area: AtesArea): Promise<void>
+  deleteAtesArea(id: string): Promise<void>
 
   // Backup (in-memory shape; ZIP packaging lives in Phase 6.4)
   exportAll(): Promise<{

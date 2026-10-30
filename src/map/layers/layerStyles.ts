@@ -1,4 +1,5 @@
-import type { TerrainOverlay } from '../../types'
+import type { AtesClass, AtesPoiType, TerrainOverlay } from '../../types'
+import type { WaypointIcon } from '../../icons/waypointIcons'
 
 export const ROUTE_LINE_WIDTH = 3
 export const ROUTE_LINE_GLOW_WIDTH = 7
@@ -16,6 +17,9 @@ export const TRACKS_LINE_LAYER_ID = 'tracks-line'
 
 export const WAYPOINTS_SOURCE_ID = 'waypoints-source'
 export const WAYPOINTS_SYMBOLS_LAYER_ID = 'waypoints-symbols'
+// Scale of every wp:<icon>:<HEX> marker on the map: waypoints and ATES
+// points of interest.
+export const MARKER_ICON_SIZE = 0.8
 
 // CSS pixel size of the generated waypoint marker images (square). Tuned so
 // that icons remain readable over satellite/topo basemaps without dominating
@@ -64,9 +68,73 @@ export const OVERLAY_MIN_ZOOM = 10
 export const DEM_TILE_SIZE = 512
 export const DEM_MAX_ZOOM = 14
 
+// ATES zones (Phase 12): one GeoJSON source holding every imported area,
+// drawn above the slope/aspect raster and below routes, tracks, waypoints and
+// photos. Listed bottom to top.
+export const ATES_SOURCE_ID = 'ates-source'
+export const ATES_FILL_LAYER_ID = 'ates-fill'
+export const ATES_OUTLINE_LAYER_ID = 'ates-outline'
+export const ATES_AREA_LAYER_ID = 'ates-area'
+export const ATES_ACCESS_LAYER_ID = 'ates-access'
+export const ATES_PATHS_LAYER_ID = 'ates-paths'
+export const ATES_PATH_ARROWS_LAYER_ID = 'ates-path-arrows'
+export const ATES_LINES_LAYER_ID = 'ates-lines'
+export const ATES_DECISION_LAYER_ID = 'ates-decision-points'
+export const ATES_POI_LAYER_ID = 'ates-poi'
+export const ATES_LAYER_IDS = [
+  ATES_FILL_LAYER_ID,
+  ATES_OUTLINE_LAYER_ID,
+  ATES_AREA_LAYER_ID,
+  ATES_ACCESS_LAYER_ID,
+  ATES_PATHS_LAYER_ID,
+  ATES_PATH_ARROWS_LAYER_ID,
+  ATES_LINES_LAYER_ID,
+  ATES_DECISION_LAYER_ID,
+  ATES_POI_LAYER_ID,
+] as const
+export const ATES_ATTRIBUTION = 'ATES ratings © Avalanche Canada'
+
+// Fixed colour per class (the conventional ATES green/blue/black), not the
+// KML's own ABGR styles. Literal hex: map paint can't read CSS properties.
+// Complex and extreme get ATES_OUTLINE_COLOR so they read on dark satellite.
+export const ATES_CLASS_COLORS: Record<AtesClass, string> = {
+  non_avalanche: '#F8FAFC',
+  simple: '#22C55E',
+  challenging: '#2563EB',
+  complex: '#111827',
+  extreme: '#7F1D1D',
+}
+export const ATES_OUTLINE_COLOR = '#F8FAFC'
+export const ATES_AREA_COLOR = '#FFFFFF'
+export const ATES_PATH_COLOR = '#EF4444'
+export const ATES_DECISION_COLOR = '#F59E0B'
+// One arrow at the middle of each avalanche path, pointing downslope. The
+// KML lists a path's coordinates from the top to the runout.
+export const ATES_PATH_ARROW_ICON = 'ates-path-arrow'
+export const ATES_PATH_ARROW_PX = 18
+export const ATES_PATH_ARROW_PIXEL_RATIO = 2
+export const ATES_LINE_WIDTH = 5
+// Access routes: yellow, as in the Trip Planner.
+export const ATES_ACCESS_COLOR = '#FACC15'
+// Points of interest are drawn as waypoint-style markers (wp:<icon>:<HEX>
+// images, see WaypointsLayer), coloured by type from WAYPOINT_SWATCHES.
+export const ATES_POI_COLORS: Record<AtesPoiType, string> = {
+  parking: '#22C55E',
+  cabin: '#3B82F6',
+  destination: '#F97316',
+  other: '#A78BFA',
+}
+export const ATES_POI_ICONS: Record<AtesPoiType, WaypointIcon> = {
+  parking: 'local_parking',
+  cabin: 'cottage',
+  destination: 'flag',
+  other: 'location_on',
+}
+
 // Every layer Couloir draws on top of the basemap. The terrain
 // overlays are inserted beneath all of these.
 export const COULOIR_OVERLAY_LAYER_IDS: readonly string[] = [
+  ...ATES_LAYER_IDS,
   ROUTES_GLOW_LAYER_ID,
   ROUTES_LINE_LAYER_ID,
   TRACKS_LINE_LAYER_ID,

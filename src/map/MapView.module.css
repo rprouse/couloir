@@ -71,7 +71,8 @@
 
 @media (max-width: 640px) {
   /* Clear the fixed tab bar. */
-  .container :global(.maplibregl-ctrl-bottom-left) {
+  .container :global(.maplibregl-ctrl-bottom-left),
+  .container :global(.maplibregl-ctrl-bottom-right) {
     bottom: var(--mobile-tabbar-h);
   }
 }

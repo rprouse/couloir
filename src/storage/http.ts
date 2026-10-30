@@ -1,4 +1,5 @@
 import type {
+  AtesArea,
   EntityTagRow,
   EntityType,
   ExportBundle,
@@ -227,6 +228,20 @@ export class HttpStorageProvider implements StorageProvider {
     )
   }
 
+  // --- ATES areas ----------------------------------------------------------
+
+  getAtesAreas(): Promise<AtesArea[]> {
+    return this.getJson('/api/ates-areas')
+  }
+
+  async saveAtesArea(area: AtesArea): Promise<void> {
+    await this.send(`/api/ates-areas/${segment(area.id)}`, jsonInit('PUT', area))
+  }
+
+  async deleteAtesArea(id: string): Promise<void> {
+    await this.send(`/api/ates-areas/${segment(id)}`, { method: 'DELETE' })
+  }
+
   // --- Backup ---------------------------------------------------------------
 
   // Assembled client-side from the list endpoints; the server has no export
@@ -236,12 +251,13 @@ export class HttpStorageProvider implements StorageProvider {
     photos: Map<string, Blob>
     thumbs: Map<string, Blob>
   }> {
-    const [routes, tracks, waypoints, photos, tags] = await Promise.all([
+    const [routes, tracks, waypoints, photos, tags, ates_areas] = await Promise.all([
       this.getRoutes(),
       this.getTracks(),
       this.getWaypoints(),
       this.getPhotos(),
       this.getTags(),
+      this.getAtesAreas(),
     ])
 
     const bundle: ExportBundle = {
@@ -256,6 +272,7 @@ export class HttpStorageProvider implements StorageProvider {
       entity_tags: entityTagRows([
         ['route', routes], ['track', tracks], ['waypoint', waypoints], ['photo', photos],
       ]),
+      ates_areas,
     }
 
     const photoBlobs = new Map<string, Blob>()

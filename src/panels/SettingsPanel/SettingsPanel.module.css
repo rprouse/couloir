@@ -116,3 +116,59 @@
   color: var(--color-danger);
   font-size: 12px;
 }
+
+.atesList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.atesRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.atesRowHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-sm);
+}
+
+.atesName {
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.atesCounts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-md);
+  font-size: 12px;
+  color: var(--color-text-dim);
+}
+
+.atesCounts li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.atesSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: none;
+  /* Outline separates the black Complex swatch from the dark panel. */
+  outline: 1px solid var(--color-text-dim);
+}

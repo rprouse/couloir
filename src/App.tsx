@@ -9,6 +9,8 @@ import { useEscapeKey } from './hooks/useEscapeKey'
 import { FileDropzone } from './components/FileDropzone/FileDropzone'
 import { DuplicatePrompt, type DuplicatePromptHandle } from './features/import/DuplicatePrompt'
 import { runImport } from './features/import/ImportButton'
+import { runAtesImport } from './features/ates/runAtesImport'
+import { splitDroppedFiles } from './features/import/dropRouting'
 import { subscribeToast } from './features/import/importToast'
 import { DetailPanel } from './panels/DetailPanel/DetailPanel'
 import { PlacementBanner } from './panels/PlacementBanner/PlacementBanner'
@@ -51,7 +53,9 @@ export default function App() {
 
   const onDropFiles = useCallback(
     (files: File[]) => {
-      void runImport(files, promptDuplicate)
+      const { gpx, kmz } = splitDroppedFiles(files)
+      if (gpx.length > 0) void runImport(gpx, promptDuplicate)
+      if (kmz.length > 0) void runAtesImport(kmz)
     },
     [promptDuplicate],
   )

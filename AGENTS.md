@@ -40,6 +40,7 @@ On Node 25+, Node's built-in `localStorage` shadows jsdom's and breaks every tes
 - GeoJSON LineStrings include Z coordinate (elevation) for routes and tracks.
 - Photo blobs are files on the server at `DATA_DIR/photos/{id}.jpg`, thumbnails at `DATA_DIR/photos/{id}_thumb.jpg`.
 - Waypoint icons are vendored Material Symbols in `src/icons/`. To add one, add it to `WAYPOINT_ICONS` (`src/icons/waypointIcons.ts`) and `NAMES` in `scripts/fetch-material-symbols.mjs`, then run `node scripts/fetch-material-symbols.mjs`. Never hand-edit `symbolPaths.ts` or add an icon package.
+- ATES ratings come only from Avalanche Canada KMZ files the user downloads and imports (`src/utils/atesKml.ts`, `src/features/ates/`). Never call Avalanche Canada's endpoints or read its map tiles, and never commit Avalanche Canada data: test fixtures are synthetic (`src/utils/atesKml.fixture.ts`).
 - Photo metadata edits go through `StorageProvider.updatePhotoMetadata` (row + tags only); `savePhoto` is for new photos and writes the blobs.
 - Maptiler API key: the browser's own key in `localStorage` under `couloir_maptiler_key`, else the server's `MAPTILER_KEY` from `/api/config` (in memory only). Read the effective key from the settings store's `maptilerKey`.
 - The app must work on plain-HTTP LAN addresses (`http://unraid:8080`), where browsers withhold secure-context APIs (`crypto.randomUUID`, `crypto.subtle`, service workers, …). Use the existing wrappers (`newId()`, `sha256Hex()`) and give any new secure-context API a fallback or feature detection.

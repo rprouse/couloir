@@ -146,6 +146,43 @@ describe('ui store — terrain overlay', () => {
   })
 })
 
+describe('ui store — ATES zones', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    useUiStore.setState(useUiStore.getInitialState())
+  })
+
+  it('defaults to on at 45% opacity', () => {
+    expect(useUiStore.getState().atesEnabled).toBe(true)
+    expect(useUiStore.getState().atesOpacity).toBe(0.45)
+  })
+
+  it('persists the switch and a clamped opacity', () => {
+    useUiStore.getState().setAtesEnabled(false)
+    expect(useUiStore.getState().atesEnabled).toBe(false)
+    expect(localStorage.getItem('couloir_ates_enabled')).toBe('false')
+    useUiStore.getState().setAtesOpacity(0)
+    expect(useUiStore.getState().atesOpacity).toBe(0.2)
+    useUiStore.getState().setAtesOpacity(0.7)
+    expect(localStorage.getItem('couloir_ates_opacity')).toBe('0.7')
+  })
+
+  it('hydrates both values and ignores garbage', () => {
+    localStorage.setItem('couloir_ates_enabled', 'false')
+    localStorage.setItem('couloir_ates_opacity', '0.9')
+    useUiStore.getState().hydrateFromStorage()
+    expect(useUiStore.getState().atesEnabled).toBe(false)
+    expect(useUiStore.getState().atesOpacity).toBe(0.9)
+
+    useUiStore.setState(useUiStore.getInitialState())
+    localStorage.setItem('couloir_ates_enabled', 'maybe')
+    localStorage.setItem('couloir_ates_opacity', 'lots')
+    useUiStore.getState().hydrateFromStorage()
+    expect(useUiStore.getState().atesEnabled).toBe(true)
+    expect(useUiStore.getState().atesOpacity).toBe(0.45)
+  })
+})
+
 describe('ui store — layer visibility', () => {
   beforeEach(() => {
     localStorage.clear()

@@ -113,6 +113,16 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [10.5 Docs](#task-105---docs)
 - [x] [10.6 Browser QA](#task-106---browser-qa)
 
+### Phase 12 — ATES Terrain Ratings  ·  Plan: [`2026-10-29-couloir-phase-12-ates-terrain.md`](docs/superpowers/plans/2026-10-29-couloir-phase-12-ates-terrain.md)
+
+- [x] [12.1 KMZ parser](#task-121---kmz-parser)
+- [x] [12.2 ATES area storage](#task-122---ates-area-storage)
+- [x] [12.3 ATES areas in backups](#task-123---ates-areas-in-backups)
+- [x] [12.4 ATES map layer](#task-124---ates-map-layer)
+- [x] [12.5 ATES controls, legend and area management](#task-125---ates-controls-legend-and-area-management)
+- [x] [12.6 Docs](#task-126---docs)
+- [x] [12.7 Browser QA](#task-127---browser-qa)
+
 ---
 
 ## Phase 1 - Project Shell
@@ -930,6 +940,61 @@ Replace the clustered thumbnail layers with an unclustered `photos-dots` circle 
 - Zoomed out: small blue dots, no clusters or thumbnails
 - From zoom 14: arrows point the photo's bearing, stay correct when the map is rotated or pitched, and photos without a bearing have none
 - Clicking a dot opens the photo; arrows and dots survive a basemap switch
+
+---
+
+## Phase 12 - ATES Terrain Ratings
+
+**Goal**: Import Avalanche Canada ATES ratings (the per-area KMZ downloads from the Trip Planner) and show them as Simple/Challenging/Complex zones on the map, switchable on top of the slope or aspect overlay.
+
+### Task 12.1 - KMZ parser
+
+Unzip with `fflate` and read the KML with `DOMParser`. The ATES class comes from each placemark's `styleUrl`, or from the `Class N – …` folder name as a fallback. Keep zones, ATES lines, the area boundary, avalanche paths and decision points; drop POIs and access routes. Test fixtures are synthetic.
+
+**Acceptance criteria**:
+- Unit tests cover every class, holes, MultiGeometry, skipped zones, dropped features and bad input; no new dependency
+
+### Task 12.2 - ATES area storage
+
+Migration 4 adds `ates_areas` (geometry as a GeoJSON FeatureCollection). Add `getAtesAreas`, `saveAtesArea` and `deleteAtesArea` to every provider and `/api/ates-areas`. Re-importing an area with the same name replaces it in place.
+
+**Acceptance criteria**:
+- The contract suite covers the round-trip, replace and delete on every provider
+
+### Task 12.3 - ATES areas in backups
+
+`ExportBundle.ates_areas`, `BUNDLE_VERSION = 2`. Version 1 bundles still restore.
+
+**Acceptance criteria**:
+- Contract tests cover export, legacy import and newer-wins merge
+
+### Task 12.4 - ATES map layer
+
+A GeoJSON source with class-coloured fills, outlines, ATES lines, the area boundary, avalanche paths and decision points. The layer goes above the slope and aspect rasters and below Couloir layers, with Avalanche Canada attribution. It has persisted `atesEnabled` and `atesOpacity` settings, and click popups that never take priority over routes, tracks, waypoints or photos.
+
+**Acceptance criteria**:
+- Unit tests cover layer data, specs, visibility, opacity and popup priority
+
+### Task 12.5 - ATES controls, legend and area management
+
+An ATES switch and legend (with the exposure-not-danger caveat) in the terrain control. A Settings section to import, list, zoom to and delete areas, plus the opacity slider. Dropping a `.kmz` on the map imports it.
+
+**Acceptance criteria**:
+- Import, replace, delete and error toasts work; fits at 375 px
+
+### Task 12.6 - Docs
+
+Update `DATA-MODEL.md`, `ARCHITECTURE.md`, `SPEC.md` and `AGENTS.md` for the ATES types, table, API, layers, backup format and the "user-imported KMZ only" rule.
+
+**Acceptance criteria**:
+- Docs describe the import pipeline, storage, layer stacking and bundle v2
+
+### Task 12.7 - Browser QA
+
+Import a real KMZ and check zone alignment against the Trip Planner, stacking with slope, popups, basemap switches, re-import, the ZIP round-trip and drag and drop.
+
+**Acceptance criteria**:
+- ATES zones render correctly over topo and satellite with no console errors
 
 ---
 

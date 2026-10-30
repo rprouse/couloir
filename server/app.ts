@@ -4,7 +4,7 @@ import { HTTPException } from 'hono/http-exception'
 import { serveStatic } from '@hono/node-server/serve-static'
 import type { StorageProvider } from '../src/storage/interface'
 import { SCHEMA_VERSION } from '../src/storage/migrations'
-import type { EntityType, ExportBundle, Photo, Route, Tag, Track, Waypoint } from '../src/types'
+import type { AtesArea, EntityType, ExportBundle, Photo, Route, Tag, Track, Waypoint } from '../src/types'
 import { logError } from './log'
 
 export interface AppConfig {
@@ -221,6 +221,18 @@ export function createApp({ storage, config, staticDir, databaseSnapshot }: {
       badRequest('tagIds must be an array of strings')
     }
     await storage.setEntityTags(type, idParam(c), tagIds)
+    return c.body(null, 204)
+  })
+
+  // --- ATES areas ----------------------------------------------------------
+
+  app.get('/api/ates-areas', async (c) => c.json(await storage.getAtesAreas()))
+  app.put('/api/ates-areas/:id', async (c) => {
+    await storage.saveAtesArea(entityFor<AtesArea>(await jsonBody(c), idParam(c)))
+    return c.body(null, 204)
+  })
+  app.delete('/api/ates-areas/:id', async (c) => {
+    await storage.deleteAtesArea(idParam(c))
     return c.body(null, 204)
   })
 

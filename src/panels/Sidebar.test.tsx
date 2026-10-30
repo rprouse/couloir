@@ -17,6 +17,12 @@ describe('Sidebar', () => {
     expect(screen.getByRole('button', { name: /settings/i })).toBeInTheDocument()
   })
 
+  it('shows the Couloir title with the site icon', () => {
+    const { container } = render(<Sidebar panels={{}} />)
+    expect(screen.getByRole('heading', { level: 1, name: 'Couloir' })).toBeInTheDocument()
+    expect(container.querySelector('img')).toHaveAttribute('src', '/icons/icon.svg')
+  })
+
   it('marks the active tab as selected', () => {
     render(<Sidebar panels={{}} />)
     expect(screen.getByRole('button', { name: /layers/i })).toHaveAttribute(
