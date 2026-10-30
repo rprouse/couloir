@@ -41,6 +41,7 @@ A geolocated photograph for recon photography: photos taken from across the vall
 - 3D terrain with adjustable exaggeration
 - Slope angle overlay: avalanche angle bands (12–24°, 25–29°, 30–34°, 35–39°, 40–44°, 45°+) computed in the browser from the Maptiler terrain tiles, with a legend
 - Aspect overlay: eight compass-direction colours on slopes of 12° and steeper, with a compass-rose legend. One overlay (slope or aspect) shows at a time; opacity is set in Settings
+- ATES terrain ratings: Avalanche Canada's per-area ATES zones (Simple, Challenging, Complex, …), imported from the KMZ files its Trip Planner offers. Coverage is only the areas the user has imported. A separate switch, so ATES can sit on top of slope or aspect, with a class legend and the caveat that ATES rates terrain exposure, not current avalanche danger. Clicking a zone shows its class and definition. Credited to Avalanche Canada on the map
 - Basemap switcher: Satellite, Outdoor/Topo, Winter
 - Compass and zoom controls
 - Current location indicator (when available)
@@ -109,6 +110,7 @@ All four data types are rendered as distinct map layers. Each layer can be toggl
 - Export all data as a single ZIP bundle: metadata, photo blobs, and a manifest. The pre-export size is shown before download.
 - Import data from a ZIP bundle. Import is additive — existing entities are updated when the bundle's `updated_at` is newer; new entities are inserted.
 - Tag management: create, rename, and delete tags. Deleting a tag automatically removes its references from every entity.
+- ATES areas: import Avalanche Canada KMZ files (or drop them on the map), list them with zone counts, zoom to or delete each, and set the zone opacity. Re-importing an area replaces it. ATES areas are included in the ZIP backup.
 
 ### Search and Filter
 
@@ -125,7 +127,6 @@ The following are explicitly out of scope for the MVP but should not be architec
 - Multi-user access or sharing
 - Collaborative editing
 - Avalanche forecast integration
-- Aspect shading overlays
 - Weather integration
 - Real-time GPS tracking in the app
 - Turn-by-turn navigation
@@ -147,7 +148,6 @@ The following are explicitly out of scope for the MVP but should not be architec
 
 - Multi-user with per-user route libraries and optional sharing (forward-auth in front of the server; every row already carries `user_id`)
 - Offline use in the field: cache library data and map tiles for areas without signal
-- Aspect shading layer
 - Direction arrow / bearing cone on photo pins (from the stored `bearing`)
 - PWA install over HTTPS (Tailscale or a reverse proxy; see `docs/DEPLOY.md`)
 - Capacitor wrapper for native iOS/Android

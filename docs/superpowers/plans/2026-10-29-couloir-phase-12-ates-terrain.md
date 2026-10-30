@@ -25,7 +25,7 @@
    - avalanche paths
    - decision points, with name and description
    
-   We drop points of interest and access routes, because your own waypoints and routes already cover those. We also drop the PNG icons. `MultiGeometry` is flattened into one feature per part.
+   Points of interest and access routes are kept and drawn on the ATES layer (changed during QA: the Trip Planner shows them, and they orient you in the area). They stay part of the area, not Couloir waypoints or routes. We drop the PNG icons. `MultiGeometry` is flattened into one feature per part.
 6. **Storage: one row per area, with geometry as a GeoJSON `FeatureCollection` in a TEXT column.** Migration 4 adds `ates_areas (id, name, source_filename, geojson, imported_at, updated_at)`. Areas aren't tagged and aren't searchable. Three areas of about 200 KB each is small, so `getAtesAreas()` returns full geometry. If anyone ever imports dozens of areas, split off a metadata-only list.
 7. **Re-importing an area replaces it.** Avalanche Canada revises its ratings, so importing a file whose area name matches an existing row (case-insensitive) keeps that row's `id` and `imported_at`, swaps in the new geometry, and bumps `updated_at`. The toast says "Updated" instead of "Imported".
 8. **ATES areas go in the ZIP backup.** `ExportBundle` gains `ates_areas` and `BUNDLE_VERSION` becomes 2, so an older app refuses a newer backup instead of silently dropping the ratings. Version 1 bundles import with no ATES areas. On import, an area replaces the existing row with the same id when its `updated_at` is newer, the same rule entities follow.
@@ -78,7 +78,8 @@ couloir/
 │   │   └── ui.ts (+ test)                              12.4 (atesEnabled, atesOpacity)
 │   ├── features/ates/
 │   │   ├── atesImport.ts / .test.ts                    12.2
-│   │   └── AtesAreasSection.tsx / .module.css / .test.tsx   12.5
+│   │   └── runAtesImport.ts / .test.ts                 12.5 (toast, layer on, frame area)
+│   ├── features/import/dropRouting.ts / .test.ts       12.5
 │   ├── features/backup/readBackup.ts, writeBackup.ts   12.3
 │   ├── components/FileDropzone/FileDropzone.tsx        12.5 (.kmz accepted)
 │   ├── map/layers/
@@ -91,7 +92,9 @@ couloir/
 │   │   ├── TerrainControl.tsx (+ test)                 12.5
 │   │   └── AtesLegend.tsx (+ test)                     12.5
 │   ├── map/MapView.tsx                                 12.4
-│   └── panels/SettingsPanel/SettingsPanel.tsx          12.5
+│   └── panels/SettingsPanel/
+│       ├── SettingsPanel.tsx / .module.css             12.5
+│       └── AtesAreasSection.tsx / .test.tsx            12.5
 ```
 
 **Conventions** (carried forward):
@@ -294,36 +297,38 @@ couloir/
 
 ## Task 12.5 — ATES controls, legend and area management
 
-**Files:** `TerrainControl.tsx` (+ test), `AtesLegend.tsx` (+ test), `SettingsPanel.tsx`, `AtesAreasSection.tsx` / `.module.css` / `.test.tsx`, `FileDropzone.tsx` and its host
+**Files:** `TerrainControl.tsx` / `.module.css` (+ test), `AtesLegend.tsx`, `SettingsPanel.tsx` / `.module.css`, `src/panels/SettingsPanel/AtesAreasSection.tsx` (+ test, next to `TagManager` and `BackupSection`), `src/features/ates/runAtesImport.ts` (+ test), `FileDropzone.tsx` (+ test), `App.tsx`, `src/features/import/dropRouting.ts` (+ test)
 
-- [ ] **Step 12.5.1: Switch and legend.** `TerrainControl` gets an `ATES` switch below the overlay row, styled like the 3D Terrain switch, with `aria-label="ATES ratings"`. It only appears once at least one area has been imported. When it's on, `AtesLegend` shows a swatch for each class present in the imported data, the caveat from Decision 11, and a credit line, "Ratings: Avalanche Canada". Tests: the switch is hidden with no areas and toggles `atesEnabled`, and the legend lists only the classes that are present.
+- [x] **Step 12.5.1: Switch and legend.** `TerrainControl` gets an `ATES` switch below the overlay row, styled like the 3D Terrain switch, with `aria-label="ATES ratings"`. It only appears once at least one area has been imported. When it's on, `AtesLegend` shows a swatch for each class present in the imported data, the caveat from Decision 11, and a credit line, "Ratings: Avalanche Canada". Tests: the switch is hidden with no areas and toggles `atesEnabled`, and the legend lists only the classes that are present.
 
-- [ ] **Step 12.5.2: Settings section, tests first.** `AtesAreasSection` in the Settings panel:
+- [x] **Step 12.5.2: Settings section, tests first.** `AtesAreasSection` in the Settings panel:
   - an "Import ATES KMZ" file button (`accept=".kmz,application/vnd.google-earth.kmz"`)
   - the `atesOpacity` slider
   - a list of imported areas, each showing its name, zone counts by class, the import date, a "Show on map" button (`fitBounds` to the area boundary) and a Delete button with a confirm
   - a one-line pointer: "Download KMZ files from the Avalanche Canada Trip Planner (avalanche.ca/planning/trip-planner)."
 
-  A successful import shows a toast through the existing import toast: "Imported Tunnel Creek South (18 zones)", "Updated …", or "…, 1 zone skipped". An `AtesImportError` shows as an error toast. Tests cover import, replace, delete and the error case. All colours are CSS custom properties except the class swatches.
+  Both the button and a drop go through `runAtesImport`, which imports each file, turns the ATES layer on and frames the last area imported. A successful import shows a toast through the existing import toast: "Imported Tunnel Creek South (18 zones)", "Updated …", or "…, 1 zone skipped". An `AtesImportError` shows as an error toast. Tests cover import, replace, delete and the error case. All colours are CSS custom properties except the class swatches.
 
-- [ ] **Step 12.5.3: Drag and drop.** The map's dropzone also accepts `.kmz` and sends those files to `importAtesKmz`, while GPX files keep going to `runImport`. A drop with both kinds handles both. Test the routing.
+- [x] **Step 12.5.3: Drag and drop.** The map's dropzone also accepts `.kmz` and sends those files to `importAtesKmz`, while GPX files keep going to `runImport`. A drop with both kinds handles both. Test the routing.
 
-- [ ] **Step 12.5.4:** It must fit at 375 px. `npm test`, `npm run typecheck`. Commit `feat: ATES switch, legend and area management`.
+- [x] **Step 12.5.4:** It must fit at 375 px. `npm test`, `npm run typecheck`. Commit `feat: ATES switch, legend and area management`.
 
 ## Task 12.6 — Docs
 
-- [ ] **Step 12.6.1: `DATA-MODEL.md`.** Add the `AtesClass`, `AtesFeature` and `AtesArea` types and the `ates_areas` table, note migration 4 and bundle version 2, and add the ATES FeatureCollection to "GeoJSON Structures".
-- [ ] **Step 12.6.2: `ARCHITECTURE.md`.**
+- [x] **Step 12.6.1: `DATA-MODEL.md`.** Add the `AtesClass`, `AtesFeature` and `AtesArea` types and the `ates_areas` table, note migration 4 and bundle version 2, and add the ATES FeatureCollection to "GeoJSON Structures".
+- [x] **Step 12.6.2: `ARCHITECTURE.md`.**
   - Storage Interface: the three methods.
   - Server › API: the `/api/ates-areas` routes.
   - Map Layer Architecture: the ATES layers and the stacking order.
   - Backup Format: `ates_areas` and v2.
   - A short "ATES Import" section: KMZ via `fflate`, then `DOMParser`, the class from `styleUrl` with the folder name as fallback, and what is dropped.
-- [ ] **Step 12.6.3: `SPEC.md`.** Under Map and Layer System: imported ATES ratings with their source, the caveat and the fact that coverage is per area. Remove anything about ATES from Future Considerations if it's there.
-- [ ] **Step 12.6.4: `AGENTS.md`.** Under Key Conventions: ATES data only comes from KMZ files the user imports, never from Avalanche Canada endpoints, and no Avalanche Canada data is committed to the repo. Update the `Never Do` StorageProvider implementations list if it needs it.
-- [ ] **Step 12.6.5:** Commit `docs: ATES terrain ratings`.
+- [x] **Step 12.6.3: `SPEC.md`.** Under Map and Layer System: imported ATES ratings with their source, the caveat and the fact that coverage is per area. Remove anything about ATES from Future Considerations if it's there.
+- [x] **Step 12.6.4: `AGENTS.md`.** Under Key Conventions: ATES data only comes from KMZ files the user imports, never from Avalanche Canada endpoints, and no Avalanche Canada data is committed to the repo. Update the `Never Do` StorageProvider implementations list if it needs it.
+- [x] **Step 12.6.5:** Commit `docs: ATES terrain ratings`.
 
 ## Task 12.7 — Browser QA
+
+Left for the user's QA. The agent had no Maptiler key or Playwright browser, so it only ran the real KMZ end to end through `HttpStorageProvider` → the dev server's `/api` → SQLite (import, re-import replaces under the same id, bundle v2 carries it, delete), plus `npm run build`.
 
 Run `npm run dev` with a real Maptiler key, import a real KMZ (Tunnel Creek South, which is in `~/Downloads`, not the repo), and drive it with Playwright.
 

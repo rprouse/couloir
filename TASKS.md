@@ -119,8 +119,8 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [12.2 ATES area storage](#task-122---ates-area-storage)
 - [x] [12.3 ATES areas in backups](#task-123---ates-areas-in-backups)
 - [x] [12.4 ATES map layer](#task-124---ates-map-layer)
-- [ ] [12.5 ATES controls, legend and area management](#task-125---ates-controls-legend-and-area-management)
-- [ ] [12.6 Docs](#task-126---docs)
+- [x] [12.5 ATES controls, legend and area management](#task-125---ates-controls-legend-and-area-management)
+- [x] [12.6 Docs](#task-126---docs)
 - [ ] [12.7 Browser QA](#task-127---browser-qa)
 
 ---

@@ -117,9 +117,42 @@ export type PhotoMetadataPatch = Partial<Pick<
   'name' | 'description' | 'lat' | 'lng' | 'elevation_m' | 'bearing' | 'taken_at' | 'tags'
 >>
 
+// ATES terrain ratings (Phase 12), imported from Avalanche Canada KMZ files.
+// One AtesArea per downloaded area. Not tagged, not searchable.
+export type AtesClass = 'non_avalanche' | ATES   // zones can also be Class 0
+export const ATES_CLASS_LABELS: Record<AtesClass, string>   // 'Non-avalanche (Class 0)' + ATES_LABELS
+
+export type LngLat = [number, number]            // 2D: ATES has no elevation
+
+export interface AtesPolygon { type: 'Polygon'; coordinates: LngLat[][] }  // outer ring, then holes
+export interface AtesLineString { type: 'LineString'; coordinates: LngLat[] }
+export interface AtesPoint { type: 'Point'; coordinates: LngLat }
+
+// Feature<G, P> = { type: 'Feature'; geometry: G; properties: P }
+export type AtesFeature =
+  | Feature<AtesPolygon, { kind: 'zone'; ates: AtesClass; description: string }>  // description = the ATES class definition
+  | Feature<AtesLineString, { kind: 'ates_line'; ates: AtesClass; name: string }>
+  | Feature<AtesPolygon, { kind: 'area' }>                                     // the area boundary
+  | Feature<AtesLineString, { kind: 'avalanche_path'; name: string }>
+  | Feature<AtesPoint, { kind: 'decision_point'; name: string; description: string }>
+  | Feature<AtesLineString, { kind: 'access_route'; name: string; description: string }>
+  | Feature<AtesPoint, { kind: 'poi'; poi: AtesPoiType; name: string; description: string }>
+
+// From point_of_interest_{type}_styles; unknown types become 'other'.
+type AtesPoiType = 'parking' | 'cabin' | 'destination' | 'other'
+
+export interface AtesArea {
+  id: string
+  name: string               // the KML Document name, e.g. 'Tunnel Creek South'
+  source_filename: string
+  geojson: { type: 'FeatureCollection'; features: AtesFeature[] }
+  imported_at: string        // first import; kept when the area is re-imported
+  updated_at: string
+}
+
 // Backup bundle — written as `metadata.json` inside the ZIP archive
 export interface ExportBundle {
-  bundle_version: number     // start at 1; increment for breaking format changes
+  bundle_version: number     // BUNDLE_VERSION (2); increment for breaking format changes
   app_version: string        // for diagnostics
   exported_at: string        // ISO 8601
   routes: Route[]
@@ -128,6 +161,7 @@ export interface ExportBundle {
   photos: Photo[]            // metadata only; blobs live alongside in `photos/{id}.jpg`
   tags: Tag[]
   entity_tags: EntityTagRow[] // serialised junction rows
+  ates_areas?: AtesArea[]    // bundle v2; absent from v1 bundles, which restore with no areas
 }
 
 export interface EntityTagRow {
@@ -254,6 +288,18 @@ CREATE TABLE entity_tags (
   PRIMARY KEY (entity_type, entity_id, tag_id)
 );
 CREATE INDEX idx_entity_tags_tag ON entity_tags(tag_id);
+
+-- src/storage/migrations/4.sql (Phase 12)
+-- ATES terrain ratings, one row per imported area. geojson is the
+-- AtesArea FeatureCollection. Not tagged.
+CREATE TABLE ates_areas (
+  id              TEXT PRIMARY KEY,
+  name            TEXT NOT NULL,
+  source_filename TEXT NOT NULL,
+  geojson         TEXT NOT NULL,
+  imported_at     TEXT NOT NULL,
+  updated_at      TEXT NOT NULL
+);
 ```
 
 **Notes**:
@@ -361,6 +407,8 @@ The elevation profile is derived from the Z coordinates at render time — no se
 
 **Multi-segment GPX tracks**: trackpoints from all `<trkseg>` elements are concatenated into a single `LineString` for storage and rendering. `duration_s` and `moving_time_s` are computed across all trackpoints.
 
+ATES areas store a `FeatureCollection` of 2D (`[lng, lat]`) features, each with a `kind` property (`zone`, `ates_line`, `area`, `avalanche_path`, `decision_point`, `access_route`, `poi`). Zones and ATES lines also carry their `ates` class. A real area (Tunnel Creek South) is about 235 KB of GeoJSON. The map layer merges every area into one source and stamps each feature with `areaId` and `areaName`.
+
 Waypoints and photos are rendered from individual coordinate fields (`lat`, `lng`) rather than GeoJSON, assembled into a GeoJSON `FeatureCollection` by the layer components at render time. Photos are not clustered; a photo's `bearing` rides along as a feature property (omitted when null) to rotate its direction arrow.
 
 ---
@@ -399,6 +447,8 @@ Initial schema is migration `1.sql`. Future schema changes are numbered sequenti
 Migration `2.sql` (Phase 5) collapses the photo subject/camera split into a single position: rows with `camera_lat`/`camera_lng` adopt them as `lat`/`lng` (and `camera_elevation_m` as `elevation_m`), then the three `camera_*` columns are dropped.
 
 Migration `3.sql` (Phase 10) adds the nullable `waypoints.icon` column. Existing rows get `NULL` and keep their category icon; ZIP bundles exported before it carry no `icon` key and import as `NULL`.
+
+Migration `4.sql` (Phase 12) adds the `ates_areas` table. The ZIP backup format goes to `BUNDLE_VERSION` 2 with an `ates_areas` list in `metadata.json`; version 1 bundles have no such key and restore without touching existing areas.
 
 ---
 
