@@ -15,7 +15,7 @@ import { ElevationProfile } from '../../components/ElevationProfile/ElevationPro
 import { TagPills } from './TagPills'
 import { ConfirmDelete } from './ConfirmDelete'
 import { Metric } from './Metric'
-import { DownloadButton } from './DownloadButton'
+import { IconButton } from './IconButton'
 import { trackToGpx, gpxFilename } from '../../utils/gpxWrite'
 import { downloadText } from '../../utils/download'
 import { debug } from '../../utils/debug'
@@ -62,13 +62,14 @@ function TrackView({ track }: { track: Track }): JSX.Element {
       <div className={styles.header}>
         <h2 className={styles.heading}>{track.name}</h2>
         <div className={styles.actions}>
-          <DownloadButton
+          <IconButton
+            icon="download"
             label="Download GPX"
             onClick={() =>
               downloadText(trackToGpx(track), gpxFilename(track.name, 'track'), 'application/gpx+xml')
             }
           />
-          <button type="button" onClick={() => editCurrent()}>Edit</button>
+          <IconButton icon="edit" label="Edit" onClick={() => editCurrent()} />
           <ConfirmDelete onConfirm={handleDelete} />
         </div>
       </div>

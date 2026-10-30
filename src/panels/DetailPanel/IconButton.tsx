@@ -1,15 +1,16 @@
 import styles from './DetailPanel.module.css'
 import { SYMBOL_VIEWBOX } from '../../icons/symbolPaths'
-import { uiIconPath } from '../../icons/uiIcons'
+import { uiIconPath, type UiIcon } from '../../icons/uiIcons'
 
 interface Props {
+  icon: UiIcon
   // Accessible name and tooltip, e.g. "Download GPX".
   label: string
   onClick: () => void
 }
 
-// Icon-only download button for the detail panel header actions.
-export function DownloadButton({ label, onClick }: Props): JSX.Element {
+// Icon-only button for the detail panel header actions.
+export function IconButton({ icon, label, onClick }: Props): JSX.Element {
   return (
     <button
       type="button"
@@ -19,7 +20,7 @@ export function DownloadButton({ label, onClick }: Props): JSX.Element {
       title={label}
     >
       <svg viewBox={SYMBOL_VIEWBOX} width="18" height="18" aria-hidden="true">
-        <path d={uiIconPath('download')} fill="currentColor" />
+        <path d={uiIconPath(icon)} fill="currentColor" />
       </svg>
     </button>
   )

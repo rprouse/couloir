@@ -14,7 +14,7 @@ import { TagPills } from './TagPills'
 import { TagPicker } from '../../components/TagPicker/TagPicker'
 import { ConfirmDelete } from './ConfirmDelete'
 import { Metric } from './Metric'
-import { DownloadButton } from './DownloadButton'
+import { IconButton } from './IconButton'
 import { waypointToGpx, gpxFilename } from '../../utils/gpxWrite'
 import { downloadText } from '../../utils/download'
 import { debug } from '../../utils/debug'
@@ -60,13 +60,14 @@ function WaypointView({ wp }: { wp: Waypoint }): JSX.Element {
           <h2 className={styles.heading}>{wp.name}</h2>
         </div>
         <div className={styles.actions}>
-          <DownloadButton
+          <IconButton
+            icon="download"
             label="Download GPX"
             onClick={() =>
               downloadText(waypointToGpx(wp), gpxFilename(wp.name, 'waypoint'), 'application/gpx+xml')
             }
           />
-          <button type="button" onClick={() => editCurrent()}>Edit</button>
+          <IconButton icon="edit" label="Edit" onClick={() => editCurrent()} />
           <ConfirmDelete onConfirm={handleDelete} />
         </div>
       </div>

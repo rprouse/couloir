@@ -13,6 +13,7 @@ import { PhotoPositionFields } from './PhotoPositionFields'
 import { TagPills } from './TagPills'
 import { TagPicker } from '../../components/TagPicker/TagPicker'
 import { ConfirmDelete } from './ConfirmDelete'
+import { IconButton } from './IconButton'
 import { PhotoLightbox } from './PhotoLightbox'
 import { Metric } from './Metric'
 import { debug } from '../../utils/debug'
@@ -83,7 +84,11 @@ function PhotoView({ photo }: { photo: Photo }): JSX.Element {
       <div className={styles.header}>
         <h2 className={styles.heading}>{photo.name}</h2>
         <div className={styles.actions}>
-          <button type="button" onClick={() => editCurrent({ lat: photo.lat, lng: photo.lng })}>Edit</button>
+          <IconButton
+            icon="edit"
+            label="Edit"
+            onClick={() => editCurrent({ lat: photo.lat, lng: photo.lng })}
+          />
           <ConfirmDelete onConfirm={handleDelete} />
         </div>
       </div>

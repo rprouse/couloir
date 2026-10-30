@@ -14,8 +14,8 @@ const VIEWBOX = '0 -960 960 960'
 
 const NAMES = [
   'arrow_downward', 'backpack', 'cabin', 'camping', 'cell_tower', 'cottage',
-  'dangerous', 'directions_car', 'download', 'downhill_skiing', 'emergency', 'fence', 'flag',
-  'hiking', 'landscape', 'landslide', 'local_fire_department', 'local_parking',
+  'dangerous', 'delete', 'directions_car', 'download', 'downhill_skiing',
+  'edit', 'emergency', 'fence', 'flag', 'hiking', 'landscape', 'landslide', 'local_fire_department', 'local_parking',
   'location_on', 'nordic_walking', 'photo_camera', 'route', 'severe_cold',
   'sledding', 'snowing', 'snowshoeing', 'star', 'visibility', 'warning',
   'water_drop',

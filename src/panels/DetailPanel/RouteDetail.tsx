@@ -12,7 +12,7 @@ import { TagPills } from './TagPills'
 import { TagPicker } from '../../components/TagPicker/TagPicker'
 import { ConfirmDelete } from './ConfirmDelete'
 import { Metric } from './Metric'
-import { DownloadButton } from './DownloadButton'
+import { IconButton } from './IconButton'
 import { routeToGpx, gpxFilename } from '../../utils/gpxWrite'
 import { downloadText } from '../../utils/download'
 import { LineTypeField, type LineType } from './LineTypeField'
@@ -53,13 +53,14 @@ function RouteView({ route }: { route: Route }): JSX.Element {
       <div className={styles.header}>
         <h2 className={styles.heading}>{route.name}</h2>
         <div className={styles.actions}>
-          <DownloadButton
+          <IconButton
+            icon="download"
             label="Download GPX"
             onClick={() =>
               downloadText(routeToGpx(route), gpxFilename(route.name, 'route'), 'application/gpx+xml')
             }
           />
-          <button type="button" onClick={() => editCurrent()}>Edit</button>
+          <IconButton icon="edit" label="Edit" onClick={() => editCurrent()} />
           <ConfirmDelete onConfirm={handleDelete} />
         </div>
       </div>
