@@ -7,6 +7,12 @@ describe('mapConfig — URL builders', () => {
     )
   })
 
+  it('builds the labelled satellite hybrid style URL', () => {
+    expect(styleUrl('hybrid', 'KEY123')).toBe(
+      'https://api.maptiler.com/maps/hybrid/style.json?key=KEY123',
+    )
+  })
+
   it('builds the satellite style URL with the key', () => {
     expect(styleUrl('satellite', 'KEY123')).toBe(
       'https://api.maptiler.com/maps/satellite/style.json?key=KEY123',

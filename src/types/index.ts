@@ -310,7 +310,7 @@ export const PHOTO_JPEG_QUALITY = 0.9
 // Map types/constants — preserved from Phase 1
 // ============================================================================
 
-export type Basemap = 'satellite' | 'outdoor' | 'winter'
+export type Basemap = 'satellite' | 'hybrid' | 'outdoor' | 'winter'
 
 // Terrain shading computed from the DEM. At most one is shown at a time.
 export type TerrainOverlay = 'slope' | 'aspect'

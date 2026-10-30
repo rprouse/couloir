@@ -378,7 +378,7 @@ export const MAP_DEFAULTS = {
   basemap: 'outdoor' as Basemap,
 }
 
-export type Basemap = 'satellite' | 'outdoor' | 'winter'
+export type Basemap = 'satellite' | 'hybrid' | 'outdoor' | 'winter'
 
 // Photo re-encoding (src/utils/image.ts). The full-size cap keeps a 24 MP
 // phone photo around 2-3 MB on the server while leaving plenty of zoom detail.

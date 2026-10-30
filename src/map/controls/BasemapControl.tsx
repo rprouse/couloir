@@ -4,6 +4,7 @@ import type { Basemap } from '../../types'
 
 const OPTIONS: ReadonlyArray<{ id: Basemap; label: string }> = [
   { id: 'satellite', label: 'Satellite' },
+  { id: 'hybrid',    label: 'Hybrid'    },
   { id: 'outdoor',   label: 'Outdoor'   },
   { id: 'winter',    label: 'Winter'    },
 ]
