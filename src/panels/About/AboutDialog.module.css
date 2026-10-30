@@ -1,0 +1,125 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: grid;
+  place-items: center;
+  padding: var(--space-md);
+  z-index: 100;
+}
+
+.dialog {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  width: min(720px, 100%);
+  max-height: calc(100vh - 2 * var(--space-md));
+  overflow: hidden;
+  background: var(--color-bg-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.text p {
+  margin: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.tagline {
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+.caveat {
+  color: var(--color-text-dim);
+  font-size: 12px;
+}
+
+.footer {
+  margin-top: auto;
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  color: var(--color-text-dim);
+  font-size: 12px;
+}
+
+.footer a {
+  color: var(--color-text-dim);
+}
+
+.footer a:hover {
+  color: var(--color-text);
+}
+
+.close {
+  background: var(--color-danger);
+  color: var(--color-text);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  font: inherit;
+}
+
+.close:hover {
+  filter: brightness(1.1);
+}
+
+.photo {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+  /* Keep the skier in frame when the photo is cropped. */
+  object-position: 50% 45%;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  /* Stacked: the photo becomes a banner above the text. */
+  .dialog {
+    grid-template-columns: 1fr;
+    grid-template-rows: 180px minmax(0, 1fr);
+  }
+
+  .photo {
+    grid-row: 1;
+  }
+
+  .text {
+    grid-row: 2;
+    padding: var(--space-md);
+  }
+}

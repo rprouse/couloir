@@ -102,6 +102,10 @@ interface UiState {
   terrainControlCollapsed: boolean | null
   setTerrainControlCollapsed: (collapsed: boolean) => void
 
+  // The About dialog, opened from the sidebar.
+  aboutOpen: boolean
+  setAboutOpen: (open: boolean) => void
+
   // The point under the cursor on a route or track elevation profile, as
   // [lng, lat], marked on the map. Null when the profile isn't hovered.
   profileHover: [number, number] | null
@@ -312,6 +316,10 @@ export const useUiStore = create<UiState>((set, get) => {
       localStorage.setItem(TERRAIN_CONTROL_COLLAPSED_KEY, String(collapsed))
       set({ terrainControlCollapsed: collapsed })
     },
+
+    // ----- About dialog -----
+    aboutOpen: false,
+    setAboutOpen: (open) => set({ aboutOpen: open }),
 
     // ----- Elevation profile hover -----
     profileHover: null,

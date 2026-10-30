@@ -19,6 +19,7 @@ export function Sidebar({ panels }: SidebarProps) {
   const setActiveTab = useUiStore((s) => s.setActiveTab)
   const toggleSidebar = useUiStore((s) => s.toggleSidebar)
   const setSidebarCollapsed = useUiStore((s) => s.setSidebarCollapsed)
+  const setAboutOpen = useUiStore((s) => s.setAboutOpen)
   const isMobile = useMediaQuery(MOBILE_QUERY)
 
   const onTab = (tab: SidebarTab) => {
@@ -57,6 +58,11 @@ export function Sidebar({ panels }: SidebarProps) {
             <span className={styles.tabLabel}>{tab.label}</span>
           </button>
         ))}
+        {/* Not a tab: opens the About dialog over the map. */}
+        <button type="button" className={styles.tabButton} onClick={() => setAboutOpen(true)}>
+          <span aria-hidden="true" className={styles.tabIcon}>ⓘ</span>
+          <span className={styles.tabLabel}>About</span>
+        </button>
       </nav>
       {!sidebarCollapsed && panels[activeTab] !== undefined && (
         <div className={styles.content}>{panels[activeTab]}</div>
