@@ -83,7 +83,8 @@ couloir/
 │   ├── components/FileDropzone/FileDropzone.tsx        12.5 (.kmz accepted)
 │   ├── map/layers/
 │   │   ├── layerStyles.ts                              12.4
-│   │   ├── atesLayerData.ts / .test.ts                 12.4
+│   │   ├── atesLayerData.ts / .test.ts                 12.4 (also zone counts, classes present, bounds)
+│   │   ├── atesPopup.ts, AtesLayer.module.css          12.4
 │   │   ├── AtesLayer.tsx (+ test)                      12.4
 │   │   └── TerrainOverlayLayer.tsx                     12.4 (beforeId)
 │   ├── map/controls/
@@ -251,21 +252,21 @@ couloir/
 
 **Files:** `layerStyles.ts`, `atesLayerData.ts` / `.test.ts`, `AtesLayer.tsx` (+ test), `TerrainOverlayLayer.tsx`, `MapView.tsx`, `src/store/ui.ts` (+ test)
 
-- [ ] **Step 12.4.1: UI state, tests first.** `atesEnabled: boolean` (default `true`) and `atesOpacity: number` (default `0.45`, clamped like `overlayOpacity`) are persisted under `couloir_ates_enabled` and `couloir_ates_opacity`, and hydrated in `hydrateFromStorage`, which silently ignores bad values.
+- [x] **Step 12.4.1: UI state, tests first.** `atesEnabled: boolean` (default `true`) and `atesOpacity: number` (default `0.45`, clamped like `overlayOpacity`) are persisted under `couloir_ates_enabled` and `couloir_ates_opacity`, and hydrated in `hydrateFromStorage`, which silently ignores bad values.
 
-- [ ] **Step 12.4.2: Constants** in `layerStyles.ts`:
+- [x] **Step 12.4.2: Constants** in `layerStyles.ts`:
   - the source and layer ids: `ATES_SOURCE_ID`, `ATES_FILL_LAYER_ID`, `ATES_OUTLINE_LAYER_ID`, `ATES_LINES_LAYER_ID`, `ATES_AREA_LAYER_ID`, `ATES_PATHS_LAYER_ID`, `ATES_DECISION_LAYER_ID`, collected in `ATES_LAYER_IDS`
   - `ATES_CLASS_COLORS: Record<AtesClass, string>` from Decision 10
   - `ATES_ATTRIBUTION`
 
   Add `ATES_LAYER_IDS` to `COULOIR_OVERLAY_LAYER_IDS` so the slope and aspect rasters always go beneath ATES, whatever order the layers install in.
 
-- [ ] **Step 12.4.3: Layer data, tests first** (`atesLayerData.ts`).
+- [x] **Step 12.4.3: Layer data, tests first** (`atesLayerData.ts`).
   - `buildAtesGeoJson(areas)` merges every area's features into one `FeatureCollection` and stamps each with `areaId` and `areaName`.
   - `atesClassColorExpression()` returns a `match` expression on `['get', 'ates']`.
   - The tests check that features from two areas merge with their area stamps, and that the expression covers every `ATES_CLASSES` entry.
 
-- [ ] **Step 12.4.4: `AtesLayer.tsx`, tests first.** It follows `TerrainOverlayLayer` and the other GeoJSON layers: install on every `style.load`, toggle visibility only, and update data with `setData` when `atesAreas` changes. The layers are:
+- [x] **Step 12.4.4: `AtesLayer.tsx`, tests first.** It follows `TerrainOverlayLayer` and the other GeoJSON layers: install on every `style.load`, toggle visibility only, and update data with `setData` when `atesAreas` changes. The layers are:
   - **fill**: `kind == zone`, class colour, opacity `atesOpacity`
   - **outline**: `kind == zone`, a 1 px line in a light colour at 0.6 opacity, so complex and extreme zones read on dark imagery
   - **ATES lines**: `kind == ates_line`, class colour, width 5
@@ -280,15 +281,16 @@ couloir/
   - the source has the attribution
   - `setData` runs when the areas change
 
-- [ ] **Step 12.4.5: Click popups.** A `click` handler on the fill and decision-point layers:
+- [x] **Step 12.4.5: Click popups.** A `click` handler on the fill and decision-point layers:
   - It returns early if `placement.mode !== 'idle'`.
   - It also returns early if `queryRenderedFeatures` at the point hits any route, track, waypoint or photo layer, so those keep priority.
   - Otherwise it opens a `maplibregl.Popup`. A zone shows the area name, `Class N – Label` and the description. A decision point shows its name and description.
   - The popup text goes in through `textContent`, never `setHTML`, because the strings come from an imported file.
-  - The cursor changes to a pointer on hover.
+  - The cursor changes to a pointer over decision points. Not over zones: they cover whole slopes, so a pointer there would be on almost everywhere.
+  - The popup body is built in `atesPopup.ts`, styled dark in `AtesLayer.module.css`. The click is one map-wide handler, not per-layer, so it can check the entity layers first. The MapLibre test mock gains layer-scoped events (`emitLayer`), `queryRenderedFeatures` and `Popup`.
   - Test it with the map mock.
 
-- [ ] **Step 12.4.6:** Mount `<AtesLayer />` in `MapView` after the two `TerrainOverlayLayer`s. `npm test`, `npm run typecheck`. Commit `feat: draw ATES zones on the map`.
+- [x] **Step 12.4.6:** Mount `<AtesLayer />` in `MapView` after the two `TerrainOverlayLayer`s. `npm test`, `npm run typecheck`. Commit `feat: draw ATES zones on the map`.
 
 ## Task 12.5 — ATES controls, legend and area management
 

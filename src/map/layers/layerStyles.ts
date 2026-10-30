@@ -1,4 +1,4 @@
-import type { TerrainOverlay } from '../../types'
+import type { AtesClass, TerrainOverlay } from '../../types'
 
 export const ROUTE_LINE_WIDTH = 3
 export const ROUTE_LINE_GLOW_WIDTH = 7
@@ -64,9 +64,46 @@ export const OVERLAY_MIN_ZOOM = 10
 export const DEM_TILE_SIZE = 512
 export const DEM_MAX_ZOOM = 14
 
+// ATES zones (Phase 12): one GeoJSON source holding every imported area,
+// drawn above the slope/aspect raster and below routes, tracks, waypoints and
+// photos. Listed bottom to top.
+export const ATES_SOURCE_ID = 'ates-source'
+export const ATES_FILL_LAYER_ID = 'ates-fill'
+export const ATES_OUTLINE_LAYER_ID = 'ates-outline'
+export const ATES_AREA_LAYER_ID = 'ates-area'
+export const ATES_PATHS_LAYER_ID = 'ates-paths'
+export const ATES_LINES_LAYER_ID = 'ates-lines'
+export const ATES_DECISION_LAYER_ID = 'ates-decision-points'
+export const ATES_LAYER_IDS = [
+  ATES_FILL_LAYER_ID,
+  ATES_OUTLINE_LAYER_ID,
+  ATES_AREA_LAYER_ID,
+  ATES_PATHS_LAYER_ID,
+  ATES_LINES_LAYER_ID,
+  ATES_DECISION_LAYER_ID,
+] as const
+export const ATES_ATTRIBUTION = 'ATES ratings © Avalanche Canada'
+
+// Fixed colour per class (the conventional ATES green/blue/black), not the
+// KML's own ABGR styles. Literal hex: map paint can't read CSS properties.
+// Complex and extreme get ATES_OUTLINE_COLOR so they read on dark satellite.
+export const ATES_CLASS_COLORS: Record<AtesClass, string> = {
+  non_avalanche: '#F8FAFC',
+  simple: '#22C55E',
+  challenging: '#2563EB',
+  complex: '#111827',
+  extreme: '#7F1D1D',
+}
+export const ATES_OUTLINE_COLOR = '#F8FAFC'
+export const ATES_AREA_COLOR = '#FFFFFF'
+export const ATES_PATH_COLOR = '#EF4444'
+export const ATES_DECISION_COLOR = '#F59E0B'
+export const ATES_LINE_WIDTH = 5
+
 // Every layer Couloir draws on top of the basemap. The terrain
 // overlays are inserted beneath all of these.
 export const COULOIR_OVERLAY_LAYER_IDS: readonly string[] = [
+  ...ATES_LAYER_IDS,
   ROUTES_GLOW_LAYER_ID,
   ROUTES_LINE_LAYER_ID,
   TRACKS_LINE_LAYER_ID,

@@ -13,12 +13,16 @@ const BASEMAP_KEY  = 'couloir_basemap'
 const TERRAIN_OVERLAY_KEY = 'couloir_terrain_overlay'
 const OVERLAY_OPACITY_KEY = 'couloir_overlay_opacity'
 const NAVIGATION_AID_KEY = 'couloir_navigation_aid'
+const ATES_ENABLED_KEY = 'couloir_ates_enabled'
+const ATES_OPACITY_KEY = 'couloir_ates_opacity'
 const VALID_BASEMAPS: ReadonlySet<Basemap> = new Set(['satellite', 'outdoor', 'winter'])
 const MIN = 1
 const MAX = 3
 export const OVERLAY_OPACITY_MIN = 0.2
 export const OVERLAY_OPACITY_MAX = 1
 const OVERLAY_OPACITY_DEFAULT = 0.6
+// ATES fills sit over the slope/aspect raster, so they default lighter.
+const ATES_OPACITY_DEFAULT = 0.45
 
 export type SidebarTab = 'layers' | 'search' | 'settings'
 export type LayerKey = 'routes' | 'tracks' | 'waypoints' | 'photos'
@@ -82,6 +86,14 @@ interface UiState {
   // on by default).
   navigationAidEnabled: boolean
   setNavigationAidEnabled: (enabled: boolean) => void
+
+  // Phase 12 — imported ATES zones, a switch independent of the terrain
+  // overlay so they can sit on top of slope or aspect. Both persisted; on by
+  // default (nothing draws until an area is imported). Fill opacity is its own.
+  atesEnabled: boolean
+  atesOpacity: number
+  setAtesEnabled: (enabled: boolean) => void
+  setAtesOpacity: (value: number) => void
 }
 
 const clamp = (n: number) => Math.max(MIN, Math.min(MAX, n))
@@ -163,6 +175,15 @@ export const useUiStore = create<UiState>((set, get) => {
       const rawNavigationAid = localStorage.getItem(NAVIGATION_AID_KEY)
       if (rawNavigationAid === 'true' || rawNavigationAid === 'false') {
         set({ navigationAidEnabled: rawNavigationAid === 'true' })
+      }
+      const rawAtesEnabled = localStorage.getItem(ATES_ENABLED_KEY)
+      if (rawAtesEnabled === 'true' || rawAtesEnabled === 'false') {
+        set({ atesEnabled: rawAtesEnabled === 'true' })
+      }
+      const rawAtesOpacity = localStorage.getItem(ATES_OPACITY_KEY)
+      if (rawAtesOpacity !== null) {
+        const n = Number(rawAtesOpacity)
+        if (Number.isFinite(n)) set({ atesOpacity: clampOpacity(n) })
       }
     },
 
@@ -254,6 +275,19 @@ export const useUiStore = create<UiState>((set, get) => {
     setNavigationAidEnabled: (enabled) => {
       localStorage.setItem(NAVIGATION_AID_KEY, String(enabled))
       set({ navigationAidEnabled: enabled })
+    },
+
+    // ----- Phase 12: ATES zones -----
+    atesEnabled: true,
+    atesOpacity: ATES_OPACITY_DEFAULT,
+    setAtesEnabled: (enabled) => {
+      localStorage.setItem(ATES_ENABLED_KEY, String(enabled))
+      set({ atesEnabled: enabled })
+    },
+    setAtesOpacity: (value) => {
+      const next = clampOpacity(value)
+      localStorage.setItem(ATES_OPACITY_KEY, String(next))
+      set({ atesOpacity: next })
     },
   }
 })

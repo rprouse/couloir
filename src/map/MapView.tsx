@@ -12,6 +12,7 @@ import { NavigationAid } from './controls/NavigationAid'
 import { LocateControl } from './controls/LocateControl'
 import { setMap } from '../hooks/useMap'
 import { TerrainOverlayLayer } from './layers/TerrainOverlayLayer'
+import { AtesLayer } from './layers/AtesLayer'
 import { RoutesLayer } from './layers/RoutesLayer'
 import { TracksLayer } from './layers/TracksLayer'
 import { WaypointsLayer } from './layers/WaypointsLayer'
@@ -159,6 +160,7 @@ export function MapView() {
       <LocateControl />
       <TerrainOverlayLayer overlay="slope" />
       <TerrainOverlayLayer overlay="aspect" />
+      <AtesLayer />
       <RoutesLayer />
       <TracksLayer />
       <WaypointsLayer />
