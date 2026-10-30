@@ -1,5 +1,5 @@
-import type { AtesArea, AtesClass, AtesFeature } from '../../types'
-import { ATES_CLASSES } from '../../types'
+import type { AtesArea, AtesClass, AtesFeature, AtesPoiType } from '../../types'
+import { ATES_CLASSES, ATES_POI_TYPES } from '../../types'
 import { ATES_CLASS_COLORS } from './layerStyles'
 
 // Every imported area's features in one collection, each stamped with the
@@ -53,6 +53,30 @@ export function atesClassesPresent(areas: AtesArea[]): AtesClass[] {
     }
   }
   return ATES_CLASSES.filter((c) => present.has(c))
+}
+
+// Legend rows for the non-zone features: lines, decision points and each
+// point-of-interest type.
+export type AtesLegendItem =
+  | { kind: 'access_route' | 'avalanche_path' | 'decision_point' }
+  | { kind: 'poi'; poi: AtesPoiType }
+
+/** The non-zone features present in any area, in a fixed order. */
+export function atesLegendItemsPresent(areas: AtesArea[]): AtesLegendItem[] {
+  const kinds = new Set<string>()
+  const pois = new Set<AtesPoiType>()
+  for (const area of areas) {
+    for (const f of area.geojson.features) {
+      kinds.add(f.properties.kind)
+      if (f.properties.kind === 'poi') pois.add(f.properties.poi)
+    }
+  }
+  return [
+    ...(['decision_point', 'avalanche_path', 'access_route'] as const)
+      .filter((k) => kinds.has(k))
+      .map((kind) => ({ kind })),
+    ...ATES_POI_TYPES.filter((p) => pois.has(p)).map((poi) => ({ kind: 'poi' as const, poi })),
+  ]
 }
 
 /** [[west, south], [east, north]] of every coordinate in the area, or null if it has none. */

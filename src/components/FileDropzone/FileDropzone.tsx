@@ -9,13 +9,13 @@ interface Props {
   label?: string
 }
 
-const defaultAccept = (file: File): boolean =>
-  file.name.toLowerCase().endsWith('.gpx')
+// GPX routes and tracks, and Avalanche Canada ATES KMZs (App routes each kind).
+const defaultAccept = (file: File): boolean => /\.(gpx|kmz)$/i.test(file.name)
 
 export function FileDropzone({
   onFiles,
   accept = defaultAccept,
-  label = 'Drop GPX files to import',
+  label = 'Drop GPX or ATES KMZ files to import',
 }: Props): JSX.Element {
   const [active, setActive] = useState(false)
   // Counter rather than boolean to handle dragenter/leave bouncing across

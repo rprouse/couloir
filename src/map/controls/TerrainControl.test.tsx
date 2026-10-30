@@ -6,6 +6,8 @@ import { act } from 'react'
 import { __mocks__ } from '../../test/mocks/maplibre-gl'
 import { setMap } from '../../hooks/useMap'
 import { SLOPE_BANDS } from '../slope/slopeBands'
+import { useAtesAreasStore } from '../../store/atesAreas'
+import { buildAtesArea } from '../../storage/contract'
 import { ASPECT_SECTORS } from '../slope/aspectBands'
 
 describe('TerrainControl', () => {
@@ -27,6 +29,46 @@ describe('TerrainControl', () => {
     await user.click(screen.getByRole('switch', { name: /3d terrain/i }))
     expect(screen.getByRole('switch', { name: /3d terrain/i })).not.toBeChecked()
     expect(useUiStore.getState().terrainEnabled).toBe(false)
+  })
+
+  describe('ATES switch', () => {
+    beforeEach(() => {
+      useAtesAreasStore.setState({ areas: [] })
+    })
+
+    it('is hidden until an area has been imported', () => {
+      render(<TerrainControl />)
+      expect(screen.queryByRole('switch', { name: /ates ratings/i })).toBeNull()
+    })
+
+    it('toggles the layer and shows a legend of the classes present', async () => {
+      const user = userEvent.setup()
+      useAtesAreasStore.setState({ areas: [buildAtesArea()] })
+      render(<TerrainControl />)
+      const toggle = screen.getByRole('switch', { name: /ates ratings/i })
+      expect(toggle).toBeChecked()
+      const legend = screen.getByRole('list', { name: /ates legend/i })
+      expect(legend).toHaveTextContent('Complex (Class 3)')
+      expect(legend).not.toHaveTextContent('Simple')
+      expect(legend).toHaveTextContent('Decision point')
+      expect(legend).not.toHaveTextContent('Parking')
+      expect(screen.getByText(/not today’s avalanche danger/)).toBeInTheDocument()
+
+      await user.click(toggle)
+      expect(useUiStore.getState().atesEnabled).toBe(false)
+      expect(screen.queryByRole('list', { name: /ates legend/i })).toBeNull()
+    })
+
+    it('works alongside a terrain overlay', async () => {
+      const user = userEvent.setup()
+      useAtesAreasStore.setState({ areas: [buildAtesArea()] })
+      render(<TerrainControl />)
+      await user.click(screen.getByRole('button', { name: 'Slope' }))
+      expect(useUiStore.getState().terrainOverlay).toBe('slope')
+      expect(useUiStore.getState().atesEnabled).toBe(true)
+      expect(screen.getByRole('list', { name: /slope angle legend/i })).toBeInTheDocument()
+      expect(screen.getByRole('list', { name: /ates legend/i })).toBeInTheDocument()
+    })
   })
 
   describe('terrain overlay', () => {

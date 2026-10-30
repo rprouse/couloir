@@ -1,4 +1,5 @@
-import type { AtesClass, TerrainOverlay } from '../../types'
+import type { AtesClass, AtesPoiType, TerrainOverlay } from '../../types'
+import type { WaypointIcon } from '../../icons/waypointIcons'
 
 export const ROUTE_LINE_WIDTH = 3
 export const ROUTE_LINE_GLOW_WIDTH = 7
@@ -71,16 +72,20 @@ export const ATES_SOURCE_ID = 'ates-source'
 export const ATES_FILL_LAYER_ID = 'ates-fill'
 export const ATES_OUTLINE_LAYER_ID = 'ates-outline'
 export const ATES_AREA_LAYER_ID = 'ates-area'
+export const ATES_ACCESS_LAYER_ID = 'ates-access'
 export const ATES_PATHS_LAYER_ID = 'ates-paths'
 export const ATES_LINES_LAYER_ID = 'ates-lines'
 export const ATES_DECISION_LAYER_ID = 'ates-decision-points'
+export const ATES_POI_LAYER_ID = 'ates-poi'
 export const ATES_LAYER_IDS = [
   ATES_FILL_LAYER_ID,
   ATES_OUTLINE_LAYER_ID,
   ATES_AREA_LAYER_ID,
+  ATES_ACCESS_LAYER_ID,
   ATES_PATHS_LAYER_ID,
   ATES_LINES_LAYER_ID,
   ATES_DECISION_LAYER_ID,
+  ATES_POI_LAYER_ID,
 ] as const
 export const ATES_ATTRIBUTION = 'ATES ratings © Avalanche Canada'
 
@@ -99,6 +104,17 @@ export const ATES_AREA_COLOR = '#FFFFFF'
 export const ATES_PATH_COLOR = '#EF4444'
 export const ATES_DECISION_COLOR = '#F59E0B'
 export const ATES_LINE_WIDTH = 5
+// Access routes: yellow, as in the Trip Planner.
+export const ATES_ACCESS_COLOR = '#FACC15'
+// Points of interest are drawn as waypoint-style markers (wp:<icon>:<HEX>
+// images, see WaypointsLayer) in one colour that isn't an ATES class colour.
+export const ATES_POI_COLOR = '#A78BFA'
+export const ATES_POI_ICONS: Record<AtesPoiType, WaypointIcon> = {
+  parking: 'local_parking',
+  cabin: 'cottage',
+  destination: 'flag',
+  other: 'location_on',
+}
 
 // Every layer Couloir draws on top of the basemap. The terrain
 // overlays are inserted beneath all of these.

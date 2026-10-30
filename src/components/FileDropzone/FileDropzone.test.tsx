@@ -30,18 +30,17 @@ describe('FileDropzone', () => {
     expect(onFiles).toHaveBeenCalledWith([expect.any(File)])
   })
 
-  it('filters out non-gpx files by default', () => {
+  it('accepts only GPX and KMZ files by default', () => {
     const onFiles = vi.fn()
     render(<FileDropzone onFiles={onFiles} />)
     act(() => {
       document.dispatchEvent(
-        dragEvent('drop', [new File([''], 'photo.jpg'), new File([''], 'a.gpx')]),
+        dragEvent('drop', [new File([''], 'photo.jpg'), new File([''], 'a.gpx'), new File([''], 'Area.KMZ')]),
       )
     })
     expect(onFiles).toHaveBeenCalledOnce()
     const arg = onFiles.mock.calls[0][0] as File[]
-    expect(arg).toHaveLength(1)
-    expect(arg[0].name).toBe('a.gpx')
+    expect(arg.map((f) => f.name)).toEqual(['a.gpx', 'Area.KMZ'])
   })
 
   it('does not call onFiles when no accepted files are dropped', () => {

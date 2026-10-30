@@ -167,12 +167,24 @@ export interface AtesPolygon { type: 'Polygon'; coordinates: LngLat[][] }  // ou
 export interface AtesLineString { type: 'LineString'; coordinates: LngLat[] }
 export interface AtesPoint { type: 'Point'; coordinates: LngLat }
 
+// Points of interest, from the KML's point_of_interest_{type}_styles.
+export type AtesPoiType = 'parking' | 'cabin' | 'destination' | 'other'
+export const ATES_POI_TYPES: readonly AtesPoiType[] = ['parking', 'cabin', 'destination', 'other']
+export const ATES_POI_LABELS: Record<AtesPoiType, string> = {
+  parking: 'Parking',
+  cabin: 'Hut, cabin or shelter',
+  destination: 'Destination',
+  other: 'Point of interest',
+}
+
 export type AtesFeature =
   | AtesGeoFeature<AtesPolygon, { kind: 'zone'; ates: AtesClass; description: string }>
   | AtesGeoFeature<AtesLineString, { kind: 'ates_line'; ates: AtesClass; name: string }>
   | AtesGeoFeature<AtesPolygon, { kind: 'area' }>
   | AtesGeoFeature<AtesLineString, { kind: 'avalanche_path'; name: string }>
   | AtesGeoFeature<AtesPoint, { kind: 'decision_point'; name: string; description: string }>
+  | AtesGeoFeature<AtesLineString, { kind: 'access_route'; name: string; description: string }>
+  | AtesGeoFeature<AtesPoint, { kind: 'poi'; poi: AtesPoiType; name: string; description: string }>
 
 export type AtesFeatureKind = AtesFeature['properties']['kind']
 

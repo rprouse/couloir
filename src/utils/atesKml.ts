@@ -4,9 +4,11 @@ import type {
   AtesFeature,
   AtesLineString,
   AtesPoint,
+  AtesPoiType,
   AtesPolygon,
   LngLat,
 } from '../types'
+import { ATES_POI_TYPES } from '../types'
 
 // Reader for the ATES KMZ files Avalanche Canada's Trip Planner offers per
 // area ("Download ATES data as KMZ"). Their KML has a fixed shape: shared
@@ -95,6 +97,17 @@ export function parseAtesKml(xml: string, sourceFilename: string): ParsedAtes {
       for (const geometry of lineStringsIn(placemark)) {
         features.push({ type: 'Feature', geometry, properties: { kind, name: placemarkName } })
       }
+    } else if (kind === 'access_route') {
+      for (const geometry of lineStringsIn(placemark)) {
+        features.push({ type: 'Feature', geometry, properties: { kind, name: placemarkName, description } })
+      }
+    } else if (kind === 'poi') {
+      const poi = poiTypeOf(style)
+      for (const geometry of pointsIn(placemark)) {
+        features.push({
+          type: 'Feature', geometry, properties: { kind, poi, name: placemarkName, description },
+        })
+      }
     } else {
       for (const geometry of pointsIn(placemark)) {
         features.push({
@@ -110,18 +123,26 @@ export function parseAtesKml(xml: string, sourceFilename: string): ParsedAtes {
   return { name, features, skipped }
 }
 
-// What a placemark is, from its style id. Points of interest, access routes and
-// anything unrecognised return null and are dropped. A polygon with an unknown
-// style still counts as a zone when it sits under the Zones / "Class N" folders.
+// What a placemark is, from its style id. Anything unrecognised returns null
+// and is dropped. A polygon with an unknown style still counts as a zone when
+// it sits under the Zones / "Class N" folders.
 function kindOf(style: string, placemark: Element): AtesFeature['properties']['kind'] | null {
   if (style === 'area_styles') return 'area'
   if (style === 'avalanche_path_styles') return 'avalanche_path'
   if (style === 'decision_point_styles') return 'decision_point'
+  if (style.startsWith('access_')) return 'access_route'
+  if (style.startsWith('point_of_interest_')) return 'poi'
   if (style.startsWith('ates_line_')) return 'ates_line'
   if (style.startsWith('zone_')) return 'zone'
   const inZones = folderNames(placemark).some((n) => /^zones$/i.test(n) || /class\s*\d/i.test(n))
   if (inZones && polygonsIn(placemark).length > 0) return 'zone'
   return null
+}
+
+// point_of_interest_cabin_styles → 'cabin'; types Couloir doesn't know → 'other'.
+function poiTypeOf(style: string): AtesPoiType {
+  const type = /^point_of_interest_([a-z]+)_styles?$/.exec(style)?.[1]
+  return ATES_POI_TYPES.find((t) => t === type) ?? 'other'
 }
 
 function classOf(style: string, placemark: Element): AtesClass | null {

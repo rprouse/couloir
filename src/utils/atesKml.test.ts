@@ -77,12 +77,25 @@ describe('parseAtesKml', () => {
     expect(dp.geometry.coordinates).toEqual([-115.066, 49.346])
   })
 
-  it('drops points of interest and access routes', () => {
-    const kinds = new Set(parsed.features.map((f) => f.properties.kind))
-    expect([...kinds].sort()).toEqual(
-      ['area', 'ates_line', 'avalanche_path', 'decision_point', 'zone'],
-    )
-    expect(parsed.features).toHaveLength(1 + 7 + 1 + 1 + 1)
+  it('keeps access routes and points of interest with their type', () => {
+    const access = ofKind(parsed.features, 'access_route')
+    expect(access).toHaveLength(1)
+    expect(access[0].properties.name).toBe('Fixture Access')
+    expect(access[0].geometry.coordinates).toEqual([[-115.07, 49.34], [-115.06, 49.35]])
+    const pois = ofKind(parsed.features, 'poi')
+    expect(pois.map((p) => p.properties)).toEqual([
+      { kind: 'poi', poi: 'parking', name: 'Parking', description: '' },
+    ])
+    expect(pois[0].geometry.coordinates).toEqual([-115.07, 49.34])
+  })
+
+  it('maps unknown point-of-interest styles to other', () => {
+    const kml = ATES_FIXTURE_KML.replace('point_of_interest_parking_styles</styleUrl>', 'point_of_interest_summit_styles</styleUrl>')
+    expect(ofKind(parseAtesKml(kml, 'x.kmz').features, 'poi')[0].properties.poi).toBe('other')
+  })
+
+  it('keeps every kind it recognises', () => {
+    expect(parsed.features).toHaveLength(1 + 7 + 1 + 1 + 1 + 1 + 1)
   })
 
   it('falls back to the filename when the Document has no name', () => {

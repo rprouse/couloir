@@ -50,6 +50,23 @@ describe('AtesLayer', () => {
     expect(filters['ates-paths']).toEqual(['==', ['get', 'kind'], 'avalanche_path'])
     expect(filters['ates-lines']).toEqual(['==', ['get', 'kind'], 'ates_line'])
     expect(filters['ates-decision-points']).toEqual(['==', ['get', 'kind'], 'decision_point'])
+    expect(filters['ates-access']).toEqual(['==', ['get', 'kind'], 'access_route'])
+    expect(filters['ates-poi']).toEqual(['==', ['get', 'kind'], 'poi'])
+  })
+
+  it('draws points of interest as waypoint markers, adding missing images', () => {
+    render(<AtesLayer />)
+    const poi = added().find((l) => l.id === 'ates-poi')!
+    expect(poi.layout['icon-image']).toEqual([
+      'match', ['get', 'poi'],
+      'parking', 'wp:local_parking:A78BFA',
+      'cabin', 'wp:cottage:A78BFA',
+      'destination', 'wp:flag:A78BFA',
+      'other', 'wp:location_on:A78BFA',
+      'wp:location_on:A78BFA',
+    ])
+    act(() => map.emit('styleimagemissing', { id: 'wp:flag:A78BFA' }))
+    expect(map.addImage).toHaveBeenCalledWith('wp:flag:A78BFA', expect.anything(), { pixelRatio: 2 })
   })
 
   it('fills zones by class at the stored opacity', () => {
@@ -142,6 +159,21 @@ describe('AtesLayer', () => {
       const popup = vi.mocked(Popup).mock.results[0].value as InstanceType<typeof __mocks__.MockPopup>
       expect(popup.content?.textContent).toContain('Col')
       expect(popup.content?.textContent).toContain('Decision point')
+    })
+
+    it('prefers a point of interest, and names an access route', () => {
+      const poi = { properties: { kind: 'poi', poi: 'cabin', name: 'Tunnel Creek Hut', description: '', areaName: 'Test Basin' } }
+      const access = { properties: { kind: 'access_route', name: 'Access', description: 'Access', areaName: 'Test Basin' } }
+      hitsFor([], [zone, access, poi])
+      render(<AtesLayer />)
+      click()
+      const popup = vi.mocked(Popup).mock.results[0].value as InstanceType<typeof __mocks__.MockPopup>
+      expect(popup.content?.textContent).toBe('Tunnel Creek HutHut, cabin or shelter · Test Basin')
+      hitsFor([], [zone, access])
+      click()
+      const second = vi.mocked(Popup).mock.results[1].value as InstanceType<typeof __mocks__.MockPopup>
+      // The description repeats the name, so it isn't shown twice.
+      expect(second.content?.textContent).toBe('AccessAccess route · Test Basin')
     })
 
     it('stands aside when a route, track, waypoint or photo was clicked', () => {

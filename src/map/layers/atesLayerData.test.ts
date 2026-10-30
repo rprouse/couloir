@@ -4,6 +4,7 @@ import {
   atesAreaBounds,
   atesClassColorExpression,
   atesClassesPresent,
+  atesLegendItemsPresent,
   atesZoneCounts,
   buildAtesGeoJson,
 } from './atesLayerData'
@@ -66,6 +67,27 @@ describe('area summaries', () => {
   it('lists the classes present across areas in ATES order', () => {
     expect(atesClassesPresent([twoZones, buildAtesArea()])).toEqual(['simple', 'complex', 'extreme'])
     expect(atesClassesPresent([])).toEqual([])
+  })
+
+  it('lists the other features present for the legend, points of interest by type', () => {
+    const withPois = buildAtesArea({
+      id: 'c',
+      geojson: {
+        type: 'FeatureCollection',
+        features: [
+          { type: 'Feature', geometry: { type: 'Point', coordinates: [-116, 49.5] }, properties: { kind: 'poi', poi: 'destination', name: 'A', description: '' } },
+          { type: 'Feature', geometry: { type: 'Point', coordinates: [-116, 49.5] }, properties: { kind: 'poi', poi: 'parking', name: 'P', description: '' } },
+          { type: 'Feature', geometry: { type: 'LineString', coordinates: [[-116, 49.5], [-116.1, 49.6]] }, properties: { kind: 'access_route', name: 'Road', description: '' } },
+        ],
+      },
+    })
+    expect(atesLegendItemsPresent([buildAtesArea(), withPois])).toEqual([
+      { kind: 'decision_point' },
+      { kind: 'access_route' },
+      { kind: 'poi', poi: 'parking' },
+      { kind: 'poi', poi: 'destination' },
+    ])
+    expect(atesLegendItemsPresent([twoZones])).toEqual([])
   })
 
   it('bounds every coordinate of an area', () => {
