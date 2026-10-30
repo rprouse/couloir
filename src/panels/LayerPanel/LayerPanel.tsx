@@ -9,6 +9,7 @@ import { useWaypointsStore } from '../../store/waypoints'
 import { usePhotosStore } from '../../store/photos'
 import { filterByTags } from '../../utils/tags'
 import { TagFilterMenu } from './TagFilterMenu'
+import { DEFAULTS } from '../../types'
 
 interface RowDef {
   key: LayerKey
@@ -17,8 +18,8 @@ interface RowDef {
 }
 
 const ROWS: ReadonlyArray<RowDef> = [
-  { key: 'routes',    label: 'Routes',    color: '#E05C2A' },
-  { key: 'tracks',    label: 'Tracks',    color: '#2A7BE0' },
+  { key: 'routes',    label: 'Routes',    color: DEFAULTS.route.color },
+  { key: 'tracks',    label: 'Tracks',    color: DEFAULTS.track.color },
   { key: 'waypoints', label: 'Waypoints', color: '#FBBF24' },
   { key: 'photos',    label: 'Photos',    color: '#94A3B8' },
 ]

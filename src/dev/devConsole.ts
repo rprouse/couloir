@@ -1,7 +1,7 @@
 import exifr from 'exifr'
 import type { StorageProvider } from '../storage/interface'
 import { newId } from '../utils/id'
-import type { AtesArea, Photo, Route, Track, Waypoint } from '../types'
+import { DEFAULTS, type AtesArea, type Photo, type Route, type Track, type Waypoint } from '../types'
 
 // Installs a `window.__couloir` helper for browser-console verification of
 // the storage layer. Tree-shaken out of production builds via the
@@ -28,7 +28,7 @@ export function installDevConsole(storage: StorageProvider): void {
         geojson: FIXED_GEOJSON,
         source_hash: `dev-${newId()}`,
         source_filename: 'devConsole.ts',
-        color: '#E05C2A',
+        color: DEFAULTS.route.color,
         ates: 'simple',
         technical_difficulty: 'moderate',
         distance_m: 0,
@@ -52,7 +52,7 @@ export function installDevConsole(storage: StorageProvider): void {
         geojson: FIXED_GEOJSON,
         source_hash: `dev-${newId()}`,
         source_filename: 'devConsole.ts',
-        color: '#2A7BE0',
+        color: DEFAULTS.track.color,
         distance_m: 0,
         elevation_gain_m: 120,
         elevation_loss_m: 0,

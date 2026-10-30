@@ -20,7 +20,7 @@ Couloir is **self-hosted and single-user**. A small server, one Docker container
 
 ### Routes and tracks
 
-- **Routes** are planned lines; **tracks** are what you actually skied. Routes draw as solid blue lines, tracks as thinner orange dotted lines, and each one can have its own colour.
+- **Routes** are planned lines; **tracks** are what you actually skied. Routes draw as thin dashed blue lines, tracks as thin dotted orange lines, and each one can have its own colour.
 - **GPX import**, one file or a batch, from a file picker or by dropping files on the map. Re-importing a file is caught by content hash, with a replace / skip / keep-both choice.
 - **Stats:** distance, elevation gain and loss. Tracks add recorded date, elapsed time and moving time; routes add an ATES rating and technical difficulty.
 - **Elevation profile** for every line. Hover the chart to see the distance and elevation, with a red dot marking that spot on the map.

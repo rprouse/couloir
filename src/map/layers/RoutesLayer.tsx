@@ -10,6 +10,7 @@ import {
   ROUTES_GLOW_LAYER_ID,
   ROUTES_LINE_LAYER_ID,
   ROUTES_SOURCE_ID,
+  ROUTE_LINE_DASH,
   ROUTE_LINE_GLOW_OPACITY,
   ROUTE_LINE_GLOW_WIDTH,
   ROUTE_LINE_WIDTH,
@@ -63,6 +64,7 @@ export function RoutesLayer(): null {
         paint: {
           'line-color': ['get', 'color'],
           'line-width': ROUTE_LINE_WIDTH,
+          'line-dasharray': ROUTE_LINE_DASH,
         },
         layout: { 'line-cap': 'round', 'line-join': 'round', visibility },
       })
