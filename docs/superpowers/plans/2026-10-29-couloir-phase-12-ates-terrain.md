@@ -330,15 +330,21 @@ couloir/
 
 Left for the user's QA. The agent had no Maptiler key or Playwright browser, so it only ran the real KMZ end to end through `HttpStorageProvider` → the dev server's `/api` → SQLite (import, re-import replaces under the same id, bundle v2 carries it, delete), plus `npm run build`.
 
+QA'd by the user in the browser on 2026-10-30 with Tunnel Creek South and Hartley Sulphur. Changes made during QA:
+
+- Access routes and points of interest are kept and drawn (they were dropped on import), with legend rows and popups.
+- Each avalanche path gets one downslope arrow at its midpoint (`ates-path-arrows`).
+- Points of interest are coloured by type: parking green, hut blue, destination orange. Waypoint markers now share their 0.8 scale (`MARKER_ICON_SIZE`).
+
 Run `npm run dev` with a real Maptiler key, import a real KMZ (Tunnel Creek South, which is in `~/Downloads`, not the repo), and drive it with Playwright.
 
-- [ ] The import toast names the area and the zone count. The area appears in Settings with its counts by class.
-- [ ] The zones line up with the terrain and with Avalanche Canada's Trip Planner. Spot-check two or three zone edges.
-- [ ] Turning slope on together with ATES puts the slope raster under the ATES fills, and routes and tracks stay on top.
-- [ ] The opacity slider updates live. The legend matches the classes present. The attribution shows only while the layer is on.
-- [ ] Clicking a zone shows its class and definition. Clicking a route on top of a zone opens the route, not the popup.
-- [ ] Switch basemap (topo → satellite → topo): the ATES layer comes back. Complex zones are readable on satellite.
-- [ ] Importing the same KMZ again says "Updated" and doesn't duplicate the area.
-- [ ] Export a ZIP, delete the area, re-import the ZIP, and the area is back. A pre-Phase-12 ZIP still restores.
-- [ ] Dropping a `.kmz` onto the map imports it, and dropping a `.gpx` still imports a route.
-- [ ] It fits at 375 px, with no console errors.
+- [x] The import toast names the area and the zone count. The area appears in Settings with its counts by class.
+- [x] The zones line up with the terrain and with Avalanche Canada's Trip Planner. Spot-check two or three zone edges.
+- [x] Turning slope on together with ATES puts the slope raster under the ATES fills, and routes and tracks stay on top.
+- [x] The opacity slider updates live. The legend matches the classes present. The attribution shows only while the layer is on.
+- [x] Clicking a zone shows its class and definition. Clicking a route on top of a zone opens the route, not the popup.
+- [x] Switch basemap (topo → satellite → topo): the ATES layer comes back. Complex zones are readable on satellite.
+- [x] Importing the same KMZ again says "Updated" and doesn't duplicate the area.
+- [x] Export a ZIP, delete the area, re-import the ZIP, and the area is back. A pre-Phase-12 ZIP still restores.
+- [x] Dropping a `.kmz` onto the map imports it, and dropping a `.gpx` still imports a route.
+- [x] It fits at 375 px, with no console errors.

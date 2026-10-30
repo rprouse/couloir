@@ -52,6 +52,19 @@ describe('AtesLayer', () => {
     expect(filters['ates-decision-points']).toEqual(['==', ['get', 'kind'], 'decision_point'])
     expect(filters['ates-access']).toEqual(['==', ['get', 'kind'], 'access_route'])
     expect(filters['ates-poi']).toEqual(['==', ['get', 'kind'], 'poi'])
+    expect(filters['ates-path-arrows']).toEqual(['==', ['get', 'kind'], 'avalanche_path'])
+  })
+
+  it('puts a downslope arrow at the middle of each avalanche path', () => {
+    render(<AtesLayer />)
+    expect(map.addImage).toHaveBeenCalledWith('ates-path-arrow', expect.anything(), { pixelRatio: 2 })
+    const arrows = added().find((l) => l.id === 'ates-path-arrows')!
+    expect(arrows.type).toBe('symbol')
+    expect(arrows.layout).toMatchObject({
+      'symbol-placement': 'line-center',
+      'icon-image': 'ates-path-arrow',
+      'icon-rotation-alignment': 'map',
+    })
   })
 
   it('draws points of interest as waypoint markers, adding missing images', () => {
@@ -59,14 +72,15 @@ describe('AtesLayer', () => {
     const poi = added().find((l) => l.id === 'ates-poi')!
     expect(poi.layout['icon-image']).toEqual([
       'match', ['get', 'poi'],
-      'parking', 'wp:local_parking:A78BFA',
-      'cabin', 'wp:cottage:A78BFA',
-      'destination', 'wp:flag:A78BFA',
+      'parking', 'wp:local_parking:22C55E',
+      'cabin', 'wp:cottage:3B82F6',
+      'destination', 'wp:flag:F97316',
       'other', 'wp:location_on:A78BFA',
       'wp:location_on:A78BFA',
     ])
-    act(() => map.emit('styleimagemissing', { id: 'wp:flag:A78BFA' }))
-    expect(map.addImage).toHaveBeenCalledWith('wp:flag:A78BFA', expect.anything(), { pixelRatio: 2 })
+    expect(poi.layout['icon-size']).toBe(0.8)
+    act(() => map.emit('styleimagemissing', { id: 'wp:flag:F97316' }))
+    expect(map.addImage).toHaveBeenCalledWith('wp:flag:F97316', expect.anything(), { pixelRatio: 2 })
   })
 
   it('fills zones by class at the stored opacity', () => {

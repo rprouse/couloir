@@ -17,6 +17,9 @@ export const TRACKS_LINE_LAYER_ID = 'tracks-line'
 
 export const WAYPOINTS_SOURCE_ID = 'waypoints-source'
 export const WAYPOINTS_SYMBOLS_LAYER_ID = 'waypoints-symbols'
+// Scale of every wp:<icon>:<HEX> marker on the map: waypoints and ATES
+// points of interest.
+export const MARKER_ICON_SIZE = 0.8
 
 // CSS pixel size of the generated waypoint marker images (square). Tuned so
 // that icons remain readable over satellite/topo basemaps without dominating
@@ -74,6 +77,7 @@ export const ATES_OUTLINE_LAYER_ID = 'ates-outline'
 export const ATES_AREA_LAYER_ID = 'ates-area'
 export const ATES_ACCESS_LAYER_ID = 'ates-access'
 export const ATES_PATHS_LAYER_ID = 'ates-paths'
+export const ATES_PATH_ARROWS_LAYER_ID = 'ates-path-arrows'
 export const ATES_LINES_LAYER_ID = 'ates-lines'
 export const ATES_DECISION_LAYER_ID = 'ates-decision-points'
 export const ATES_POI_LAYER_ID = 'ates-poi'
@@ -83,6 +87,7 @@ export const ATES_LAYER_IDS = [
   ATES_AREA_LAYER_ID,
   ATES_ACCESS_LAYER_ID,
   ATES_PATHS_LAYER_ID,
+  ATES_PATH_ARROWS_LAYER_ID,
   ATES_LINES_LAYER_ID,
   ATES_DECISION_LAYER_ID,
   ATES_POI_LAYER_ID,
@@ -103,12 +108,22 @@ export const ATES_OUTLINE_COLOR = '#F8FAFC'
 export const ATES_AREA_COLOR = '#FFFFFF'
 export const ATES_PATH_COLOR = '#EF4444'
 export const ATES_DECISION_COLOR = '#F59E0B'
+// One arrow at the middle of each avalanche path, pointing downslope. The
+// KML lists a path's coordinates from the top to the runout.
+export const ATES_PATH_ARROW_ICON = 'ates-path-arrow'
+export const ATES_PATH_ARROW_PX = 18
+export const ATES_PATH_ARROW_PIXEL_RATIO = 2
 export const ATES_LINE_WIDTH = 5
 // Access routes: yellow, as in the Trip Planner.
 export const ATES_ACCESS_COLOR = '#FACC15'
 // Points of interest are drawn as waypoint-style markers (wp:<icon>:<HEX>
-// images, see WaypointsLayer) in one colour that isn't an ATES class colour.
-export const ATES_POI_COLOR = '#A78BFA'
+// images, see WaypointsLayer), coloured by type from WAYPOINT_SWATCHES.
+export const ATES_POI_COLORS: Record<AtesPoiType, string> = {
+  parking: '#22C55E',
+  cabin: '#3B82F6',
+  destination: '#F97316',
+  other: '#A78BFA',
+}
 export const ATES_POI_ICONS: Record<AtesPoiType, WaypointIcon> = {
   parking: 'local_parking',
   cabin: 'cottage',

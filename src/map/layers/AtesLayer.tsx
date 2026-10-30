@@ -9,6 +9,7 @@ import { useUiStore } from '../../store/ui'
 import { atesClassColorExpression, buildAtesGeoJson } from './atesLayerData'
 import { atesPopupContent } from './atesPopup'
 import { buildWaypointIcon } from './wpIcons'
+import { buildAtesPathArrowIcon } from './atesIcons'
 import styles from './AtesLayer.module.css'
 import {
   ATES_ACCESS_COLOR,
@@ -25,12 +26,16 @@ import {
   ATES_OUTLINE_COLOR,
   ATES_OUTLINE_LAYER_ID,
   ATES_PATH_COLOR,
+  ATES_PATH_ARROW_ICON,
+  ATES_PATH_ARROW_PIXEL_RATIO,
+  ATES_PATH_ARROWS_LAYER_ID,
   ATES_PATHS_LAYER_ID,
-  ATES_POI_COLOR,
+  ATES_POI_COLORS,
   ATES_POI_ICONS,
   ATES_POI_LAYER_ID,
   ATES_SOURCE_ID,
   COULOIR_OVERLAY_LAYER_IDS,
+  MARKER_ICON_SIZE,
 } from './layerStyles'
 
 // Routes, tracks, waypoints and photos: drawn above ATES and win a click.
@@ -51,8 +56,8 @@ const kindIs = (kind: string) => ['==', ['get', 'kind'], kind]
 const poiImage = [
   'match',
   ['get', 'poi'],
-  ...ATES_POI_TYPES.flatMap((t) => [t, waypointImageId(ATES_POI_ICONS[t], ATES_POI_COLOR)]),
-  waypointImageId(ATES_POI_ICONS.other, ATES_POI_COLOR),
+  ...ATES_POI_TYPES.flatMap((t) => [t, waypointImageId(ATES_POI_ICONS[t], ATES_POI_COLORS[t])]),
+  waypointImageId(ATES_POI_ICONS.other, ATES_POI_COLORS.other),
 ]
 
 // Clickable layers, and which kind of feature wins when several are hit.
@@ -84,6 +89,9 @@ export function AtesLayer(): null {
 
     const install = () => {
       if (map.getSource(ATES_SOURCE_ID)) return
+      if (!map.hasImage(ATES_PATH_ARROW_ICON)) {
+        map.addImage(ATES_PATH_ARROW_ICON, buildAtesPathArrowIcon(), { pixelRatio: ATES_PATH_ARROW_PIXEL_RATIO })
+      }
       const { atesEnabled, atesOpacity } = useUiStore.getState()
       const visibility = atesEnabled ? 'visible' : 'none'
       map.addSource(ATES_SOURCE_ID, {
@@ -133,6 +141,19 @@ export function AtesLayer(): null {
         layout: { visibility, 'line-cap': 'round', 'line-join': 'round' },
       })
       add({
+        id: ATES_PATH_ARROWS_LAYER_ID,
+        type: 'symbol',
+        filter: kindIs('avalanche_path'),
+        layout: {
+          visibility,
+          'symbol-placement': 'line-center',
+          'icon-image': ATES_PATH_ARROW_ICON,
+          'icon-rotation-alignment': 'map',
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+        },
+      })
+      add({
         id: ATES_LINES_LAYER_ID,
         type: 'line',
         filter: kindIs('ates_line'),
@@ -155,7 +176,7 @@ export function AtesLayer(): null {
         id: ATES_POI_LAYER_ID,
         type: 'symbol',
         filter: kindIs('poi'),
-        layout: { visibility, 'icon-image': poiImage, 'icon-size': 0.8, 'icon-allow-overlap': true },
+        layout: { visibility, 'icon-image': poiImage, 'icon-size': MARKER_ICON_SIZE, 'icon-allow-overlap': true },
       })
     }
 

@@ -7,7 +7,7 @@ import {
   ATES_CLASS_COLORS,
   ATES_DECISION_COLOR,
   ATES_PATH_COLOR,
-  ATES_POI_COLOR,
+  ATES_POI_COLORS,
   ATES_POI_ICONS,
 } from '../layers/layerStyles'
 
@@ -37,7 +37,7 @@ export function AtesLegend({ classes, items = [] }: { classes: AtesClass[]; item
           item.kind === 'poi' ? (
             <li key={`poi:${item.poi}`} className={styles.atesClass}>
               <span className={styles.atesMarker}>
-                <WaypointBadge icon={ATES_POI_ICONS[item.poi]} color={ATES_POI_COLOR} size={14} />
+                <WaypointBadge icon={ATES_POI_ICONS[item.poi]} color={ATES_POI_COLORS[item.poi]} size={14} />
               </span>
               <span>{ATES_POI_LABELS[item.poi]}</span>
             </li>

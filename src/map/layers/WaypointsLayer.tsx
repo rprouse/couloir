@@ -9,6 +9,7 @@ import { buildWaypointsGeoJson } from './waypointsLayerData'
 import { buildWaypointIcon } from './wpIcons'
 import { parseWaypointImageId } from '../../icons/waypointIcons'
 import {
+  MARKER_ICON_SIZE,
   WAYPOINTS_SOURCE_ID,
   WAYPOINTS_SYMBOLS_LAYER_ID,
 } from './layerStyles'
@@ -68,7 +69,7 @@ export function WaypointsLayer(): null {
         source: WAYPOINTS_SOURCE_ID,
         layout: {
           'icon-image': ['get', 'image'],
-          'icon-size': 1,
+          'icon-size': MARKER_ICON_SIZE,
           'icon-allow-overlap': true,
           visibility,
         },
