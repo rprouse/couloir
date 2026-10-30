@@ -94,6 +94,11 @@ interface UiState {
   atesOpacity: number
   setAtesEnabled: (enabled: boolean) => void
   setAtesOpacity: (value: number) => void
+
+  // The point under the cursor on a route or track elevation profile, as
+  // [lng, lat], marked on the map. Null when the profile isn't hovered.
+  profileHover: [number, number] | null
+  setProfileHover: (point: [number, number] | null) => void
 }
 
 const clamp = (n: number) => Math.max(MIN, Math.min(MAX, n))
@@ -289,5 +294,9 @@ export const useUiStore = create<UiState>((set, get) => {
       localStorage.setItem(ATES_OPACITY_KEY, String(next))
       set({ atesOpacity: next })
     },
+
+    // ----- Elevation profile hover -----
+    profileHover: null,
+    setProfileHover: (point) => set({ profileHover: point }),
   }
 })

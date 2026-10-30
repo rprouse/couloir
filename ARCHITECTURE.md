@@ -119,7 +119,7 @@ couloir/
 │   │   ├── ates/              # ATES KMZ import (atesImport.ts) and its toast/layer/framing (runAtesImport.ts)
 │   │   └── backup/            # ZIP backup read/write via fflate
 │   ├── components/
-│   │   ├── ElevationProfile/  # Recharts elevation chart
+│   │   ├── ElevationProfile/  # Recharts elevation chart; hover marks the point on the map (layers/ProfileHoverMarker.tsx)
 │   │   ├── TagPicker/
 │   │   └── FileDropzone/
 │   ├── hooks/

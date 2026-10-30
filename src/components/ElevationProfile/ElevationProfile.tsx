@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import type { LineStringZ } from '../../types'
+import { useUiStore } from '../../store/ui'
 import { cumulativeDistanceMeters } from '../../utils/geo'
 import styles from './ElevationProfile.module.css'
 
@@ -9,6 +11,10 @@ interface Props {
 }
 
 export function ElevationProfile({ geojson, height = 160 }: Props): JSX.Element {
+  const setProfileHover = useUiStore((s) => s.setProfileHover)
+  // Drop the map marker if the profile goes away while hovered.
+  useEffect(() => () => setProfileHover(null), [setProfileHover])
+
   if (geojson.coordinates.length < 2) {
     return <div className={styles.empty}>Profile unavailable (need ≥ 2 points).</div>
   }
@@ -21,7 +27,16 @@ export function ElevationProfile({ geojson, height = 160 }: Props): JSX.Element 
   return (
     <div className={styles.wrap} data-testid="elevation-profile">
       <ResponsiveContainer width="100%" height={height}>
-        <LineChart data={data} margin={{ top: 8, right: 8, bottom: 16, left: 8 }}>
+        <LineChart
+          data={data}
+          margin={{ top: 8, right: 8, bottom: 16, left: 8 }}
+          onMouseMove={(state) => {
+            const i = state.activeTooltipIndex
+            const point = typeof i === 'number' ? geojson.coordinates[i] : undefined
+            setProfileHover(point ? [point[0], point[1]] : null)
+          }}
+          onMouseLeave={() => setProfileHover(null)}
+        >
           <XAxis
             dataKey="distanceKm"
             type="number"
