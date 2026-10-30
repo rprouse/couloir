@@ -1,4 +1,7 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
+import type maplibregl from 'maplibre-gl'
+import { useMap } from '../../hooks/useMap'
 import styles from './TerrainControl.module.css'
 import { useUiStore } from '../../store/ui'
 import { useAtesAreasStore } from '../../store/atesAreas'
@@ -15,7 +18,33 @@ const OVERLAY_OPTIONS: ReadonlyArray<{ id: TerrainOverlay | null; label: string 
   { id: 'aspect', label: 'Aspect' },
 ]
 
+// Rendered into a MapLibre bottom-right control slot rather than positioned
+// over the map: MapLibre stacks bottom controls above the attribution, so the
+// box clears it however tall the attribution grows.
 export function TerrainControl() {
+  const map = useMap()
+  const [slot, setSlot] = useState<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (!map) return
+    const el = document.createElement('div')
+    el.className = 'maplibregl-ctrl'
+    const control: maplibregl.IControl = {
+      onAdd: () => el,
+      onRemove: () => el.remove(),
+    }
+    map.addControl(control, 'bottom-right')
+    setSlot(el)
+    return () => {
+      map.removeControl(control)
+      setSlot(null)
+    }
+  }, [map])
+
+  return slot ? createPortal(<TerrainControlPanel />, slot) : null
+}
+
+export function TerrainControlPanel() {
   const enabled = useUiStore((s) => s.terrainEnabled)
   const toggle = useUiStore((s) => s.toggleTerrain)
   const overlay = useUiStore((s) => s.terrainOverlay)

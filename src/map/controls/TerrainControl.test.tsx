@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { TerrainControl } from './TerrainControl'
+import { TerrainControl, TerrainControlPanel } from './TerrainControl'
 import { useUiStore } from '../../store/ui'
 import { act } from 'react'
 import { __mocks__ } from '../../test/mocks/maplibre-gl'
@@ -16,8 +16,20 @@ describe('TerrainControl', () => {
     useUiStore.setState(useUiStore.getInitialState())
   })
 
+  it('sits in the bottom-right control stack, above the attribution', () => {
+    const map = new __mocks__.MockMap()
+    act(() => setMap(map as never))
+    const { unmount } = render(<TerrainControl />)
+    expect(map.addControl).toHaveBeenCalledWith(expect.anything(), 'bottom-right')
+    const control = map.addControl.mock.calls[0][0] as { onAdd: () => HTMLElement }
+    expect(control.onAdd()).toHaveTextContent('3D Terrain')
+    unmount()
+    expect(map.removeControl).toHaveBeenCalledWith(control)
+    act(() => setMap(null))
+  })
+
   it('renders an enabled terrain toggle and no sliders', () => {
-    render(<TerrainControl />)
+    render(<TerrainControlPanel />)
     expect(screen.getByRole('switch', { name: /3d terrain/i })).toBeChecked()
     // Exaggeration and opacity live in Settings.
     expect(screen.queryByRole('slider')).toBeNull()
@@ -25,7 +37,7 @@ describe('TerrainControl', () => {
 
   it('toggles terrain on click', async () => {
     const user = userEvent.setup()
-    render(<TerrainControl />)
+    render(<TerrainControlPanel />)
     await user.click(screen.getByRole('switch', { name: /3d terrain/i }))
     expect(screen.getByRole('switch', { name: /3d terrain/i })).not.toBeChecked()
     expect(useUiStore.getState().terrainEnabled).toBe(false)
@@ -37,14 +49,14 @@ describe('TerrainControl', () => {
     })
 
     it('is hidden until an area has been imported', () => {
-      render(<TerrainControl />)
+      render(<TerrainControlPanel />)
       expect(screen.queryByRole('switch', { name: /ates ratings/i })).toBeNull()
     })
 
     it('toggles the layer and shows a legend of the classes present', async () => {
       const user = userEvent.setup()
       useAtesAreasStore.setState({ areas: [buildAtesArea()] })
-      render(<TerrainControl />)
+      render(<TerrainControlPanel />)
       const toggle = screen.getByRole('switch', { name: /ates ratings/i })
       expect(toggle).toBeChecked()
       const legend = screen.getByRole('list', { name: /ates legend/i })
@@ -62,7 +74,7 @@ describe('TerrainControl', () => {
     it('works alongside a terrain overlay', async () => {
       const user = userEvent.setup()
       useAtesAreasStore.setState({ areas: [buildAtesArea()] })
-      render(<TerrainControl />)
+      render(<TerrainControlPanel />)
       await user.click(screen.getByRole('button', { name: 'Slope' }))
       expect(useUiStore.getState().terrainOverlay).toBe('slope')
       expect(useUiStore.getState().atesEnabled).toBe(true)
@@ -76,7 +88,7 @@ describe('TerrainControl', () => {
 
     it('starts with Off pressed and switches between overlays', async () => {
       const user = userEvent.setup()
-      render(<TerrainControl />)
+      render(<TerrainControlPanel />)
       const group = screen.getByRole('group', { name: /overlay/i })
       expect(group).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Off' })).toHaveAttribute('aria-pressed', 'true')
@@ -94,14 +106,14 @@ describe('TerrainControl', () => {
     })
 
     it('shows no legend while the overlay is off', () => {
-      render(<TerrainControl />)
+      render(<TerrainControlPanel />)
       expect(screen.queryByRole('list', { name: /slope angle legend/i })).toBeNull()
       expect(screen.queryByRole('img', { name: /aspect legend/i })).toBeNull()
     })
 
     it('shows the slope bands and caveat for the slope overlay', () => {
       useUiStore.setState({ terrainOverlay: 'slope' })
-      render(<TerrainControl />)
+      render(<TerrainControlPanel />)
       const legend = screen.getByRole('list', { name: /slope angle legend/i })
       expect(legend.querySelectorAll('li')).toHaveLength(SLOPE_BANDS.length)
       expect(screen.getByText(/not a substitute for field assessment/i)).toBeInTheDocument()
@@ -109,7 +121,7 @@ describe('TerrainControl', () => {
 
     it('shows the compass rose and caveat for the aspect overlay', () => {
       useUiStore.setState({ terrainOverlay: 'aspect' })
-      render(<TerrainControl />)
+      render(<TerrainControlPanel />)
       const rose = screen.getByRole('img', { name: /aspect legend/i })
       expect(rose.querySelectorAll('path')).toHaveLength(ASPECT_SECTORS.length)
       expect(screen.queryByRole('list', { name: /slope angle legend/i })).toBeNull()
@@ -121,7 +133,7 @@ describe('TerrainControl', () => {
       map.getZoom.mockReturnValue(8)
       act(() => setMap(map as never))
       useUiStore.setState({ terrainOverlay: 'aspect' })
-      render(<TerrainControl />)
+      render(<TerrainControlPanel />)
       expect(screen.getByText(/zoom in to see aspect/i)).toBeInTheDocument()
       map.getZoom.mockReturnValue(12)
       act(() => map.emit('zoomend'))
