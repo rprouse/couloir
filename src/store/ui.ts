@@ -16,6 +16,7 @@ const NAVIGATION_AID_KEY = 'couloir_navigation_aid'
 const ATES_ENABLED_KEY = 'couloir_ates_enabled'
 const ATES_OPACITY_KEY = 'couloir_ates_opacity'
 const TERRAIN_CONTROL_COLLAPSED_KEY = 'couloir_terrain_control_collapsed'
+const BASEMAP_CONTROL_COLLAPSED_KEY = 'couloir_basemap_control_collapsed'
 const VALID_BASEMAPS: ReadonlySet<Basemap> = new Set(['satellite', 'hybrid', 'outdoor', 'winter'])
 const MIN = 1
 const MAX = 3
@@ -101,6 +102,11 @@ interface UiState {
   // and expands on desktop.
   terrainControlCollapsed: boolean | null
   setTerrainControlCollapsed: (collapsed: boolean) => void
+
+  // Whether the top-right basemap switcher shows only the active basemap.
+  // Same null-until-chosen default as the terrain box.
+  basemapControlCollapsed: boolean | null
+  setBasemapControlCollapsed: (collapsed: boolean) => void
 
   // The About dialog, opened from the sidebar.
   aboutOpen: boolean
@@ -204,6 +210,10 @@ export const useUiStore = create<UiState>((set, get) => {
       const rawCollapsed = localStorage.getItem(TERRAIN_CONTROL_COLLAPSED_KEY)
       if (rawCollapsed === 'true' || rawCollapsed === 'false') {
         set({ terrainControlCollapsed: rawCollapsed === 'true' })
+      }
+      const rawBasemapCollapsed = localStorage.getItem(BASEMAP_CONTROL_COLLAPSED_KEY)
+      if (rawBasemapCollapsed === 'true' || rawBasemapCollapsed === 'false') {
+        set({ basemapControlCollapsed: rawBasemapCollapsed === 'true' })
       }
     },
 
@@ -315,6 +325,13 @@ export const useUiStore = create<UiState>((set, get) => {
     setTerrainControlCollapsed: (collapsed) => {
       localStorage.setItem(TERRAIN_CONTROL_COLLAPSED_KEY, String(collapsed))
       set({ terrainControlCollapsed: collapsed })
+    },
+
+    // ----- Basemap switcher -----
+    basemapControlCollapsed: null,
+    setBasemapControlCollapsed: (collapsed) => {
+      localStorage.setItem(BASEMAP_CONTROL_COLLAPSED_KEY, String(collapsed))
+      set({ basemapControlCollapsed: collapsed })
     },
 
     // ----- About dialog -----
