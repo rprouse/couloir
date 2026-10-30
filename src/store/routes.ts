@@ -13,6 +13,9 @@ interface RoutesState {
 
   load: () => Promise<void>
   add: (input: NewRouteInput) => Promise<Route>
+  // Saves a complete route as given (id and timestamps included), e.g. one
+  // converted from the other line type.
+  insert: (route: Route) => Promise<void>
   update: (id: string, patch: Partial<Omit<Route, 'id' | 'created_at'>>) => Promise<Route>
   remove: (id: string) => Promise<void>
 }
@@ -38,6 +41,11 @@ export const useRoutesStore = create<RoutesState>((set, get) => ({
     await getStorage().saveRoute(route)
     set((s) => ({ routes: [...s.routes, route] }))
     return route
+  },
+
+  insert: async (route) => {
+    await getStorage().saveRoute(route)
+    set((s) => ({ routes: [...s.routes, route] }))
   },
 
   update: async (id, patch) => {

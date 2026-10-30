@@ -10,11 +10,12 @@ window.ResizeObserver = class ResizeObserver {
   disconnect() { /* no-op */ }
 }
 import { useTracksStore } from '../../store/tracks'
+import { useRoutesStore } from '../../store/routes'
 import { useTagsStore } from '../../store/tags'
 import { useUiStore } from '../../store/ui'
 import { InMemoryStorageProvider } from '../../storage/memory'
 import { setStorage, clearStorage, getStorage } from '../../storage/provider'
-import type { Track } from '../../types'
+import { DEFAULTS, type Track } from '../../types'
 
 const baseTrack: Track = {
   id: 't1',
@@ -125,5 +126,22 @@ describe('TrackDetail', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Steep' }))
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(async () => expect((await getStorage().getTrack('t1'))?.tags).toEqual(['tag1']))
+  })
+
+  it('edit converts the track to a route with the route default colour', async () => {
+    useRoutesStore.setState({ routes: [], loading: false, error: null })
+    const user = userEvent.setup()
+    render(<TrackDetail trackId="t1" mode="edit" />)
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Type' }), 'route')
+    expect(screen.getByText(/converts this track to a route/i)).toBeInTheDocument()
+    expect(screen.queryByDisplayValue('#2A7BE0')).toBeNull()
+    await user.click(screen.getByRole('button', { name: /^Save$/ }))
+    await waitFor(() => expect(useRoutesStore.getState().routes).toHaveLength(1))
+    const route = useRoutesStore.getState().routes[0]
+    expect(route).toMatchObject({ id: 't1', name: 'Tour A', color: DEFAULTS.route.color, ates: null })
+    expect(useTracksStore.getState().tracks).toHaveLength(0)
+    expect(await getStorage().getTrack('t1')).toBeNull()
+    expect(await getStorage().getRoute('t1')).not.toBeNull()
+    expect(useUiStore.getState().panel).toEqual({ mode: 'view', entityType: 'route', entityId: 't1' })
   })
 })

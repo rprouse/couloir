@@ -116,6 +116,7 @@ couloir/
 │   │   ├── tracks/            # Track import, form, list
 │   │   ├── waypoints/         # Waypoint creation, form
 │   │   ├── photos/            # Photo upload, EXIF processing, placement, viewer
+│   │   ├── convert/           # Route ↔ track conversion from the edit form (takes the new type's default colour)
 │   │   ├── ates/              # ATES KMZ import (atesImport.ts) and its toast/layer/framing (runAtesImport.ts)
 │   │   └── backup/            # ZIP backup read/write via fflate
 │   ├── components/

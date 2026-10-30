@@ -12,6 +12,8 @@ import { TagPills } from './TagPills'
 import { TagPicker } from '../../components/TagPicker/TagPicker'
 import { ConfirmDelete } from './ConfirmDelete'
 import { Metric } from './Metric'
+import { LineTypeField, type LineType } from './LineTypeField'
+import { convertRouteToTrack } from '../../features/convert/convertLine'
 
 interface Props {
   routeId: string
@@ -105,6 +107,8 @@ function RouteEdit({ route }: { route: Route }): JSX.Element {
   const [ates, setAtes] = useState<ATES | ''>(route.ates ?? '')
   const [tech, setTech] = useState<TechnicalDifficulty | ''>(route.technical_difficulty ?? '')
   const [tags, setTags] = useState<string[]>(route.tags)
+  const [lineType, setLineType] = useState<LineType>('route')
+  const converting = lineType === 'track'
 
   // Reload local state if the underlying route is replaced (e.g. duplicate
   // import re-applied). Keying on id+updated_at makes this exact.
@@ -115,14 +119,20 @@ function RouteEdit({ route }: { route: Route }): JSX.Element {
     setAtes(route.ates ?? '')
     setTech(route.technical_difficulty ?? '')
     setTags(route.tags)
+    setLineType('route')
   }, [route.id, route.updated_at])
 
   const colorOk = isValidHex(color)
-  const canSave = name.trim().length > 0 && colorOk
+  const canSave = name.trim().length > 0 && (converting || colorOk)
 
   const onSave = async () => {
     if (!canSave) return
     try {
+      if (converting) {
+        const track = await convertRouteToTrack({ ...route, name: name.trim(), description, tags })
+        openEntity('track', track.id)
+        return
+      }
       await update(route.id, {
         name: name.trim(),
         description,
@@ -166,42 +176,47 @@ function RouteEdit({ route }: { route: Route }): JSX.Element {
             onChange={(e) => setDescription(e.target.value)}
           />
         </label>
-        <label className={shared.field}>
-          <span>Color</span>
-          <div className={shared.row}>
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-            />
-            <input
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              aria-invalid={!colorOk}
-            />
-          </div>
-          {!colorOk && (
-            <span className={styles.subtle}>Use #RRGGBB hex.</span>
-          )}
-        </label>
-        <label className={shared.field}>
-          <span>ATES</span>
-          <select value={ates} onChange={(e) => setAtes(e.target.value as ATES | '')}>
-            <option value="">— not rated</option>
-            {(Object.keys(ATES_LABELS) as ATES[]).map((k) => (
-              <option key={k} value={k}>{ATES_LABELS[k]}</option>
-            ))}
-          </select>
-        </label>
-        <label className={shared.field}>
-          <span>Technical difficulty</span>
-          <select value={tech} onChange={(e) => setTech(e.target.value as TechnicalDifficulty | '')}>
-            <option value="">— not rated</option>
-            {(Object.keys(TECHNICAL_DIFFICULTY_LABELS) as TechnicalDifficulty[]).map((k) => (
-              <option key={k} value={k}>{TECHNICAL_DIFFICULTY_LABELS[k]}</option>
-            ))}
-          </select>
-        </label>
+        <LineTypeField current="route" value={lineType} onChange={setLineType} />
+        {!converting && (
+          <>
+            <label className={shared.field}>
+              <span>Color</span>
+              <div className={shared.row}>
+                <input
+                  type="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                />
+                <input
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  aria-invalid={!colorOk}
+                />
+              </div>
+              {!colorOk && (
+                <span className={styles.subtle}>Use #RRGGBB hex.</span>
+              )}
+            </label>
+            <label className={shared.field}>
+              <span>ATES</span>
+              <select value={ates} onChange={(e) => setAtes(e.target.value as ATES | '')}>
+                <option value="">— not rated</option>
+                {(Object.keys(ATES_LABELS) as ATES[]).map((k) => (
+                  <option key={k} value={k}>{ATES_LABELS[k]}</option>
+                ))}
+              </select>
+            </label>
+            <label className={shared.field}>
+              <span>Technical difficulty</span>
+              <select value={tech} onChange={(e) => setTech(e.target.value as TechnicalDifficulty | '')}>
+                <option value="">— not rated</option>
+                {(Object.keys(TECHNICAL_DIFFICULTY_LABELS) as TechnicalDifficulty[]).map((k) => (
+                  <option key={k} value={k}>{TECHNICAL_DIFFICULTY_LABELS[k]}</option>
+                ))}
+              </select>
+            </label>
+          </>
+        )}
       </section>
 
       <section className={shared.section}>
