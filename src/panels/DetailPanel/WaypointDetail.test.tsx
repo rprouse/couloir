@@ -80,6 +80,23 @@ describe('WaypointDetail (edit)', () => {
     })
   })
 
+  it('moves the waypoint to pasted coordinates', async () => {
+    render(<WaypointDetail waypointId="w1" mode="edit" />)
+    const coords = screen.getByLabelText(/coordinates/i)
+    expect(coords).toHaveValue('49.500000, -116.000000')
+    fireEvent.change(coords, { target: { value: '50.1234, -115.5678' } })
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+    await waitFor(() => {
+      expect(useWaypointsStore.getState().waypoints[0]).toMatchObject({ lat: 50.1234, lng: -115.5678 })
+    })
+  })
+
+  it('disables Save when the coordinates do not parse', () => {
+    render(<WaypointDetail waypointId="w1" mode="edit" />)
+    fireEvent.change(screen.getByLabelText(/coordinates/i), { target: { value: '50.1234' } })
+    expect(screen.getByRole('button', { name: /save/i })).toBeDisabled()
+  })
+
   it('Cancel returns to view without writing', () => {
     render(<WaypointDetail waypointId="w1" mode="edit" />)
     fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Discarded' } })
