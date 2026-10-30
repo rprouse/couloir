@@ -1,12 +1,15 @@
 import type { AtesClass, AtesPoiType, TerrainOverlay } from '../../types'
 import type { WaypointIcon } from '../../icons/waypointIcons'
 
-export const ROUTE_LINE_WIDTH = 3
-export const ROUTE_LINE_GLOW_WIDTH = 7
+// Routes are thin and dashed. Dash and gap are in line widths; the round
+// caps add half a width to each end, so a [2, 3] dash draws 3 on, 2 off.
+export const ROUTE_LINE_WIDTH = 2
+export const ROUTE_LINE_DASH: [number, number] = [2, 3]
+export const ROUTE_LINE_GLOW_WIDTH = 5
 export const ROUTE_LINE_GLOW_OPACITY = 0.25
 
-// Tracks are thinner than routes and dotted: a zero-length dash with round
-// caps draws a dot; the gap is in line widths.
+// Tracks are dotted: a zero-length dash with round caps draws a dot; the gap
+// is in line widths.
 export const TRACK_LINE_WIDTH = 2
 export const TRACK_LINE_DASH: [number, number] = [0, 2]
 
