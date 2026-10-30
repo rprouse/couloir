@@ -43,7 +43,13 @@ On Node 25+, Node's built-in `localStorage` shadows jsdom's and breaks every tes
 - ATES ratings come only from Avalanche Canada KMZ files the user downloads and imports (`src/utils/atesKml.ts`, `src/features/ates/`). Never call Avalanche Canada's endpoints or read its map tiles, and never commit Avalanche Canada data: test fixtures are synthetic (`src/utils/atesKml.fixture.ts`).
 - Photo metadata edits go through `StorageProvider.updatePhotoMetadata` (row + tags only); `savePhoto` is for new photos and writes the blobs.
 - Maptiler API key: the browser's own key in `localStorage` under `couloir_maptiler_key`, else the server's `MAPTILER_KEY` from `/api/config` (in memory only). Read the effective key from the settings store's `maptilerKey`.
-- The app must work on plain-HTTP LAN addresses (`http://unraid:8080`), where browsers withhold secure-context APIs (`crypto.randomUUID`, `crypto.subtle`, service workers, …). Use the existing wrappers (`newId()`, `sha256Hex()`) and give any new secure-context API a fallback or feature detection.
+- The app must work on plain-HTTP LAN addresses (`http://unraid:8080`), where browsers withhold secure-context APIs (`crypto.randomUUID`, `crypto.subtle`, `navigator.clipboard`, service workers, …). Use the existing wrappers (`newId()`, `sha256Hex()`, `copyText()` in `src/utils/clipboard.ts`, `downloadText()` in `src/utils/download.ts`) and give any new secure-context API a fallback or feature detection.
+- Route and track defaults: colour from `DEFAULTS` (`src/types/index.ts`), line width and dash from `layerStyles.ts` (routes solid, tracks thinner and dotted). Each entity stores its own colour, so changing a default affects only new imports. Route ↔ track conversion (`src/features/convert/convertLine.ts`) keeps the id and gives the line the new type's default colour.
+- To add a basemap, update the `Basemap` type (`src/types/index.ts` and DATA-MODEL.md), `VALID_BASEMAPS` (`src/store/ui.ts`), `STYLE_PATHS` (`src/map/mapConfig.ts`) and `OPTIONS` (`src/map/controls/BasemapControl.tsx`).
+- Collapsible map controls (terrain box, basemap switcher) keep a persisted `boolean | null` in the UI store: `null` means the user hasn't chosen yet, so the control collapses on mobile (`MOBILE_QUERY`) and expands on desktop.
+- Images committed to the repo (`src/assets/`) must be re-encoded without EXIF: phone photos carry GPS tags.
+- Dark theme throughout. CSS custom properties for all colors.
+- CSS Modules for component styles.
 
 ### Server conventions
 
@@ -53,8 +59,6 @@ On Node 25+, Node's built-in `localStorage` shadows jsdom's and breaks every tes
 - Validate any id before it reaches a file path (`server/app.ts` does this for every route).
 - Schema changes are new numbered files in `src/storage/migrations/`, plus a bump to `SCHEMA_VERSION`. Never edit an applied migration.
 - Log server errors with `logError()` (`server/log.ts`, stderr = container log).
-- Dark theme throughout. CSS custom properties for all colors.
-- CSS Modules for component styles.
 
 ## Current Phase
 
@@ -67,6 +71,7 @@ If no plan exists yet for the current phase, write one (`superpowers:writing-pla
 ## Tooling
 
 - All `git` commands must be run via the PowerShell tool, not Bash. The 1Password agent that signs commits is wired into the PowerShell session; Bash invocations of `git commit` fail with "Could not connect to socket".
+- The Playwright MCP browser can't launch on this machine (Chrome isn't installed), so ask the user to check visual changes rather than claiming they were seen.
 - Browser-side smoke testing: in dev mode `window.__couloir` exposes the live `StorageProvider` plus dummy-entity helpers (`createDummyRoute`, `createDummyTrack`, `createDummyWaypoint`, `createDummyPhoto`, `exportAll`, `reimport`, `listAll`). Defined in `src/dev/devConsole.ts`.
 
 ## Coding Style
