@@ -43,6 +43,31 @@ describe('TerrainControl', () => {
     expect(useUiStore.getState().terrainEnabled).toBe(false)
   })
 
+  describe('collapsing', () => {
+    afterEach(() => vi.unstubAllGlobals())
+
+    it('collapses to a header that names what is on, and remembers it', async () => {
+      useUiStore.setState({ terrainOverlay: 'slope' })
+      const user = userEvent.setup()
+      render(<TerrainControlPanel />)
+      const header = screen.getByRole('button', { name: /terrain/i, expanded: true })
+      await user.click(header)
+      expect(header).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.queryByRole('switch', { name: /3d terrain/i })).toBeNull()
+      expect(header).toHaveTextContent('3D · Slope')
+      expect(localStorage.getItem('couloir_terrain_control_collapsed')).toBe('true')
+      await user.click(header)
+      expect(screen.getByRole('switch', { name: /3d terrain/i })).toBeInTheDocument()
+    })
+
+    it('starts collapsed on mobile until the user expands it', () => {
+      vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
+      render(<TerrainControlPanel />)
+      expect(screen.getByRole('button', { name: /terrain/i })).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.queryByRole('switch', { name: /3d terrain/i })).toBeNull()
+    })
+  })
+
   describe('ATES switch', () => {
     beforeEach(() => {
       useAtesAreasStore.setState({ areas: [] })

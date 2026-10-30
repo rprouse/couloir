@@ -15,6 +15,7 @@ const OVERLAY_OPACITY_KEY = 'couloir_overlay_opacity'
 const NAVIGATION_AID_KEY = 'couloir_navigation_aid'
 const ATES_ENABLED_KEY = 'couloir_ates_enabled'
 const ATES_OPACITY_KEY = 'couloir_ates_opacity'
+const TERRAIN_CONTROL_COLLAPSED_KEY = 'couloir_terrain_control_collapsed'
 const VALID_BASEMAPS: ReadonlySet<Basemap> = new Set(['satellite', 'outdoor', 'winter'])
 const MIN = 1
 const MAX = 3
@@ -94,6 +95,12 @@ interface UiState {
   atesOpacity: number
   setAtesEnabled: (enabled: boolean) => void
   setAtesOpacity: (value: number) => void
+
+  // Whether the bottom-right terrain/overlay box is collapsed to its header.
+  // Null until the user chooses (persisted); the box then collapses on mobile
+  // and expands on desktop.
+  terrainControlCollapsed: boolean | null
+  setTerrainControlCollapsed: (collapsed: boolean) => void
 
   // The point under the cursor on a route or track elevation profile, as
   // [lng, lat], marked on the map. Null when the profile isn't hovered.
@@ -189,6 +196,10 @@ export const useUiStore = create<UiState>((set, get) => {
       if (rawAtesOpacity !== null) {
         const n = Number(rawAtesOpacity)
         if (Number.isFinite(n)) set({ atesOpacity: clampOpacity(n) })
+      }
+      const rawCollapsed = localStorage.getItem(TERRAIN_CONTROL_COLLAPSED_KEY)
+      if (rawCollapsed === 'true' || rawCollapsed === 'false') {
+        set({ terrainControlCollapsed: rawCollapsed === 'true' })
       }
     },
 
@@ -293,6 +304,13 @@ export const useUiStore = create<UiState>((set, get) => {
       const next = clampOpacity(value)
       localStorage.setItem(ATES_OPACITY_KEY, String(next))
       set({ atesOpacity: next })
+    },
+
+    // ----- Terrain control box -----
+    terrainControlCollapsed: null,
+    setTerrainControlCollapsed: (collapsed) => {
+      localStorage.setItem(TERRAIN_CONTROL_COLLAPSED_KEY, String(collapsed))
+      set({ terrainControlCollapsed: collapsed })
     },
 
     // ----- Elevation profile hover -----

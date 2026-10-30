@@ -14,6 +14,39 @@
   gap: var(--space-sm);
 }
 
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.summary {
+  color: var(--color-text-dim);
+}
+
+.chevron {
+  margin-left: auto;
+  color: var(--color-text-dim);
+}
+
+.header:hover .chevron {
+  color: var(--color-text);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
 .toggle,
 .overlayRow {
   display: flex;
