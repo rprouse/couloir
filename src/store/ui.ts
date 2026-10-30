@@ -15,7 +15,9 @@ const OVERLAY_OPACITY_KEY = 'couloir_overlay_opacity'
 const NAVIGATION_AID_KEY = 'couloir_navigation_aid'
 const ATES_ENABLED_KEY = 'couloir_ates_enabled'
 const ATES_OPACITY_KEY = 'couloir_ates_opacity'
-const VALID_BASEMAPS: ReadonlySet<Basemap> = new Set(['satellite', 'outdoor', 'winter'])
+const TERRAIN_CONTROL_COLLAPSED_KEY = 'couloir_terrain_control_collapsed'
+const BASEMAP_CONTROL_COLLAPSED_KEY = 'couloir_basemap_control_collapsed'
+const VALID_BASEMAPS: ReadonlySet<Basemap> = new Set(['satellite', 'hybrid', 'outdoor', 'winter'])
 const MIN = 1
 const MAX = 3
 export const OVERLAY_OPACITY_MIN = 0.2
@@ -94,6 +96,26 @@ interface UiState {
   atesOpacity: number
   setAtesEnabled: (enabled: boolean) => void
   setAtesOpacity: (value: number) => void
+
+  // Whether the bottom-right terrain/overlay box is collapsed to its header.
+  // Null until the user chooses (persisted); the box then collapses on mobile
+  // and expands on desktop.
+  terrainControlCollapsed: boolean | null
+  setTerrainControlCollapsed: (collapsed: boolean) => void
+
+  // Whether the top-right basemap switcher shows only the active basemap.
+  // Same null-until-chosen default as the terrain box.
+  basemapControlCollapsed: boolean | null
+  setBasemapControlCollapsed: (collapsed: boolean) => void
+
+  // The About dialog, opened from the sidebar.
+  aboutOpen: boolean
+  setAboutOpen: (open: boolean) => void
+
+  // The point under the cursor on a route or track elevation profile, as
+  // [lng, lat], marked on the map. Null when the profile isn't hovered.
+  profileHover: [number, number] | null
+  setProfileHover: (point: [number, number] | null) => void
 }
 
 const clamp = (n: number) => Math.max(MIN, Math.min(MAX, n))
@@ -184,6 +206,14 @@ export const useUiStore = create<UiState>((set, get) => {
       if (rawAtesOpacity !== null) {
         const n = Number(rawAtesOpacity)
         if (Number.isFinite(n)) set({ atesOpacity: clampOpacity(n) })
+      }
+      const rawCollapsed = localStorage.getItem(TERRAIN_CONTROL_COLLAPSED_KEY)
+      if (rawCollapsed === 'true' || rawCollapsed === 'false') {
+        set({ terrainControlCollapsed: rawCollapsed === 'true' })
+      }
+      const rawBasemapCollapsed = localStorage.getItem(BASEMAP_CONTROL_COLLAPSED_KEY)
+      if (rawBasemapCollapsed === 'true' || rawBasemapCollapsed === 'false') {
+        set({ basemapControlCollapsed: rawBasemapCollapsed === 'true' })
       }
     },
 
@@ -289,5 +319,27 @@ export const useUiStore = create<UiState>((set, get) => {
       localStorage.setItem(ATES_OPACITY_KEY, String(next))
       set({ atesOpacity: next })
     },
+
+    // ----- Terrain control box -----
+    terrainControlCollapsed: null,
+    setTerrainControlCollapsed: (collapsed) => {
+      localStorage.setItem(TERRAIN_CONTROL_COLLAPSED_KEY, String(collapsed))
+      set({ terrainControlCollapsed: collapsed })
+    },
+
+    // ----- Basemap switcher -----
+    basemapControlCollapsed: null,
+    setBasemapControlCollapsed: (collapsed) => {
+      localStorage.setItem(BASEMAP_CONTROL_COLLAPSED_KEY, String(collapsed))
+      set({ basemapControlCollapsed: collapsed })
+    },
+
+    // ----- About dialog -----
+    aboutOpen: false,
+    setAboutOpen: (open) => set({ aboutOpen: open }),
+
+    // ----- Elevation profile hover -----
+    profileHover: null,
+    setProfileHover: (point) => set({ profileHover: point }),
   }
 })

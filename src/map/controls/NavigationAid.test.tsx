@@ -1,9 +1,12 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import type maplibregl from 'maplibre-gl'
 import { __mocks__ } from '../../test/mocks/maplibre-gl'
 import { setMap } from '../../hooks/useMap'
 import { useUiStore } from '../../store/ui'
 import { NavigationAid } from './NavigationAid'
+import { copyText } from '../../utils/clipboard'
+
+vi.mock('../../utils/clipboard', () => ({ copyText: vi.fn(() => Promise.resolve(true)) }))
 
 describe('NavigationAid', () => {
   let map: InstanceType<typeof __mocks__.MockMap>
@@ -53,5 +56,12 @@ describe('NavigationAid', () => {
     render(<NavigationAid />)
     expect(screen.queryByTestId('map-crosshair')).toBeNull()
     expect(screen.queryByLabelText('Map centre')).toBeNull()
+  })
+
+  it('copies the centre as "lat, lng" when clicked', async () => {
+    render(<NavigationAid />)
+    fireEvent.click(screen.getByRole('button', { name: /copy lat, lng/i }))
+    expect(copyText).toHaveBeenCalledWith('49.50400, -115.06300')
+    expect(await screen.findByText('Copied lat, lng')).toBeInTheDocument()
   })
 })

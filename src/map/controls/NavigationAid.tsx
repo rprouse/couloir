@@ -4,6 +4,7 @@ import { useMap } from '../../hooks/useMap'
 import { useUiStore } from '../../store/ui'
 import { formatCoordinate, readNavigation, type NavigationReading } from '../navigation'
 import { formatBearing, formatElevationM } from '../../utils/format'
+import { copyText } from '../../utils/clipboard'
 
 // Live reading for the map centre. Updates at most once per animation frame
 // while the map moves, and again on idle so the elevation fills in once the
@@ -36,11 +37,55 @@ function useNavigationReading(): NavigationReading | null {
   return reading
 }
 
+const COPIED_MS = 1500
+
+// Clicking the readout copies the centre as "lat, lng", the order mapping
+// apps accept when pasted.
 function Readout() {
   const reading = useNavigationReading()
+  const [status, setStatus] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (status === null) return
+    const timer = setTimeout(() => setStatus(null), COPIED_MS)
+    return () => clearTimeout(timer)
+  }, [status])
+
   if (!reading) return null
+
+  const copy = () => {
+    const text = `${formatCoordinate(reading.lat)}, ${formatCoordinate(reading.lng)}`
+    copyText(text)
+      .then((ok) => setStatus(ok ? 'Copied lat, lng' : 'Copy failed'))
+      .catch(() => setStatus('Copy failed'))
+  }
+
   return (
-    <dl className={styles.readout} aria-label="Map centre">
+    <div
+      className={styles.readout}
+      role="button"
+      tabIndex={0}
+      title="Copy lat, lng"
+      aria-label="Copy lat, lng"
+      onClick={copy}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          copy()
+        }
+      }}
+    >
+      <ReadoutValues reading={reading} />
+      <div className={styles.status} aria-live="polite">
+        {status}
+      </div>
+    </div>
+  )
+}
+
+function ReadoutValues({ reading }: { reading: NavigationReading }) {
+  return (
+    <dl className={styles.values} aria-label="Map centre">
       <dt>Lat</dt>
       <dd>{formatCoordinate(reading.lat)}</dd>
       <dt>Lng</dt>

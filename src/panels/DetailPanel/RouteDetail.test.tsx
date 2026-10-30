@@ -3,11 +3,12 @@ import { act } from 'react'
 import userEvent from '@testing-library/user-event'
 import { RouteDetail } from './RouteDetail'
 import { useRoutesStore } from '../../store/routes'
+import { useTracksStore } from '../../store/tracks'
 import { useUiStore } from '../../store/ui'
 import { useTagsStore } from '../../store/tags'
 import { InMemoryStorageProvider } from '../../storage/memory'
 import { setStorage, clearStorage, getStorage } from '../../storage/provider'
-import type { Route } from '../../types'
+import { DEFAULTS, type Route } from '../../types'
 
 // recharts' ResponsiveContainer uses ResizeObserver which jsdom doesn't provide.
 window.ResizeObserver = class ResizeObserver {
@@ -134,5 +135,22 @@ describe('RouteDetail', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Steep' }))
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(async () => expect((await getStorage().getRoute('r1'))?.tags).toEqual(['tag1']))
+  })
+
+  it('edit converts the route to a track with the track default colour', async () => {
+    useTracksStore.setState({ tracks: [], loading: false, error: null })
+    const user = userEvent.setup()
+    render(<RouteDetail routeId="r1" mode="edit" />)
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Type' }), 'track')
+    expect(screen.getByText(/converts this route to a track/i)).toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: 'ATES' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: /^Save$/ }))
+    await waitFor(() => expect(useTracksStore.getState().tracks).toHaveLength(1))
+    expect(useTracksStore.getState().tracks[0]).toMatchObject({
+      id: 'r1', name: 'Polar Peak', color: DEFAULTS.track.color, duration_s: null,
+    })
+    expect(useRoutesStore.getState().routes).toHaveLength(0)
+    expect(await getStorage().getRoute('r1')).toBeNull()
+    expect(useUiStore.getState().panel).toEqual({ mode: 'view', entityType: 'track', entityId: 'r1' })
   })
 })

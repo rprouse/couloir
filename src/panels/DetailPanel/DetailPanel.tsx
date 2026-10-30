@@ -33,11 +33,7 @@ export function DetailPanel(): JSX.Element | null {
   return (
     <aside className={styles.panel} role="complementary" aria-label="Detail panel">
       {body}
-      <button
-        type="button"
-        onClick={closePanel}
-        style={{ alignSelf: 'flex-start' }}
-      >
+      <button type="button" className={styles.close} onClick={closePanel}>
         Close
       </button>
     </aside>

@@ -52,6 +52,15 @@ describe('WaypointCreate', () => {
     })
   })
 
+  it('saves pasted coordinates in place of the placed position', async () => {
+    render(<WaypointCreate />)
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Col' } })
+    fireEvent.change(screen.getByLabelText(/coordinates/i), { target: { value: '50.25° N, 115.75° W' } })
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+    await waitFor(() => expect(useWaypointsStore.getState().waypoints).toHaveLength(1))
+    expect(useWaypointsStore.getState().waypoints[0]).toMatchObject({ lat: 50.25, lng: -115.75 })
+  })
+
   it('saves the picked icon and colour', async () => {
     render(<WaypointCreate />)
     fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Elk Lakes Cabin' } })

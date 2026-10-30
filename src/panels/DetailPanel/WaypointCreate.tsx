@@ -12,11 +12,15 @@ import type { WaypointIcon } from '../../icons/waypointIcons'
 import { isValidHex } from '../../utils/format'
 import { WaypointStyleFields } from './WaypointStyleFields'
 import { debug } from '../../utils/debug'
+import { formatLatLng, parseLatLng } from '../../utils/coords'
+import { CoordinatesField } from './CoordinatesField'
 
-// Waypoint creation form. Reads the seeded lat/lng from panel.draft (set by
-// completePlacement); owns name/description/category/elevation as local state.
-// Elevation is autofilled from queryTerrainElevation when the DEM is loaded;
-// otherwise the field is left blank for the user to enter (or leave null).
+// Waypoint creation form. Seeds the coordinates from panel.draft (set by
+// completePlacement); they stay editable so a position copied from another
+// app can be pasted in. Owns name/description/category/elevation as local
+// state. Elevation is autofilled from the DEM for the current coordinates
+// when it's loaded, until the user types an elevation; otherwise the field is
+// left blank for the user to enter (or leave null).
 export function WaypointCreate(): JSX.Element {
   const panel = useUiStore((s) => s.panel)
   const closePanel = useUiStore((s) => s.closePanel)
@@ -43,15 +47,22 @@ export function WaypointCreate(): JSX.Element {
   const [icon, setIcon] = useState<WaypointIcon | null>(null)
   const [color, setColor] = useState<string>('')
   const [tags, setTags] = useState<string[]>([])
+  const [coords, setCoords] = useState(
+    seedLat !== null && seedLng !== null ? formatLatLng(seedLat, seedLng) : '',
+  )
+  const [elevationTyped, setElevationTyped] = useState(false)
+  const position = parseLatLng(coords)
+  const lat = position?.lat ?? null
+  const lng = position?.lng ?? null
 
-  // Autofill elevation from the DEM when the map is available. queryTerrain-
-  // Elevation returns null when terrain isn't enabled or tiles haven't loaded;
-  // we leave the field blank in those cases rather than guess a value.
+  // Autofill elevation from the DEM when the map is available. queryElevation
+  // returns null when terrain isn't enabled or tiles haven't loaded; we leave
+  // the field as it is in those cases rather than guess a value.
   useEffect(() => {
-    if (!map || seedLat === null || seedLng === null) return
-    const elev = queryElevation(map, seedLat, seedLng)
+    if (!map || lat === null || lng === null || elevationTyped) return
+    const elev = queryElevation(map, lat, lng)
     if (elev !== null) setElevation(String(Math.round(elev)))
-  }, [map, seedLat, seedLng])
+  }, [map, lat, lng, elevationTyped])
 
   // Guard: if invariants drift, render an explanatory message rather than throw.
   // Must come after all hook calls to satisfy React's rules of hooks.
@@ -60,10 +71,10 @@ export function WaypointCreate(): JSX.Element {
   }
 
   const colorOk = color === '' || isValidHex(color)
-  const canSave = name.trim().length > 0 && seedLat !== null && seedLng !== null && colorOk
+  const canSave = name.trim().length > 0 && position !== null && colorOk
 
   const onSave = async () => {
-    if (!canSave || seedLat === null || seedLng === null) return
+    if (!canSave || position === null) return
     const elevNum = elevation.trim() === '' ? null : Number(elevation)
     const elevValid = elevNum === null || Number.isFinite(elevNum)
     if (!elevValid) return
@@ -72,8 +83,8 @@ export function WaypointCreate(): JSX.Element {
         user_id: 'local',
         name: name.trim(),
         description,
-        lat: seedLat,
-        lng: seedLng,
+        lat: position.lat,
+        lng: position.lng,
         elevation_m: elevNum,
         category,
         color: color === '' ? null : color,
@@ -128,10 +139,14 @@ export function WaypointCreate(): JSX.Element {
             type="number"
             inputMode="numeric"
             value={elevation}
-            onChange={(e) => setElevation(e.target.value)}
+            onChange={(e) => {
+              setElevation(e.target.value)
+              setElevationTyped(true)
+            }}
             placeholder="optional"
           />
         </label>
+        <CoordinatesField value={coords} onChange={setCoords} />
       </section>
 
       <section className={shared.section}>
@@ -142,15 +157,6 @@ export function WaypointCreate(): JSX.Element {
           onIconChange={setIcon}
           onColorChange={setColor}
         />
-      </section>
-
-      <section className={shared.section}>
-        <h3>Coordinates</h3>
-        <p className={styles.subtle}>
-          {seedLat !== null && seedLng !== null
-            ? `${seedLat.toFixed(5)}, ${seedLng.toFixed(5)}`
-            : '—'}
-        </p>
       </section>
 
       <section className={shared.section}>

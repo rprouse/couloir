@@ -7,6 +7,9 @@ import { setStorage, getStorage } from '../../storage/provider'
 import { InMemoryStorageProvider } from '../../storage/memory'
 import { WaypointDetail } from './WaypointDetail'
 import type { Waypoint } from '../../types'
+import { downloadText } from '../../utils/download'
+
+vi.mock('../../utils/download', () => ({ downloadText: vi.fn() }))
 
 const sample = (over: Partial<Waypoint> = {}): Waypoint => ({
   id: 'w1',
@@ -51,6 +54,16 @@ describe('WaypointDetail (view)', () => {
     expect(screen.getByRole('img', { name: 'Cabin' })).toBeInTheDocument()
   })
 
+  it('downloads the waypoint as GPX', () => {
+    render(<WaypointDetail waypointId="w1" mode="view" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Download GPX' }))
+    expect(downloadText).toHaveBeenCalledWith(
+      expect.stringContaining('<wpt lat="49.5" lon="-116">'),
+      'Summit-Hut.gpx',
+      'application/gpx+xml',
+    )
+  })
+
   it('renders "—" for null elevation', () => {
     setup(sample({ elevation_m: null }))
     render(<WaypointDetail waypointId="w1" mode="view" />)
@@ -78,6 +91,23 @@ describe('WaypointDetail (edit)', () => {
       entityType: 'waypoint',
       entityId: 'w1',
     })
+  })
+
+  it('moves the waypoint to pasted coordinates', async () => {
+    render(<WaypointDetail waypointId="w1" mode="edit" />)
+    const coords = screen.getByLabelText(/coordinates/i)
+    expect(coords).toHaveValue('49.500000, -116.000000')
+    fireEvent.change(coords, { target: { value: '50.1234, -115.5678' } })
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+    await waitFor(() => {
+      expect(useWaypointsStore.getState().waypoints[0]).toMatchObject({ lat: 50.1234, lng: -115.5678 })
+    })
+  })
+
+  it('disables Save when the coordinates do not parse', () => {
+    render(<WaypointDetail waypointId="w1" mode="edit" />)
+    fireEvent.change(screen.getByLabelText(/coordinates/i), { target: { value: '50.1234' } })
+    expect(screen.getByRole('button', { name: /save/i })).toBeDisabled()
   })
 
   it('Cancel returns to view without writing', () => {

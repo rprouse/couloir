@@ -252,8 +252,8 @@ export type EntityDraft =
 // ============================================================================
 
 export const DEFAULTS = {
-  route: { color: '#E05C2A' },
-  track: { color: '#2A7BE0' },
+  route: { color: '#2A7BE0' },
+  track: { color: '#E05C2A' },
 } as const
 
 // Default colours offered for new tags, cycled in order.
@@ -310,7 +310,7 @@ export const PHOTO_JPEG_QUALITY = 0.9
 // Map types/constants — preserved from Phase 1
 // ============================================================================
 
-export type Basemap = 'satellite' | 'outdoor' | 'winter'
+export type Basemap = 'satellite' | 'hybrid' | 'outdoor' | 'winter'
 
 // Terrain shading computed from the DEM. At most one is shown at a time.
 export type TerrainOverlay = 'slope' | 'aspect'

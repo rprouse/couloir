@@ -14,7 +14,14 @@ import { TagPills } from './TagPills'
 import { TagPicker } from '../../components/TagPicker/TagPicker'
 import { ConfirmDelete } from './ConfirmDelete'
 import { Metric } from './Metric'
+import { IconButton } from './IconButton'
+import { waypointToGpx, gpxFilename } from '../../utils/gpxWrite'
+import { downloadText } from '../../utils/download'
 import { debug } from '../../utils/debug'
+import { useMap } from '../../hooks/useMap'
+import { queryElevation } from '../../map/terrain'
+import { formatLatLng, parseLatLng } from '../../utils/coords'
+import { CoordinatesField } from './CoordinatesField'
 
 interface Props {
   waypointId: string
@@ -53,7 +60,14 @@ function WaypointView({ wp }: { wp: Waypoint }): JSX.Element {
           <h2 className={styles.heading}>{wp.name}</h2>
         </div>
         <div className={styles.actions}>
-          <button type="button" onClick={() => editCurrent()}>Edit</button>
+          <IconButton
+            icon="download"
+            label="Download GPX"
+            onClick={() =>
+              downloadText(waypointToGpx(wp), gpxFilename(wp.name, 'waypoint'), 'application/gpx+xml')
+            }
+          />
+          <IconButton icon="edit" label="Edit" onClick={() => editCurrent()} />
           <ConfirmDelete onConfirm={handleDelete} />
         </div>
       </div>
@@ -95,10 +109,14 @@ function WaypointEdit({ wp }: { wp: Waypoint }): JSX.Element {
   const [color, setColor] = useState<string>(wp.color ?? '')
   const [icon, setIcon] = useState<WaypointIcon | null>(wp.icon)
   const [tags, setTags] = useState<string[]>(wp.tags)
+  const [coords, setCoords] = useState(formatLatLng(wp.lat, wp.lng))
+  const [elevationTyped, setElevationTyped] = useState(false)
+  const map = useMap()
 
   // Re-sync local state if the underlying waypoint is replaced upstream
   // (e.g. drag commit, or a sync arrival in the future).
   useEffect(() => {
+    setCoords(formatLatLng(wp.lat, wp.lng))
     setName(wp.name)
     setDescription(wp.description)
     setCategory(wp.category)
@@ -106,19 +124,35 @@ function WaypointEdit({ wp }: { wp: Waypoint }): JSX.Element {
     setColor(wp.color ?? '')
     setIcon(wp.icon)
     setTags(wp.tags)
+    setElevationTyped(false)
   }, [wp.id, wp.updated_at])
+
+  const position = parseLatLng(coords)
+  const lat = position?.lat ?? null
+  const lng = position?.lng ?? null
+
+  // Moving the waypoint refreshes its elevation from the DEM (when loaded),
+  // unless the user has typed one.
+  useEffect(() => {
+    if (!map || lat === null || lng === null || elevationTyped) return
+    if (lat === wp.lat && lng === wp.lng) return
+    const elev = queryElevation(map, lat, lng)
+    if (elev !== null) setElevation(String(Math.round(elev)))
+  }, [map, lat, lng, elevationTyped, wp.lat, wp.lng])
 
   const elevNum = elevation.trim() === '' ? null : Number(elevation)
   const elevValid = elevNum === null || Number.isFinite(elevNum)
   const colorOk = color === '' || isValidHex(color)
-  const canSave = name.trim().length > 0 && elevValid && colorOk
+  const canSave = name.trim().length > 0 && elevValid && colorOk && position !== null
 
   const onSave = async () => {
-    if (!canSave) return
+    if (!canSave || position === null) return
     try {
       await update(wp.id, {
         name: name.trim(),
         description,
+        lat: position.lat,
+        lng: position.lng,
         category,
         elevation_m: elevNum,
         color: color === '' ? null : color,
@@ -173,10 +207,14 @@ function WaypointEdit({ wp }: { wp: Waypoint }): JSX.Element {
             type="number"
             inputMode="numeric"
             value={elevation}
-            onChange={(e) => setElevation(e.target.value)}
+            onChange={(e) => {
+              setElevation(e.target.value)
+              setElevationTyped(true)
+            }}
             placeholder="optional"
           />
         </label>
+        <CoordinatesField value={coords} onChange={setCoords} />
       </section>
 
       <section className={shared.section}>

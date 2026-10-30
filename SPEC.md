@@ -42,7 +42,7 @@ A geolocated photograph for recon photography: photos taken from across the vall
 - Slope angle overlay: avalanche angle bands (12–24°, 25–29°, 30–34°, 35–39°, 40–44°, 45°+) computed in the browser from the Maptiler terrain tiles, with a legend
 - Aspect overlay: eight compass-direction colours on slopes of 12° and steeper, with a compass-rose legend. One overlay (slope or aspect) shows at a time; opacity is set in Settings
 - ATES terrain ratings: Avalanche Canada's per-area ATES zones (Simple, Challenging, Complex, …), imported from the KMZ files its Trip Planner offers. Coverage is only the areas the user has imported. A separate switch, so ATES can sit on top of slope or aspect, with a class legend and the caveat that ATES rates terrain exposure, not current avalanche danger. Clicking a zone shows its class and definition. Credited to Avalanche Canada on the map
-- Basemap switcher: Satellite, Outdoor/Topo, Winter
+- Basemap switcher: Satellite, Satellite Hybrid (labelled), Outdoor/Topo, Winter
 - Compass and zoom controls
 - Current location indicator (when available)
 - Pitch and bearing reset controls

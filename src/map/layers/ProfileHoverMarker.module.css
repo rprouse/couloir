@@ -1,0 +1,9 @@
+.dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-danger);
+  border: 2px solid var(--color-marker-glyph);
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+}

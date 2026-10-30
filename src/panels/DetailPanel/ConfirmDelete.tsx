@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconButton } from './IconButton'
 
 interface Props {
   label?: string
@@ -7,12 +8,9 @@ interface Props {
 
 export function ConfirmDelete({ label = 'Delete', onConfirm }: Props): JSX.Element {
   const [armed, setArmed] = useState(false)
+  // A trash icon; the confirm step stays as text so it can't be misread.
   if (!armed) {
-    return (
-      <button type="button" onClick={() => setArmed(true)}>
-        {label}
-      </button>
-    )
+    return <IconButton icon="delete" label={label} onClick={() => setArmed(true)} />
   }
   return (
     <div style={{ display: 'inline-flex', gap: 'var(--space-sm)' }}>

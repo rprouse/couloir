@@ -5,8 +5,10 @@ export const ROUTE_LINE_WIDTH = 3
 export const ROUTE_LINE_GLOW_WIDTH = 7
 export const ROUTE_LINE_GLOW_OPACITY = 0.25
 
-export const TRACK_LINE_WIDTH = 3
-export const TRACK_LINE_DASH: [number, number] = [2, 1.5]
+// Tracks are thinner than routes and dotted: a zero-length dash with round
+// caps draws a dot; the gap is in line widths.
+export const TRACK_LINE_WIDTH = 2
+export const TRACK_LINE_DASH: [number, number] = [0, 2]
 
 export const ROUTES_SOURCE_ID = 'routes-source'
 export const ROUTES_GLOW_LAYER_ID = 'routes-glow'

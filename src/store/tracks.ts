@@ -13,6 +13,9 @@ interface TracksState {
 
   load: () => Promise<void>
   add: (input: NewTrackInput) => Promise<Track>
+  // Saves a complete track as given (id and timestamps included), e.g. one
+  // converted from the other line type.
+  insert: (track: Track) => Promise<void>
   update: (id: string, patch: Partial<Omit<Track, 'id' | 'created_at'>>) => Promise<Track>
   remove: (id: string) => Promise<void>
 }
@@ -38,6 +41,11 @@ export const useTracksStore = create<TracksState>((set, get) => ({
     await getStorage().saveTrack(track)
     set((s) => ({ tracks: [...s.tracks, track] }))
     return track
+  },
+
+  insert: async (track) => {
+    await getStorage().saveTrack(track)
+    set((s) => ({ tracks: [...s.tracks, track] }))
   },
 
   update: async (id, patch) => {

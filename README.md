@@ -8,17 +8,66 @@ Couloir is **self-hosted and single-user**. A small server, one Docker container
 
 ## Features
 
-- **3D map:** MapLibre GL with Maptiler terrain and adjustable exaggeration. Satellite, Outdoor and Winter basemaps.
-- **Routes and tracks:** import GPX files (batch or drag-and-drop). Duplicate files are detected by content hash, with a replace / skip / keep-both choice. Each one gets an elevation profile, distance, gain/loss, ATES rating and technical difficulty (routes), and elapsed vs. moving time (tracks).
-- **Waypoints:** click to place, pick a category (entry gate, cliff band, rollover, hazard, skin track, cache, summit, …), elevation filled in from terrain, drag to reposition.
-- **Recon photos:** add a JPEG or PNG. EXIF GPS pins it where it was taken; without GPS, you click the map. Bearing, altitude and capture time are prefilled from EXIF. Photos are re-encoded (max 4096 px) with all EXIF stripped before storage. They show as clustered thumbnails, with a full-window viewer. HEIC is rejected with instructions for switching an iPhone to JPEG.
-- **Tags:** colour-coded tags shared across all entity types, a tag picker in every form, management in Settings, and per-layer tag filters.
-- **Search:** across names and descriptions of everything, grouped by type. Clicking a result flies the map there.
-- **Slope angle and aspect overlays:** avalanche-band or compass-direction shading computed in the browser from Maptiler's terrain tiles.
-- **Backup:** the server snapshots its database daily and keeps two weeks of snapshots. You can also export everything (metadata, photos, thumbnails) to a single ZIP; Chrome and Edge stream it straight to disk. Restore is additive and idempotent, and missing thumbnails are regenerated.
-- **Installable PWA** when served over HTTPS (for example with Tailscale). Over plain HTTP on the LAN everything else still works.
+### The map
+
+- **3D terrain** from Maptiler, with adjustable exaggeration and a default you set in Settings.
+- **Four basemaps:** Satellite, Satellite Hybrid (imagery with place names and roads), Outdoor topo and Winter. The basemap switcher folds down to just the active basemap.
+- **Slope angle overlay** in avalanche bands (12–24°, 25–29°, 30–34°, 35–39°, 40–44°, 45°+), or an **aspect overlay** shading slopes of 12° and steeper by compass direction. Both are computed in the browser from Maptiler's terrain tiles, with legends and adjustable opacity.
+- **ATES terrain ratings** from the Avalanche Canada KMZ files you download from its Trip Planner and import (or drop on the map). ATES can sit on top of slope or aspect shading; click a zone to see its class and definition. Couloir never fetches Avalanche Canada data itself.
+- **Navigation aid:** a centre crosshair with a live latitude/longitude, elevation and bearing readout. Click the readout to copy the coordinates.
+- **Locate:** centre on your GPS position once, then follow it as a moving dot.
+- Compass, zoom, scale bar and pitch/bearing reset. The terrain box and basemap switcher collapse to stay out of the way, and start collapsed on phones.
+
+### Routes and tracks
+
+- **Routes** are planned lines; **tracks** are what you actually skied. Routes draw as solid blue lines, tracks as thinner orange dotted lines, and each one can have its own colour.
+- **GPX import**, one file or a batch, from a file picker or by dropping files on the map. Re-importing a file is caught by content hash, with a replace / skip / keep-both choice.
+- **Stats:** distance, elevation gain and loss. Tracks add recorded date, elapsed time and moving time; routes add an ATES rating and technical difficulty.
+- **Elevation profile** for every line. Hover the chart to see the distance and elevation, with a red dot marking that spot on the map.
+- **Convert** a route into a track or back, keeping its geometry, stats, tags and history.
+- **Download as GPX** to take a line into Gaia, CalTopo, a Garmin or a phone.
+
+### Waypoints
+
+- Click the map to place one, or type its coordinates (decimal degrees, comma or space separated, with or without N/S/E/W). Drag it to move it later.
+- Categories for the features that matter on a tour: entry gate, cliff band, rollover, hazard, skin track, cache, summit, point of interest and other. Each has its own icon and colour, and any waypoint can override them with a different icon (parking, skier, camp, cabin, …) or colour.
+- Elevation fills in from the terrain.
+- Download a waypoint as GPX.
+
+### Recon photos
+
+- Add JPEG or PNG photos taken from across the valley. A photo with EXIF GPS is pinned where it was taken; otherwise you click the map to place it.
+- Bearing (the way the camera faced), altitude and capture time are prefilled from EXIF when present.
+- Photos are re-encoded (longest side up to 4096 px) with **all EXIF stripped**, so stored photos carry no stray metadata.
+- On the map each photo is a small blue dot; from zoom 14, an arrow shows which way the camera was pointing. Click a dot for a full-window viewer.
+- HEIC is rejected with instructions for switching an iPhone to JPEG.
+
+### Organising
+
+- **Tags** with colours, shared across routes, tracks, waypoints and photos. Rename or delete a tag in Settings and every entity follows.
+- **Layers** toggle independently, show item counts, and filter by tag.
+- **Search** across names and descriptions of everything, grouped by type. Clicking a result flies the map there.
+
+### Your data
+
+- **Self-hosted:** everything lives in one SQLite database and a folder of photo files on your server.
+- **Daily snapshots** of the database, kept for two weeks.
+- **ZIP export** of the whole library (metadata, photos, thumbnails, ATES areas). Chrome and Edge stream it straight to disk. Import is additive and safe to repeat, and regenerates missing thumbnails.
+
+### Everywhere else
+
+- **Works on a plain-HTTP LAN address** like `http://unraid:8080`. Served over HTTPS (for example with Tailscale), it's also an **installable PWA**.
 - **Mobile layout:** below 640 px the sidebar and detail panel become bottom sheets.
 - **Dark theme** throughout, because planning happens in dim rooms.
+
+## A typical session
+
+1. **Scout.** Photograph a line from across the valley. Add the photos; they land where you stood, with arrows pointing at the terrain you were looking at.
+2. **Plan.** Draw the route in CalTopo or Gaia and import the GPX. Turn on slope shading and ATES, check the elevation profile, and mark the entry gate, the cliff band to avoid and the rollover where it steepens.
+3. **Ski it.** Import the recorded track from your watch or phone and compare it with the plan. Tag both with the zone and season.
+4. **Remember.** Next year, search for the zone and everything you learned is back on the map.
+
+Couloir is a planning aid. It doesn't know about current avalanche conditions; check the forecast and use your own judgement in the field.
 
 ## Getting started
 
@@ -68,7 +117,7 @@ If Vitest hangs on Windows with an esbuild service error, run `npx vitest run --
 | Server | Node 24, [Hono](https://hono.dev), SQLite via the built-in `node:sqlite`; photos as files |
 | Deployment | Docker image on GHCR (GitHub Actions), Unraid template |
 | Charts | Recharts (elevation profiles) |
-| GPX | Custom `DOMParser` parser |
+| GPX | Custom `DOMParser` parser and writer |
 | EXIF | `exifr` |
 | Backup | `fflate` (ZIP) |
 | PWA | `vite-plugin-pwa` (Workbox) |
@@ -85,7 +134,7 @@ src/
 ├── store/        Zustand slices (routes, tracks, waypoints, photos, tags, settings, ui)
 ├── map/          MapView, one component per layer, placement + controls
 ├── panels/       Sidebar, Layer/Search/Settings panels, Detail panel (view/edit/create)
-├── features/     GPX import, photo import, tags, search, backup
+├── features/     GPX import, photo import, ATES import, route ↔ track conversion, tags, search, backup
 ├── components/   Shared UI (TagPicker, CompassRose, ElevationProfile, …)
 ├── hooks/, utils/, types/
 └── dev/          window.__couloir console helpers (dev builds only)
@@ -109,14 +158,12 @@ src/
 
 ## Status and roadmap
 
-The MVP (Phases 1–6) is complete, along with the slope angle overlay (Phase 7) and the move to a self-hosted server (Phase 8). Next up, tracked as issues:
+The MVP (Phases 1–6) is complete, along with the slope angle overlay (Phase 7), the move to a self-hosted server (Phase 8), the aspect overlay (Phase 9), waypoint icons and colours (Phase 10), photo markers with bearing arrows (Phase 11) and ATES terrain ratings (Phase 12). Next up, tracked as issues:
 
 - [#7](https://github.com/rprouse/couloir/issues/7) Upgrade `maplibre-gl` 4.7 → 6.x (clears a critical `npm audit` advisory)
-- [#8](https://github.com/rprouse/couloir/issues/8) Photo bearing arrows on the map
 - [#9](https://github.com/rprouse/couloir/issues/9) Offline map tile caching for field use
-- [#10](https://github.com/rprouse/couloir/issues/10) Export routes and tracks to GPX
 
-The rest of the backlog (aspect shading, offline use in the field, multi-user, Capacitor apps, …) is in [`TASKS.md`](TASKS.md#post-mvp-backlog).
+The rest of the backlog (offline use in the field, multi-user, Capacitor apps, …) is in [`TASKS.md`](TASKS.md#post-mvp-backlog).
 
 ## License
 

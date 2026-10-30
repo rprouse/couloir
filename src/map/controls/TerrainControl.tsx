@@ -9,6 +9,7 @@ import type { TerrainOverlay } from '../../types'
 import { atesClassesPresent, atesLegendItemsPresent } from '../layers/atesLayerData'
 import { OverlayLegend } from './OverlayLegend'
 import { AtesLegend } from './AtesLegend'
+import { MOBILE_QUERY, useMediaQuery } from '../../hooks/useMediaQuery'
 
 // Exaggeration and overlay opacity are set in the Settings panel; this box
 // keeps only the switches you flip while looking at the map.
@@ -44,7 +45,50 @@ export function TerrainControl() {
   return slot ? createPortal(<TerrainControlPanel />, slot) : null
 }
 
+// Collapses to a one-line header so it takes less of the map (collapsed by
+// default on mobile).
 export function TerrainControlPanel() {
+  const enabled = useUiStore((s) => s.terrainEnabled)
+  const overlay = useUiStore((s) => s.terrainOverlay)
+  const atesEnabled = useUiStore((s) => s.atesEnabled)
+  const atesAreas = useAtesAreasStore((s) => s.areas)
+  const isMobile = useMediaQuery(MOBILE_QUERY)
+  const storedCollapsed = useUiStore((s) => s.terrainControlCollapsed)
+  const setCollapsed = useUiStore((s) => s.setTerrainControlCollapsed)
+  const collapsed = storedCollapsed ?? isMobile
+
+  // Collapsed, the header still says what's switched on.
+  const active = [
+    enabled && '3D',
+    OVERLAY_OPTIONS.find((o) => o.id === overlay && o.id !== null)?.label,
+    atesAreas.length > 0 && atesEnabled && 'ATES',
+  ].filter(Boolean)
+
+  return (
+    <div className={styles.control}>
+      <button
+        type="button"
+        className={styles.header}
+        aria-expanded={!collapsed}
+        aria-controls="terrain-control-body"
+        onClick={() => setCollapsed(!collapsed)}
+      >
+        <span>Terrain</span>
+        {collapsed && active.length > 0 && (
+          <span className={styles.summary}>{active.join(' · ')}</span>
+        )}
+        <span className={styles.chevron} aria-hidden="true">{collapsed ? '▴' : '▾'}</span>
+      </button>
+      {!collapsed && (
+        <div id="terrain-control-body" className={styles.body}>
+          <TerrainControlBody />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TerrainControlBody() {
   const enabled = useUiStore((s) => s.terrainEnabled)
   const toggle = useUiStore((s) => s.toggleTerrain)
   const overlay = useUiStore((s) => s.terrainOverlay)
@@ -56,7 +100,8 @@ export function TerrainControlPanel() {
   const atesItems = useMemo(() => atesLegendItemsPresent(atesAreas), [atesAreas])
 
   return (
-    <div className={styles.control}>
+    <>
+      <hr className={styles.divider} />
       <label className={styles.toggle}>
         <input
           type="checkbox"
@@ -103,6 +148,6 @@ export function TerrainControlPanel() {
           {atesEnabled && <AtesLegend classes={atesClasses} items={atesItems} />}
         </>
       )}
-    </div>
+    </>
   )
 }

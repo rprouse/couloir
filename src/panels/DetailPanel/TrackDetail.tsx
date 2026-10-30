@@ -15,7 +15,12 @@ import { ElevationProfile } from '../../components/ElevationProfile/ElevationPro
 import { TagPills } from './TagPills'
 import { ConfirmDelete } from './ConfirmDelete'
 import { Metric } from './Metric'
+import { IconButton } from './IconButton'
+import { trackToGpx, gpxFilename } from '../../utils/gpxWrite'
+import { downloadText } from '../../utils/download'
 import { debug } from '../../utils/debug'
+import { LineTypeField, type LineType } from './LineTypeField'
+import { convertTrackToRoute } from '../../features/convert/convertLine'
 
 interface Props {
   trackId: string
@@ -57,7 +62,14 @@ function TrackView({ track }: { track: Track }): JSX.Element {
       <div className={styles.header}>
         <h2 className={styles.heading}>{track.name}</h2>
         <div className={styles.actions}>
-          <button type="button" onClick={() => editCurrent()}>Edit</button>
+          <IconButton
+            icon="download"
+            label="Download GPX"
+            onClick={() =>
+              downloadText(trackToGpx(track), gpxFilename(track.name, 'track'), 'application/gpx+xml')
+            }
+          />
+          <IconButton icon="edit" label="Edit" onClick={() => editCurrent()} />
           <ConfirmDelete onConfirm={handleDelete} />
         </div>
       </div>
@@ -105,6 +117,8 @@ function TrackEdit({ track }: { track: Track }): JSX.Element {
   const [description, setDescription] = useState(track.description)
   const [color, setColor] = useState(track.color)
   const [tags, setTags] = useState<string[]>(track.tags)
+  const [lineType, setLineType] = useState<LineType>('track')
+  const converting = lineType === 'route'
 
   // Reload local state if the underlying track is replaced (duplicate import
   // re-applied). Keying on id+updated_at re-syncs only on identity change,
@@ -114,14 +128,20 @@ function TrackEdit({ track }: { track: Track }): JSX.Element {
     setDescription(track.description)
     setColor(track.color)
     setTags(track.tags)
+    setLineType('track')
   }, [track.id, track.updated_at])
 
   const colorOk = isValidHex(color)
-  const canSave = name.trim().length > 0 && colorOk
+  const canSave = name.trim().length > 0 && (converting || colorOk)
 
   const onSave = async () => {
     if (!canSave) return
     try {
+      if (converting) {
+        const route = await convertTrackToRoute({ ...track, name: name.trim(), description, tags })
+        openEntity('route', route.id)
+        return
+      }
       await update(track.id, { name: name.trim(), description, color, tags })
       openEntity('track', track.id)
     } catch (err) {
@@ -153,22 +173,25 @@ function TrackEdit({ track }: { track: Track }): JSX.Element {
             onChange={(e) => setDescription(e.target.value)}
           />
         </label>
-        <label className={shared.field}>
-          <span>Color</span>
-          <div className={shared.row}>
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-            />
-            <input
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              aria-invalid={!colorOk}
-            />
-          </div>
-          {!colorOk && <span className={styles.subtle}>Use #RRGGBB hex.</span>}
-        </label>
+        <LineTypeField current="track" value={lineType} onChange={setLineType} />
+        {!converting && (
+          <label className={shared.field}>
+            <span>Color</span>
+            <div className={shared.row}>
+              <input
+                type="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+              />
+              <input
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                aria-invalid={!colorOk}
+              />
+            </div>
+            {!colorOk && <span className={styles.subtle}>Use #RRGGBB hex.</span>}
+          </label>
+        )}
       </section>
 
       <section className={shared.section}>

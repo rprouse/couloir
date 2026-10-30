@@ -47,6 +47,29 @@
   background: var(--color-bg-0);
 }
 
+/* Square icon button, same height as the text buttons beside it. */
+.actions .iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-sm);
+}
+
+.close {
+  align-self: flex-end;
+  background: var(--color-danger);
+  color: var(--color-text);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  font: inherit;
+}
+
+.close:hover {
+  filter: brightness(1.1);
+}
+
 .subtle {
   color: var(--color-text-dim);
   font-size: 12px;

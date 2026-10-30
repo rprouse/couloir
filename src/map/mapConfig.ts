@@ -4,6 +4,7 @@ const BASE = 'https://api.maptiler.com'
 
 const STYLE_PATHS: Record<Basemap, string> = {
   satellite: 'maps/satellite/style.json',
+  hybrid:    'maps/hybrid/style.json',
   outdoor:   'maps/outdoor-v2/style.json',
   winter:    'maps/winter-v2/style.json',
 }

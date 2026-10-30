@@ -318,8 +318,8 @@ CREATE TABLE ates_areas (
 
 // Default colors per entity type
 export const DEFAULTS = {
-  route: { color: '#E05C2A' },   // burnt orange
-  track: { color: '#2A7BE0' },   // sky blue
+  route: { color: '#2A7BE0' },   // sky blue
+  track: { color: '#E05C2A' },   // burnt orange
 }
 
 // Default color and icon per waypoint category. A waypoint's own `icon` and
@@ -378,7 +378,7 @@ export const MAP_DEFAULTS = {
   basemap: 'outdoor' as Basemap,
 }
 
-export type Basemap = 'satellite' | 'outdoor' | 'winter'
+export type Basemap = 'satellite' | 'hybrid' | 'outdoor' | 'winter'
 
 // Photo re-encoding (src/utils/image.ts). The full-size cap keeps a 24 MP
 // phone photo around 2-3 MB on the server while leaving plenty of zoom detail.

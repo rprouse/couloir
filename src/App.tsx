@@ -14,6 +14,7 @@ import { splitDroppedFiles } from './features/import/dropRouting'
 import { subscribeToast } from './features/import/importToast'
 import { DetailPanel } from './panels/DetailPanel/DetailPanel'
 import { PlacementBanner } from './panels/PlacementBanner/PlacementBanner'
+import { AboutDialog } from './panels/About/AboutDialog'
 import { MOBILE_QUERY, useMediaQuery } from './hooks/useMediaQuery'
 import { useUiStore } from './store/ui'
 
@@ -81,6 +82,7 @@ export default function App() {
         <DetailPanel />
       </div>
       <DuplicatePrompt onReady={setPromptHandle} />
+      <AboutDialog />
     </div>
   )
 }
