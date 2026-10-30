@@ -38,6 +38,12 @@ export function Sidebar({ panels }: SidebarProps) {
       data-collapsed={sidebarCollapsed ? 'true' : 'false'}
       data-mobile={isMobile ? 'true' : 'false'}
     >
+      {/* The site icon (public/icons/icon.svg, also the favicon). Collapsed,
+          only the icon shows; on mobile the brand is hidden (bottom sheet). */}
+      <header className={styles.brand}>
+        <img className={styles.brandIcon} src="/icons/icon.svg" alt="" />
+        <h1 className={styles.brandTitle}>Couloir</h1>
+      </header>
       <nav className={styles.tabs} aria-label="Sidebar tabs">
         {TABS.map((tab) => (
           <button
