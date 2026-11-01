@@ -15,6 +15,19 @@ import {
 } from './layerStyles'
 import { debug } from '../../utils/debug'
 
+// A waypoint can be dragged only while its own detail panel is in edit mode;
+// otherwise a click (which always jiggles the mouse a little) would move it.
+function isDraggable(id: unknown): id is string {
+  const { panel, placement } = useUiStore.getState()
+  return (
+    typeof id === 'string' &&
+    placement.mode === 'idle' &&
+    panel.mode === 'edit' &&
+    panel.entityType === 'waypoint' &&
+    panel.entityId === id
+  )
+}
+
 export function WaypointsLayer(): null {
   const map = useMap()
   const waypoints = useWaypointsStore((s) => s.waypoints)
@@ -91,10 +104,14 @@ export function WaypointsLayer(): null {
     }
     map.on('click', WAYPOINTS_SYMBOLS_LAYER_ID, onClick)
 
-    // Cursor affordance — move when hovering a draggable waypoint
-    const onEnter = () => {
+    // Cursor affordance — move over the waypoint being edited, pointer over
+    // the rest (they open on click).
+    const onEnter = (
+      e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] },
+    ) => {
       if (useUiStore.getState().placement.mode !== 'idle') return
-      map.getCanvas().style.cursor = 'move'
+      const id: unknown = e.features?.[0]?.properties?.id
+      map.getCanvas().style.cursor = isDraggable(id) ? 'move' : 'pointer'
     }
     const onLeave = () => {
       // Don't override placement-mode crosshair while placement is active.
@@ -105,10 +122,10 @@ export function WaypointsLayer(): null {
     map.on('mouseenter', WAYPOINTS_SYMBOLS_LAYER_ID, onEnter)
     map.on('mouseleave', WAYPOINTS_SYMBOLS_LAYER_ID, onLeave)
 
-    // Drag-to-reposition. Starts on mousedown over a symbol; disables dragPan
-    // for the duration; updates the source data live; commits via update()
-    // on mouseup. If placement mode is active we skip the drag — clicking the
-    // map in placement mode is the click-to-place gesture.
+    // Drag-to-reposition. Starts on mousedown over the waypoint being edited
+    // (see isDraggable); disables dragPan for the duration; updates the source
+    // data live; commits via update() on mouseup. Placement mode skips the
+    // drag — clicking the map then is the click-to-place gesture.
     const onMouseMove = (e: maplibregl.MapMouseEvent) => {
       if (!drag.current.id) return
       drag.current.lat = e.lngLat.lat
@@ -156,9 +173,8 @@ export function WaypointsLayer(): null {
     const onMouseDown = (
       e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] },
     ) => {
-      if (useUiStore.getState().placement.mode !== 'idle') return
-      const id = e.features?.[0]?.properties?.id
-      if (typeof id !== 'string') return
+      const id: unknown = e.features?.[0]?.properties?.id
+      if (!isDraggable(id)) return
       e.preventDefault()
       drag.current = { id, lat: e.lngLat.lat, lng: e.lngLat.lng }
       map.dragPan.disable()
