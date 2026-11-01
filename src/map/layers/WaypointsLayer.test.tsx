@@ -96,5 +96,23 @@ describe('WaypointsLayer', () => {
       expect(e.preventDefault).toHaveBeenCalled()
       expect(map.dragPan.disable).toHaveBeenCalled()
     })
+
+    it('drops the dragged position into the edit draft without storing it', () => {
+      const update = vi.fn()
+      useWaypointsStore.setState({ update } as never)
+      render(<WaypointsLayer />)
+      act(() => {
+        useUiStore.getState().openEntity('waypoint', 'wp1')
+        useUiStore.getState().editCurrent()
+      })
+      down('wp1')
+      act(() => {
+        map.emit('mousemove', { lngLat: { lat: 50.5, lng: -115.5 } })
+        map.emit('mouseup')
+      })
+      expect(useUiStore.getState().panel).toMatchObject({ draft: { lat: 50.5, lng: -115.5 } })
+      expect(update).not.toHaveBeenCalled()
+      expect(map.dragPan.enable).toHaveBeenCalled()
+    })
   })
 })
