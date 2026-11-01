@@ -138,6 +138,14 @@ export function MapView() {
     }
   }, [terrainEnabled, terrainExaggeration])
 
+  // Switching to 2D flattens the view: a tilted map without terrain is just
+  // a skewed picture. Bearing is kept; only the north arrow resets that.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || terrainEnabled) return
+    map.easeTo({ pitch: 0 })
+  }, [terrainEnabled])
+
   // Destroy the map only on full component unmount.
   useEffect(() => {
     return () => {

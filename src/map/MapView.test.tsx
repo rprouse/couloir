@@ -124,6 +124,20 @@ describe('MapView', () => {
     })
   })
 
+  it('flattens the pitch when switching to 2D', () => {
+    useSettingsStore.setState({ maptilerKey: 'KEY' })
+    render(<MapView />)
+    const map = MapMock.mock.results[0].value as { easeTo: ReturnType<typeof vi.fn> }
+    expect(map.easeTo).not.toHaveBeenCalled()
+
+    act(() => useUiStore.getState().toggleTerrain())
+    expect(map.easeTo).toHaveBeenCalledWith({ pitch: 0 })
+
+    map.easeTo.mockClear()
+    act(() => useUiStore.getState().toggleTerrain())
+    expect(map.easeTo).not.toHaveBeenCalled()
+  })
+
   it('initializes the map when the key transitions from null to set', () => {
     render(<MapView />)
     expect(MapMock).not.toHaveBeenCalled()
