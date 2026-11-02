@@ -3,7 +3,8 @@ import type maplibregl from 'maplibre-gl'
 import type { GeoJSONSource } from 'maplibre-gl'
 import { useMap } from '../../hooks/useMap'
 import { useWaypointsStore } from '../../store/waypoints'
-import { useUiStore } from '../../store/ui'
+import { draftNumber, useUiStore, type PanelState } from '../../store/ui'
+import type { Waypoint } from '../../types'
 import { filterByTags } from '../../utils/tags'
 import { buildWaypointsGeoJson } from './waypointsLayerData'
 import { buildWaypointIcon } from './wpIcons'
@@ -13,19 +14,54 @@ import {
   WAYPOINTS_SOURCE_ID,
   WAYPOINTS_SYMBOLS_LAYER_ID,
 } from './layerStyles'
-import { debug } from '../../utils/debug'
+
+// The id of the waypoint whose detail panel is in edit mode, or null.
+function editingWaypointId(panel: PanelState): string | null {
+  return panel.mode === 'edit' && panel.entityType === 'waypoint' ? panel.entityId : null
+}
+
+// While a waypoint is edited, the map shows it at the draft position (a drag
+// or typed coordinates) rather than the stored one; Save commits it.
+function withDraftPosition(
+  waypoints: Waypoint[],
+  editingId: string | null,
+  lat: number | null,
+  lng: number | null,
+): Waypoint[] {
+  if (editingId === null || lat === null || lng === null) return waypoints
+  return waypoints.map((w) => (w.id === editingId ? { ...w, lat, lng } : w))
+}
+
+// A waypoint can be dragged only while its own detail panel is in edit mode;
+// otherwise a click (which always jiggles the mouse a little) would move it.
+function isDraggable(id: unknown): id is string {
+  const { panel, placement } = useUiStore.getState()
+  return (
+    typeof id === 'string' &&
+    placement.mode === 'idle' &&
+    panel.mode === 'edit' &&
+    panel.entityType === 'waypoint' &&
+    panel.entityId === id
+  )
+}
 
 export function WaypointsLayer(): null {
   const map = useMap()
   const waypoints = useWaypointsStore((s) => s.waypoints)
   const tagFilter = useUiStore((s) => s.tagFilters.waypoints)
-  const shown = useMemo(() => filterByTags(waypoints, tagFilter), [waypoints, tagFilter])
+  const editingId = useUiStore((s) => editingWaypointId(s.panel))
+  const draftLat = useUiStore((s) => (editingWaypointId(s.panel) ? draftNumber(s.panel, 'lat') : null))
+  const draftLng = useUiStore((s) => (editingWaypointId(s.panel) ? draftNumber(s.panel, 'lng') : null))
+  const shown = useMemo(
+    () => withDraftPosition(filterByTags(waypoints, tagFilter), editingId, draftLat, draftLng),
+    [waypoints, tagFilter, editingId, draftLat, draftLng],
+  )
   const visible = useUiStore((s) => s.layerVisibility.waypoints)
 
   // Drag state lives in a ref because mousemove handlers fire on every pixel
   // and we don't want to re-bind React state for each one. dragging.id is set
   // by mousedown, mutated by mousemove (locally + via setData for live
-  // feedback), and committed via update() on mouseup.
+  // feedback), and written to the edit panel's draft on mouseup.
   const drag = useRef<{
     id: string | null
     lat: number
@@ -91,10 +127,14 @@ export function WaypointsLayer(): null {
     }
     map.on('click', WAYPOINTS_SYMBOLS_LAYER_ID, onClick)
 
-    // Cursor affordance — move when hovering a draggable waypoint
-    const onEnter = () => {
+    // Cursor affordance — move over the waypoint being edited, pointer over
+    // the rest (they open on click).
+    const onEnter = (
+      e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] },
+    ) => {
       if (useUiStore.getState().placement.mode !== 'idle') return
-      map.getCanvas().style.cursor = 'move'
+      const id: unknown = e.features?.[0]?.properties?.id
+      map.getCanvas().style.cursor = isDraggable(id) ? 'move' : 'pointer'
     }
     const onLeave = () => {
       // Don't override placement-mode crosshair while placement is active.
@@ -105,10 +145,11 @@ export function WaypointsLayer(): null {
     map.on('mouseenter', WAYPOINTS_SYMBOLS_LAYER_ID, onEnter)
     map.on('mouseleave', WAYPOINTS_SYMBOLS_LAYER_ID, onLeave)
 
-    // Drag-to-reposition. Starts on mousedown over a symbol; disables dragPan
-    // for the duration; updates the source data live; commits via update()
-    // on mouseup. If placement mode is active we skip the drag — clicking the
-    // map in placement mode is the click-to-place gesture.
+    // Drag-to-reposition. Starts on mousedown over the waypoint being edited
+    // (see isDraggable); disables dragPan for the duration; updates the source
+    // data live; writes the edit draft on mouseup (the panel's Save stores
+    // it). Placement mode skips the drag — clicking the map then is the
+    // click-to-place gesture.
     const onMouseMove = (e: maplibregl.MapMouseEvent) => {
       if (!drag.current.id) return
       drag.current.lat = e.lngLat.lat
@@ -128,7 +169,7 @@ export function WaypointsLayer(): null {
       ;(src as GeoJSONSource).setData(buildWaypointsGeoJson(wps) as never)
     }
 
-    const onMouseUp = async () => {
+    const onMouseUp = () => {
       const { id, lat, lng } = drag.current
       drag.current = { id: null, lat: 0, lng: 0 }
       map.off('mousemove', onMouseMove)
@@ -136,29 +177,23 @@ export function WaypointsLayer(): null {
       window.removeEventListener('mouseup', onWindowMouseUp)
       map.dragPan.enable()
       if (!id) return
-      // Commit. The store update flips updated_at and re-renders the layer,
-      // which converges the visual state with the persisted state.
-      try {
-        await useWaypointsStore.getState().update(id, { lat, lng })
-      } catch (err) {
-        debug('waypoint drag-reposition failed', err)
-      }
+      // Only into the draft: the edit form picks it up, and Save or Cancel
+      // decides. The layer re-renders from the draft, keeping the new spot.
+      const ui = useUiStore.getState()
+      if (editingWaypointId(ui.panel) === id) ui.updateDraft({ lat, lng })
     }
 
     // Safety net: if the mouse is released outside the map canvas, MapLibre
     // never fires its 'mouseup'. This window-level listener ensures dragPan is
     // re-enabled and the drag state is cleared regardless. The drag-state guard
     // inside onMouseUp makes the call idempotent.
-    const onWindowMouseUp = () => {
-      void onMouseUp()
-    }
+    const onWindowMouseUp = () => onMouseUp()
 
     const onMouseDown = (
       e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] },
     ) => {
-      if (useUiStore.getState().placement.mode !== 'idle') return
-      const id = e.features?.[0]?.properties?.id
-      if (typeof id !== 'string') return
+      const id: unknown = e.features?.[0]?.properties?.id
+      if (!isDraggable(id)) return
       e.preventDefault()
       drag.current = { id, lat: e.lngLat.lat, lng: e.lngLat.lng }
       map.dragPan.disable()

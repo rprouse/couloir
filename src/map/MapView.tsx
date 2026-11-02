@@ -138,6 +138,19 @@ export function MapView() {
     }
   }, [terrainEnabled, terrainExaggeration])
 
+  // Switching to 2D flattens the view (a tilted map without terrain is just
+  // a skewed picture); switching back to 3D tilts it to the default pitch.
+  // Bearing is kept; only the north arrow resets that. Runs on a change
+  // only, so the initial render doesn't move the map.
+  const prevTerrainEnabled = useRef(terrainEnabled)
+  useEffect(() => {
+    const map = mapRef.current
+    if (prevTerrainEnabled.current === terrainEnabled) return
+    prevTerrainEnabled.current = terrainEnabled
+    if (!map) return
+    map.easeTo({ pitch: terrainEnabled ? MAP_DEFAULTS.pitch : 0 })
+  }, [terrainEnabled])
+
   // Destroy the map only on full component unmount.
   useEffect(() => {
     return () => {

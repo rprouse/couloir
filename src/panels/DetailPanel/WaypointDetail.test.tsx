@@ -104,6 +104,38 @@ describe('WaypointDetail (edit)', () => {
     })
   })
 
+  describe('with the panel in edit mode', () => {
+    beforeEach(() =>
+      act(() => useUiStore.getState().editCurrent()),
+    )
+
+    it('follows a map drag without storing it or losing unsaved edits', async () => {
+      render(<WaypointDetail waypointId="w1" mode="edit" />)
+      fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Renamed' } })
+      act(() => useUiStore.getState().updateDraft({ lat: 50.25, lng: -115.75 }))
+      expect(screen.getByLabelText(/coordinates/i)).toHaveValue('50.250000, -115.750000')
+      expect(screen.getByLabelText(/name/i)).toHaveValue('Renamed')
+      expect(useWaypointsStore.getState().waypoints[0]).toMatchObject({ lat: 49.5, lng: -116 })
+
+      fireEvent.click(screen.getByRole('button', { name: /save/i }))
+      await waitFor(() => {
+        expect(useWaypointsStore.getState().waypoints[0]).toMatchObject({
+          name: 'Renamed',
+          lat: 50.25,
+          lng: -115.75,
+        })
+      })
+    })
+
+    it('writes typed coordinates to the draft so the marker follows', () => {
+      render(<WaypointDetail waypointId="w1" mode="edit" />)
+      const coords = screen.getByLabelText(/coordinates/i)
+      fireEvent.change(coords, { target: { value: '50.1, -115.2' } })
+      expect(useUiStore.getState().panel).toMatchObject({ draft: { lat: 50.1, lng: -115.2 } })
+      expect(coords).toHaveValue('50.1, -115.2')
+    })
+  })
+
   it('disables Save when the coordinates do not parse', () => {
     render(<WaypointDetail waypointId="w1" mode="edit" />)
     fireEvent.change(screen.getByLabelText(/coordinates/i), { target: { value: '50.1234' } })

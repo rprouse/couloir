@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import styles from './DetailPanel.module.css'
 import shared from './DetailPanel.shared.module.css'
 import { useWaypointsStore } from '../../store/waypoints'
-import { useUiStore } from '../../store/ui'
+import { draftNumber, useUiStore } from '../../store/ui'
 import { WAYPOINT_CATEGORIES } from '../../types'
 import type { Waypoint, WaypointCategory } from '../../types'
 import type { WaypointIcon } from '../../icons/waypointIcons'
@@ -99,6 +99,11 @@ function WaypointView({ wp }: { wp: Waypoint }): JSX.Element {
 function WaypointEdit({ wp }: { wp: Waypoint }): JSX.Element {
   const update = useWaypointsStore((s) => s.update)
   const openEntity = useUiStore((s) => s.openEntity)
+  const updateDraft = useUiStore((s) => s.updateDraft)
+  // The edit draft's position: written by a map drag or by typed coordinates,
+  // and drawn by the map layer. Nothing is stored until Save.
+  const draftLat = useUiStore((s) => draftNumber(s.panel, 'lat'))
+  const draftLng = useUiStore((s) => draftNumber(s.panel, 'lng'))
 
   const [name, setName] = useState(wp.name)
   const [description, setDescription] = useState(wp.description)
@@ -114,7 +119,7 @@ function WaypointEdit({ wp }: { wp: Waypoint }): JSX.Element {
   const map = useMap()
 
   // Re-sync local state if the underlying waypoint is replaced upstream
-  // (e.g. drag commit, or a sync arrival in the future).
+  // (e.g. a sync arrival in the future).
   useEffect(() => {
     setCoords(formatLatLng(wp.lat, wp.lng))
     setName(wp.name)
@@ -126,6 +131,23 @@ function WaypointEdit({ wp }: { wp: Waypoint }): JSX.Element {
     setTags(wp.tags)
     setElevationTyped(false)
   }, [wp.id, wp.updated_at])
+
+  // A map drag rewrites the draft; mirror it into the coordinates field,
+  // unless the field already says the same place (it was typed).
+  useEffect(() => {
+    if (draftLat === null || draftLng === null) return
+    setCoords((cur) => {
+      const p = parseLatLng(cur)
+      return p && p.lat === draftLat && p.lng === draftLng ? cur : formatLatLng(draftLat, draftLng)
+    })
+  }, [draftLat, draftLng])
+
+  const onCoordsChange = (text: string) => {
+    setCoords(text)
+    // Valid typed coordinates move the marker on the map too.
+    const p = parseLatLng(text)
+    if (p) updateDraft({ lat: p.lat, lng: p.lng })
+  }
 
   const position = parseLatLng(coords)
   const lat = position?.lat ?? null
@@ -214,7 +236,7 @@ function WaypointEdit({ wp }: { wp: Waypoint }): JSX.Element {
             placeholder="optional"
           />
         </label>
-        <CoordinatesField value={coords} onChange={setCoords} />
+        <CoordinatesField value={coords} onChange={onCoordsChange} />
       </section>
 
       <section className={shared.section}>

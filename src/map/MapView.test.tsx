@@ -124,6 +124,20 @@ describe('MapView', () => {
     })
   })
 
+  it('flattens the pitch for 2D and tilts it back to 45° for 3D', () => {
+    useSettingsStore.setState({ maptilerKey: 'KEY' })
+    render(<MapView />)
+    const map = MapMock.mock.results[0].value as { easeTo: ReturnType<typeof vi.fn> }
+    expect(map.easeTo).not.toHaveBeenCalled()
+
+    act(() => useUiStore.getState().toggleTerrain())
+    expect(map.easeTo).toHaveBeenLastCalledWith({ pitch: 0 })
+
+    act(() => useUiStore.getState().toggleTerrain())
+    expect(map.easeTo).toHaveBeenLastCalledWith({ pitch: 45 })
+    expect(map.easeTo).toHaveBeenCalledTimes(2)
+  })
+
   it('initializes the map when the key transitions from null to set', () => {
     render(<MapView />)
     expect(MapMock).not.toHaveBeenCalled()

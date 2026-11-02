@@ -59,4 +59,60 @@ describe('WaypointsLayer', () => {
     missing('wp:cabin:22C55E')
     expect(map.addImage).not.toHaveBeenCalled()
   })
+
+  describe('drag to reposition', () => {
+    const down = (id: string) => {
+      const e = { features: [{ properties: { id } }], lngLat: { lat: 49, lng: -116 }, preventDefault: vi.fn() }
+      act(() => map.emitLayer('mousedown', WAYPOINTS_SYMBOLS_LAYER_ID, e))
+      return e
+    }
+
+    it('does not start a drag when the waypoint is only being viewed', () => {
+      render(<WaypointsLayer />)
+      act(() => useUiStore.getState().openEntity('waypoint', 'wp1'))
+      const e = down('wp1')
+      expect(e.preventDefault).not.toHaveBeenCalled()
+      expect(map.dragPan.disable).not.toHaveBeenCalled()
+    })
+
+    it('does not start a drag on a waypoint other than the one being edited', () => {
+      render(<WaypointsLayer />)
+      act(() => {
+        useUiStore.getState().openEntity('waypoint', 'wp1')
+        useUiStore.getState().editCurrent()
+      })
+      const e = down('wp2')
+      expect(e.preventDefault).not.toHaveBeenCalled()
+      expect(map.dragPan.disable).not.toHaveBeenCalled()
+    })
+
+    it('starts a drag on the waypoint being edited', () => {
+      render(<WaypointsLayer />)
+      act(() => {
+        useUiStore.getState().openEntity('waypoint', 'wp1')
+        useUiStore.getState().editCurrent()
+      })
+      const e = down('wp1')
+      expect(e.preventDefault).toHaveBeenCalled()
+      expect(map.dragPan.disable).toHaveBeenCalled()
+    })
+
+    it('drops the dragged position into the edit draft without storing it', () => {
+      const update = vi.fn()
+      useWaypointsStore.setState({ update } as never)
+      render(<WaypointsLayer />)
+      act(() => {
+        useUiStore.getState().openEntity('waypoint', 'wp1')
+        useUiStore.getState().editCurrent()
+      })
+      down('wp1')
+      act(() => {
+        map.emit('mousemove', { lngLat: { lat: 50.5, lng: -115.5 } })
+        map.emit('mouseup')
+      })
+      expect(useUiStore.getState().panel).toMatchObject({ draft: { lat: 50.5, lng: -115.5 } })
+      expect(update).not.toHaveBeenCalled()
+      expect(map.dragPan.enable).toHaveBeenCalled()
+    })
+  })
 })
