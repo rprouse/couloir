@@ -201,3 +201,48 @@
   color: var(--color-warn);
 }
 
+
+/* Freezing-level overlay: readout, forecast-hour slider. */
+.freezingLevel {
+  margin: 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dim {
+  color: var(--color-text-dim);
+}
+
+.hourRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 11px;
+}
+
+.hourRow input {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--color-accent-cool);
+}
+
+.hourLabel {
+  flex: none;
+  min-width: 9em;
+  color: var(--color-text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.linkButton {
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-accent-cool);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.caveat a {
+  color: inherit;
+}

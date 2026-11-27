@@ -8,6 +8,7 @@ import {
 import { SLOPE_BANDS } from './slopeBands'
 import { ASPECT_SECTORS } from './aspectBands'
 import { metersPerPixel } from './slopeMath'
+import { FREEZING_BANDS } from './freezingBands'
 
 const TEMPLATE = 'https://dem.test/{z}/{x}/{y}.webp?key=K'
 const W = 4
@@ -64,8 +65,15 @@ const params = (url = `slope://${Z}/${X}/${Y}`) => ({ url }) as RequestParameter
 
 describe('parseOverlayUrl', () => {
   it('parses the overlay and z/x/y', () => {
-    expect(parseOverlayUrl('slope://12/738/1397')).toEqual({ overlay: 'slope', z: 12, x: 738, y: 1397 })
-    expect(parseOverlayUrl('aspect://12/738/1397')).toEqual({ overlay: 'aspect', z: 12, x: 738, y: 1397 })
+    expect(parseOverlayUrl('slope://12/738/1397')).toEqual({ overlay: 'slope', z: 12, x: 738, y: 1397, levelM: null })
+    expect(parseOverlayUrl('aspect://12/738/1397')).toEqual({ overlay: 'aspect', z: 12, x: 738, y: 1397, levelM: null })
+  })
+  it('parses the freezing level from the query', () => {
+    expect(parseOverlayUrl('freezing://12/738/1397?m=1850')).toEqual({
+      overlay: 'freezing', z: 12, x: 738, y: 1397, levelM: 1850,
+    })
+    expect(parseOverlayUrl('freezing://12/738/1397?m=-1000')?.levelM).toBe(-1000)
+    expect(parseOverlayUrl('freezing://12/738/1397')?.levelM).toBeNull()
   })
   it.each([
     'slope://12/738',
@@ -73,6 +81,7 @@ describe('parseOverlayUrl', () => {
     'hillshade://12/738/1397',
     'slope://a/b/c',
     'slope://12/738/1397.png',
+    'freezing://12/738/1397?m=abc',
   ])('rejects %s', (url) => {
     expect(parseOverlayUrl(url)).toBeNull()
   })
@@ -83,8 +92,9 @@ describe('registerOverlayProtocols', () => {
     const addProtocol = vi.fn()
     const { codec } = fakeCodec(planeRgba(10))
     registerOverlayProtocols(addProtocol, { fetchFn: fakeFetch() as unknown as typeof fetch, codec, getKey: () => 'K' })
-    expect(addProtocol.mock.calls.map(([name]) => name)).toEqual(['slope', 'aspect'])
+    expect(addProtocol.mock.calls.map(([name]) => name)).toEqual(['slope', 'aspect', 'freezing'])
     expect(addProtocol.mock.calls[0][1]).toBe(addProtocol.mock.calls[1][1])
+    expect(addProtocol.mock.calls[0][1]).toBe(addProtocol.mock.calls[2][1])
   })
 })
 
@@ -124,6 +134,33 @@ describe('createOverlayLoader', () => {
     for (let p = 0; p < W * W; p++) {
       expect(Array.from(rgba.slice(p * 4, p * 4 + 4))).toEqual([...expected, 255])
     }
+  })
+
+  it('splits freezing tiles at the level in the URL', async () => {
+    // planeRgba rises east from 1500 m by ~one cell's rise per pixel at 32°.
+    const cell = metersPerPixel(Z, Y, W)
+    const level = Math.round(1500 + 1.5 * cell * Math.tan((32 * Math.PI) / 180))
+    const { codec, encodePng } = fakeCodec(planeRgba(32))
+    const load = createOverlayLoader({ fetchFn: fakeFetch() as unknown as typeof fetch, codec, getKey: () => 'K' })
+    await load(params(`freezing://${Z}/${X}/${Y}?m=${level}`), new AbortController())
+    const [rgba] = encodePng.mock.calls[0]
+    const hex = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16))
+    const row = [0, 1, 2, 3].map((x) => Array.from(rgba.slice(x * 4, x * 4 + 3)))
+    expect(row).toEqual([
+      hex(FREEZING_BANDS.below.color),
+      hex(FREEZING_BANDS.below.color),
+      hex(FREEZING_BANDS.above.color),
+      hex(FREEZING_BANDS.above.color),
+    ])
+  })
+
+  it('draws an empty freezing tile without fetching when there is no level', async () => {
+    const fetchFn = fakeFetch()
+    const { codec, encodePng } = fakeCodec(planeRgba(32))
+    const load = createOverlayLoader({ fetchFn: fetchFn as unknown as typeof fetch, codec, getKey: () => 'K' })
+    await load(params(`freezing://${Z}/${X}/${Y}`), new AbortController())
+    expect(fetchFn).not.toHaveBeenCalled()
+    expect(encodePng.mock.calls[0][1]).toBe(1)
   })
 
   it('shares the tiles.json lookup across overlays', async () => {

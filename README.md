@@ -13,6 +13,7 @@ Couloir is **self-hosted and single-user**. A small server, one Docker container
 - **3D terrain** from Maptiler, with adjustable exaggeration and a default you set in Settings.
 - **Four basemaps:** Satellite, Satellite Hybrid (imagery with place names and roads), Outdoor topo and Winter. The basemap switcher folds down to just the active basemap.
 - **Slope angle overlay** in avalanche bands (12–24°, 25–29°, 30–34°, 35–39°, 40–44°, 45°+), or an **aspect overlay** shading slopes of 12° and steeper by compass direction. Both are computed in the browser from Maptiler's terrain tiles, with legends and adjustable opacity.
+- **Freezing level overlay**: terrain above and below the modelled freezing level for the map centre (Environment Canada GEM via [Open-Meteo](https://open-meteo.com/), no key), with a slider to step through the next 72 hours.
 - **ATES terrain ratings** from the Avalanche Canada KMZ files you download from its Trip Planner and import (or drop on the map). ATES can sit on top of slope or aspect shading; click a zone to see its class and definition. Couloir never fetches Avalanche Canada data itself.
 - **Navigation aid:** a centre crosshair with a live latitude/longitude, elevation and bearing readout. Click the readout to copy the coordinates.
 - **Locate:** centre on your GPS position once, then follow it as a moving dot.
@@ -158,7 +159,7 @@ src/
 
 ## Status and roadmap
 
-The MVP (Phases 1–6) is complete, along with the slope angle overlay (Phase 7), the move to a self-hosted server (Phase 8), the aspect overlay (Phase 9), waypoint icons and colours (Phase 10), photo markers with bearing arrows (Phase 11) and ATES terrain ratings (Phase 12). Next up, tracked as issues:
+The MVP (Phases 1–6) is complete, along with the slope angle overlay (Phase 7), the move to a self-hosted server (Phase 8), the aspect overlay (Phase 9), waypoint icons and colours (Phase 10), photo markers with bearing arrows (Phase 11) ATES terrain ratings (Phase 12) and the freezing level overlay (Phase 13). Next up, tracked as issues:
 
 - [#7](https://github.com/rprouse/couloir/issues/7) Upgrade `maplibre-gl` 4.7 → 6.x (clears a critical `npm audit` advisory)
 - [#9](https://github.com/rprouse/couloir/issues/9) Offline map tile caching for field use

@@ -12,6 +12,7 @@ import { NavigationAid } from './controls/NavigationAid'
 import { LocateControl } from './controls/LocateControl'
 import { setMap } from '../hooks/useMap'
 import { TerrainOverlayLayer } from './layers/TerrainOverlayLayer'
+import { FreezingLevelSync } from './layers/FreezingLevelSync'
 import { AtesLayer } from './layers/AtesLayer'
 import { RoutesLayer } from './layers/RoutesLayer'
 import { TracksLayer } from './layers/TracksLayer'
@@ -174,6 +175,8 @@ export function MapView() {
       <LocateControl />
       <TerrainOverlayLayer overlay="slope" />
       <TerrainOverlayLayer overlay="aspect" />
+      <TerrainOverlayLayer overlay="freezing" />
+      <FreezingLevelSync />
       <AtesLayer />
       <RoutesLayer />
       <TracksLayer />

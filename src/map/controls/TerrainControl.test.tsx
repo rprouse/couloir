@@ -9,6 +9,7 @@ import { SLOPE_BANDS } from '../slope/slopeBands'
 import { useAtesAreasStore } from '../../store/atesAreas'
 import { buildAtesArea } from '../../storage/contract'
 import { ASPECT_SECTORS } from '../slope/aspectBands'
+import { useFreezingLevelStore } from '../../store/freezingLevel'
 
 describe('TerrainControl', () => {
   beforeEach(() => {
@@ -151,6 +152,65 @@ describe('TerrainControl', () => {
       expect(rose.querySelectorAll('path')).toHaveLength(ASPECT_SECTORS.length)
       expect(screen.queryByRole('list', { name: /slope angle legend/i })).toBeNull()
       expect(screen.getByText(/not a substitute for field assessment/i)).toBeInTheDocument()
+    })
+
+    describe('freezing overlay', () => {
+      const T0 = 1_800_000_000_000
+      beforeEach(() => {
+        useFreezingLevelStore.setState(useFreezingLevelStore.getInitialState())
+        useUiStore.setState({ terrainOverlay: 'freezing' })
+      })
+
+      it('is offered as an overlay', async () => {
+        useUiStore.setState({ terrainOverlay: null })
+        const user = userEvent.setup()
+        render(<TerrainControlPanel />)
+        await user.click(screen.getByRole('button', { name: 'Freezing' }))
+        expect(useUiStore.getState().terrainOverlay).toBe('freezing')
+      })
+
+      it('shows loading until the forecast arrives', () => {
+        render(<TerrainControlPanel />)
+        expect(screen.getByText(/loading freezing level/i)).toBeInTheDocument()
+      })
+
+      it('shows the level, the two bands, the hour and the Open-Meteo credit', () => {
+        useFreezingLevelStore.setState({
+          now: T0,
+          forecast: {
+            lat: 49.5,
+            lng: -115.06,
+            groundElevation: 1018,
+            fetchedAt: T0,
+            hours: [
+              { time: T0, levelM: 1750, belowGround: false },
+              { time: T0 + 3_600_000, levelM: 1018, belowGround: true },
+            ],
+          },
+        })
+        render(<TerrainControlPanel />)
+        expect(screen.getByText(/freezing level 1,?750 m/i)).toBeInTheDocument()
+        const legend = screen.getByRole('list', { name: /freezing level legend/i })
+        expect(legend.querySelectorAll('li')).toHaveLength(2)
+        expect(screen.getByRole('link', { name: /open-meteo/i })).toBeInTheDocument()
+        expect(screen.getByText('Now')).toBeInTheDocument()
+
+        act(() => useFreezingLevelStore.getState().setHourOffset(1))
+        expect(screen.getByText(/below 1018 m/i)).toBeInTheDocument()
+        expect(screen.getByRole('slider', { name: /forecast hour/i })).toHaveValue('1')
+      })
+
+      it('shows the error with a retry for the map centre', async () => {
+        const map = new __mocks__.MockMap()
+        act(() => setMap(map as never))
+        const load = vi.fn(async (_lat: number, _lng: number) => {})
+        useFreezingLevelStore.setState({ error: 'Open-Meteo returned 500', load })
+        const user = userEvent.setup()
+        render(<TerrainControlPanel />)
+        expect(screen.getByRole('alert')).toHaveTextContent('Open-Meteo returned 500')
+        await user.click(screen.getByRole('button', { name: 'Retry' }))
+        expect(load).toHaveBeenCalledWith(49.504, -115.063)
+      })
     })
 
     it('hints to zoom in below the minimum overlay zoom, updating on zoomend', () => {

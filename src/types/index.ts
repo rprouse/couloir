@@ -313,8 +313,8 @@ export const PHOTO_JPEG_QUALITY = 0.9
 export type Basemap = 'satellite' | 'hybrid' | 'outdoor' | 'winter'
 
 // Terrain shading computed from the DEM. At most one is shown at a time.
-export type TerrainOverlay = 'slope' | 'aspect'
-export const TERRAIN_OVERLAYS: readonly TerrainOverlay[] = ['slope', 'aspect']
+export type TerrainOverlay = 'slope' | 'aspect' | 'freezing'
+export const TERRAIN_OVERLAYS: readonly TerrainOverlay[] = ['slope', 'aspect', 'freezing']
 
 export const MAP_DEFAULTS = {
   center: [-115.063, 49.504] as [number, number],  // Fernie, BC
