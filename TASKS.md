@@ -123,6 +123,12 @@ Implementation plans for each phase are written just-in-time and live in `docs/s
 - [x] [12.6 Docs](#task-126---docs)
 - [x] [12.7 Browser QA](#task-127---browser-qa)
 
+### Phase 13 — Freezing Level Overlay
+
+- [x] 13.1 Freezing level from Open-Meteo (GEM pressure levels, ported from the esp32_avalanche display), fetched for the map centre
+- [x] 13.2 `freezing://` overlay tiles, Freezing option in the terrain control, legend with a forecast-hour slider (now to +72 h)
+- [ ] 13.3 Browser QA
+
 ---
 
 ## Phase 1 - Project Shell

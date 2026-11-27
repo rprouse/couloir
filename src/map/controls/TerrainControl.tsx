@@ -17,6 +17,7 @@ const OVERLAY_OPTIONS: ReadonlyArray<{ id: TerrainOverlay | null; label: string 
   { id: null, label: 'Off' },
   { id: 'slope', label: 'Slope' },
   { id: 'aspect', label: 'Aspect' },
+  { id: 'freezing', label: 'Freezing' },
 ]
 
 // Rendered into a MapLibre bottom-right control slot rather than positioned

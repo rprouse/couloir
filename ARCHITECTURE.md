@@ -89,16 +89,19 @@ couloir/
 │   │   │   ├── TracksLayer.tsx
 │   │   │   ├── WaypointsLayer.tsx # + wpIcons.ts: draws marker images on demand
 │   │   │   ├── PhotosLayer.tsx
-│   │   │   ├── TerrainOverlayLayer.tsx # Raster slope/aspect overlay (slope://, aspect:// tiles)
+│   │   │   ├── TerrainOverlayLayer.tsx # Raster slope/aspect/freezing overlay (slope://, aspect://, freezing:// tiles)
+│   │   │   ├── FreezingLevelSync.tsx # Fetches the freezing level for the map centre while that overlay is on
 │   │   │   └── AtesLayer.tsx  # ATES zones + click popup; atesLayerData.ts, atesPopup.ts
 │   │   ├── slope/
 │   │   │   ├── slopeMath.ts    # terrain-rgb decode, ground resolution, Horn gradient, slope, aspect
 │   │   │   ├── slopeBands.ts   # Avalanche angle bands + RGBA colouring
 │   │   │   ├── aspectBands.ts  # Eight compass sectors + RGBA colouring
+│   │   │   ├── freezingBands.ts # Above/below freezing level RGBA colouring
 │   │   │   ├── overlayProtocol.ts # slope:// and aspect:// MapLibre protocols (DEM fetch → PNG)
 │   │   │   └── browserCodec.ts # createImageBitmap / OffscreenCanvas decode+encode
 │   │   ├── controls/
-│   │   │   ├── TerrainControl.tsx # 3D terrain switch + Off/Slope/Aspect overlay picker
+│   │   │   ├── TerrainControl.tsx # 3D terrain switch + Off/Slope/Aspect/Freezing overlay picker
+│   │   │   ├── FreezingLegend.tsx # Freezing level readout, forecast-hour slider, bands
 │   │   │   ├── OverlayLegend.tsx  # Slope bands or aspect compass rose
 │   │   │   ├── AtesLegend.tsx     # ATES class swatches + exposure-not-danger caveat
 │   │   │   ├── NavigationAid.tsx  # Centre crosshair + lat/lng, elevation, bearing readout
@@ -319,6 +322,14 @@ Slope-angle and aspect shading are computed in the browser from the same terrain
 - Off by default, since every overlay tile costs a Maptiler request. The map control picks Off / Slope / Aspect; the shared opacity is set in Settings. Both are saved in `localStorage` (`couloir_terrain_overlay`, `couloir_overlay_opacity`).
 - Accuracy: the DEM is roughly 30 m, so short steep features (cliff bands, rolls, gully walls) read lower than reality. The legend says so.
 
+#### Freezing level
+
+- The third overlay, `freezing://{z}/{x}/{y}?m=<metres>`, colours each DEM pixel blue at or above the freezing level and orange below it (`FREEZING_BANDS`, `src/map/slope/freezingBands.ts`). No gradient is computed. The level is in the URL, so `TerrainOverlayLayer` calls `setTiles()` on its source when it changes; with no `m` the loader returns an empty tile without fetching the DEM.
+- The level comes from Open-Meteo (`api.open-meteo.com`, free, no key, CORS-enabled, called from the browser): model `gem_seamless`, hourly `temperature_2m` plus temperature and geopotential height at 850/700/600/500 hPa, `forecast_hours=73`. GEM publishes no `freezing_level_height`, so `computeFreezingLevel()` (`src/features/freezing/freezingLevel.ts`, ported from the esp32_avalanche display) takes the highest height where the temperature drops through 0 °C going up, interpolated between the model ground and the pressure levels above it. Freezing at the model ground paints everything blue (`FREEZING_EVERYWHERE_M`).
+- One point: the map centre, rounded to 0.01°. `FreezingLevelSync` fetches when the overlay is switched on, then on `moveend` once the centre is more than 10 km from the forecast point or the forecast is over an hour old (also checked every 5 minutes). A newer load aborts an older one.
+- `useFreezingLevelStore` (`src/store/freezingLevel.ts`) holds the forecast, load state, the clock (`now`) and the forecast-hour offset (0–72, not persisted). The legend's slider sets the offset; the tiles use the hour nearest `now + offset`.
+- Open-Meteo data is CC BY 4.0: the source carries a map attribution and the legend links to open-meteo.com.
+
 ### ATES Ratings
 
 Avalanche Canada's ATES ratings are imported from the per-area KMZ files its Trip Planner offers ("Download ATES data as KMZ", behind a usage and disclaimer dialog). Avalanche Canada has no public ATES API or tile service. Couloir only reads files the user downloads, and never calls Avalanche Canada's endpoints.
@@ -346,7 +357,7 @@ The error banner is dismissable but reappears if errors continue.
 Zustand is used for all application state. The store is divided into slices:
 
 - **routes, tracks, waypoints, photos, tags, atesAreas**: mirror the storage layer. Each slice loads on app startup, and mutations call through to the storage provider then update local state.
-- **ui**: panel state, placement state, layer visibility toggles, active basemap, terrain exaggeration, terrain overlay choice (off/slope/aspect) and its opacity, the ATES switch and its opacity, error banner state.
+- **ui**: panel state, placement state, layer visibility toggles, active basemap, terrain exaggeration, terrain overlay choice (off/slope/aspect/freezing) and its opacity, the ATES switch and its opacity, error banner state.
 
 ### Panel and placement state
 
@@ -470,6 +481,7 @@ WaypointsLayer → source: 'waypoints-source' → layer: 'waypoints-symbols'
 TerrainOverlayLayer (one per overlay)
                → source: 'slope-source' (raster, slope://{z}/{x}/{y}) → layer: 'slope-raster'
                → source: 'aspect-source' (raster, aspect://{z}/{x}/{y}) → layer: 'aspect-raster'
+               → source: 'freezing-source' (raster, freezing://{z}/{x}/{y}?m=…) → layer: 'freezing-raster'
                  (inserted beneath basemap labels and all Couloir layers; see Terrain Overlays)
 
 AtesLayer      → source: 'ates-source' (every imported area; see ATES Ratings)

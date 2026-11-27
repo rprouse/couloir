@@ -5,6 +5,7 @@ import type { TerrainOverlay } from '../../types'
 import { SLOPE_BANDS } from '../slope/slopeBands'
 import { ASPECT_SECTORS } from '../slope/aspectBands'
 import { OVERLAY_MIN_ZOOM } from '../layers/layerStyles'
+import { FreezingLegend } from './FreezingLegend'
 
 // Current map zoom, tracked on zoomend; null until the map exists.
 function useMapZoom(): number | null {
@@ -25,7 +26,7 @@ function useMapZoom(): number | null {
   return zoom
 }
 
-const CAVEATS: Record<TerrainOverlay, string> = {
+const CAVEATS: Record<Exclude<TerrainOverlay, 'freezing'>, string> = {
   slope:
     'Approximate. Computed from ~30 m elevation data; short steep features read low. Not a ' +
     'substitute for field assessment.',
@@ -96,12 +97,23 @@ function AspectRose() {
 
 export function OverlayLegend({ overlay }: { overlay: TerrainOverlay }) {
   const zoom = useMapZoom()
+  const zoomHint = zoom !== null && zoom < OVERLAY_MIN_ZOOM && (
+    <p className={styles.hint}>
+      Zoom in to see {overlay === 'freezing' ? 'the freezing level' : overlay}
+    </p>
+  )
+  if (overlay === 'freezing') {
+    return (
+      <div className={styles.legend}>
+        <FreezingLegend />
+        {zoomHint}
+      </div>
+    )
+  }
   return (
     <div className={styles.legend}>
       {overlay === 'slope' ? <SlopeBands /> : <AspectRose />}
-      {zoom !== null && zoom < OVERLAY_MIN_ZOOM && (
-        <p className={styles.hint}>Zoom in to see {overlay}</p>
-      )}
+      {zoomHint}
       <p className={styles.caveat}>{CAVEATS[overlay]}</p>
     </div>
   )

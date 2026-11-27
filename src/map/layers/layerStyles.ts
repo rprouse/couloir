@@ -62,10 +62,12 @@ export const PHOTO_ARROW_PIXEL_RATIO = 2
 export const OVERLAY_SOURCE_IDS: Record<TerrainOverlay, string> = {
   slope: 'slope-source',
   aspect: 'aspect-source',
+  freezing: 'freezing-source',
 }
 export const OVERLAY_LAYER_IDS: Record<TerrainOverlay, string> = {
   slope: 'slope-raster',
   aspect: 'aspect-raster',
+  freezing: 'freezing-raster',
 }
 // Below this a DEM pixel covers ≥ ~50 m and slope values are meaningless.
 export const OVERLAY_MIN_ZOOM = 10

@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type maplibregl from 'maplibre-gl'
 import { useMap } from '../../hooks/useMap'
 import { useUiStore } from '../../store/ui'
+import { selectTileLevel, useFreezingLevelStore } from '../../store/freezingLevel'
 import type { TerrainOverlay } from '../../types'
 import { overlayTileUrl } from '../slope/overlayProtocol'
 import {
@@ -24,6 +25,12 @@ export function TerrainOverlayLayer({ overlay }: { overlay: TerrainOverlay }): n
   const map = useMap()
   const visible = useUiStore((s) => s.terrainOverlay === overlay)
   const opacity = useUiStore((s) => s.overlayOpacity)
+  // Only the freezing overlay's tiles depend on data: its split elevation is
+  // part of the tile URL, so a new level (hour, place) reloads the tiles.
+  const levelM = useFreezingLevelStore((s) => (overlay === 'freezing' ? selectTileLevel(s) : null))
+  const tileUrl = overlayTileUrl(overlay, levelM)
+  const tileUrlRef = useRef(tileUrl)
+  tileUrlRef.current = tileUrl
   const sourceId = OVERLAY_SOURCE_IDS[overlay]
   const layerId = OVERLAY_LAYER_IDS[overlay]
 
@@ -38,10 +45,14 @@ export function TerrainOverlayLayer({ overlay }: { overlay: TerrainOverlay }): n
       const { terrainOverlay, overlayOpacity } = useUiStore.getState()
       map.addSource(sourceId, {
         type: 'raster',
-        tiles: [overlayTileUrl(overlay)],
+        tiles: [tileUrlRef.current],
         tileSize: DEM_TILE_SIZE,
         minzoom: OVERLAY_MIN_ZOOM,
         maxzoom: DEM_MAX_ZOOM,
+        // Open-Meteo's data is CC BY 4.0.
+        ...(overlay === 'freezing' && {
+          attribution: '<a href="https://open-meteo.com/" target="_blank">Weather data by Open-Meteo.com</a>',
+        }),
       })
       map.addLayer(
         {
@@ -76,6 +87,14 @@ export function TerrainOverlayLayer({ overlay }: { overlay: TerrainOverlay }): n
     if (!map.getLayer(layerId)) return
     map.setPaintProperty(layerId, 'raster-opacity', opacity)
   }, [map, layerId, opacity])
+
+  // (4) Tile URL change (freezing level): swap the source's tiles in place.
+  useEffect(() => {
+    if (!map) return
+    const source = map.getSource(sourceId) as maplibregl.RasterTileSource | undefined
+    if (!source || source.tiles?.[0] === tileUrl) return
+    source.setTiles([tileUrl])
+  }, [map, sourceId, tileUrl])
 
   return null
 }

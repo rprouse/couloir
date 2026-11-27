@@ -3,6 +3,7 @@ import { act } from 'react'
 import { __mocks__ } from '../../test/mocks/maplibre-gl'
 import { setMap } from '../../hooks/useMap'
 import { useUiStore } from '../../store/ui'
+import { useFreezingLevelStore } from '../../store/freezingLevel'
 import { TerrainOverlayLayer } from './TerrainOverlayLayer'
 import { DEM_MAX_ZOOM, DEM_TILE_SIZE, OVERLAY_MIN_ZOOM } from './layerStyles'
 
@@ -13,6 +14,7 @@ describe('TerrainOverlayLayer', () => {
   beforeEach(() => {
     localStorage.clear()
     useUiStore.setState(useUiStore.getInitialState())
+    useFreezingLevelStore.setState(useFreezingLevelStore.getInitialState())
     map = new __mocks__.MockMap()
     act(() => setMap(map as never))
   })
@@ -114,5 +116,82 @@ describe('TerrainOverlayLayer', () => {
     map.getSource.mockReturnValue(null as never)
     act(() => map.emit('style.load'))
     expect(map.addSource).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows at most one terrain overlay at a time', () => {
+    map.getLayer.mockReturnValue({} as never)
+    render(
+      <>
+        <TerrainOverlayLayer overlay="slope" />
+        <TerrainOverlayLayer overlay="aspect" />
+        <TerrainOverlayLayer overlay="freezing" />
+      </>,
+    )
+    // Last visibility set per raster layer.
+    const visibleLayers = () => {
+      const last = new Map<string, string>()
+      for (const [id, , value] of map.setLayoutProperty.mock.calls as [string, string, string][]) {
+        last.set(id, value)
+      }
+      return [...last].filter(([, v]) => v === 'visible').map(([id]) => id)
+    }
+    for (const overlay of ['slope', 'aspect', 'freezing', 'slope'] as const) {
+      act(() => useUiStore.getState().setTerrainOverlay(overlay))
+      expect(visibleLayers()).toEqual([`${overlay}-raster`])
+    }
+    act(() => useUiStore.getState().setTerrainOverlay(null))
+    expect(visibleLayers()).toEqual([])
+  })
+
+  describe('freezing overlay', () => {
+    const T0 = 1_800_000_000_000
+    const withLevel = (levelM: number) =>
+      useFreezingLevelStore.setState({
+        now: T0,
+        hourOffset: 0,
+        forecast: {
+          lat: 49.5,
+          lng: -115.06,
+          groundElevation: 1018,
+          fetchedAt: T0,
+          hours: [{ time: T0, levelM, belowGround: false }],
+        },
+      })
+
+    it('installs with no level (empty tiles) and the Open-Meteo credit', () => {
+      render(<TerrainOverlayLayer overlay="freezing" />)
+      expect(map.addSource).toHaveBeenCalledWith(
+        'freezing-source',
+        expect.objectContaining({
+          tiles: ['freezing://{z}/{x}/{y}'],
+          attribution: expect.stringContaining('Open-Meteo'),
+        }),
+      )
+    })
+
+    it('installs with the current level in the tile URL', () => {
+      withLevel(1750)
+      render(<TerrainOverlayLayer overlay="freezing" />)
+      expect(map.addSource).toHaveBeenCalledWith(
+        'freezing-source',
+        expect.objectContaining({ tiles: ['freezing://{z}/{x}/{y}?m=1750'] }),
+      )
+    })
+
+    it('swaps the source tiles when the level changes', () => {
+      const source = { tiles: ['freezing://{z}/{x}/{y}'], setTiles: vi.fn() }
+      render(<TerrainOverlayLayer overlay="freezing" />)
+      map.getSource.mockReturnValue(source as never)
+      act(() => withLevel(1900))
+      expect(source.setTiles).toHaveBeenCalledWith(['freezing://{z}/{x}/{y}?m=1900'])
+    })
+
+    it('leaves slope tiles alone when the freezing level changes', () => {
+      const source = { tiles: ['slope://{z}/{x}/{y}'], setTiles: vi.fn() }
+      render(<TerrainOverlayLayer overlay="slope" />)
+      map.getSource.mockReturnValue(source as never)
+      act(() => withLevel(1900))
+      expect(source.setTiles).not.toHaveBeenCalled()
+    })
   })
 })
