@@ -118,6 +118,31 @@ describe('TerrainOverlayLayer', () => {
     expect(map.addSource).toHaveBeenCalledTimes(2)
   })
 
+  it('shows at most one terrain overlay at a time', () => {
+    map.getLayer.mockReturnValue({} as never)
+    render(
+      <>
+        <TerrainOverlayLayer overlay="slope" />
+        <TerrainOverlayLayer overlay="aspect" />
+        <TerrainOverlayLayer overlay="freezing" />
+      </>,
+    )
+    // Last visibility set per raster layer.
+    const visibleLayers = () => {
+      const last = new Map<string, string>()
+      for (const [id, , value] of map.setLayoutProperty.mock.calls as [string, string, string][]) {
+        last.set(id, value)
+      }
+      return [...last].filter(([, v]) => v === 'visible').map(([id]) => id)
+    }
+    for (const overlay of ['slope', 'aspect', 'freezing', 'slope'] as const) {
+      act(() => useUiStore.getState().setTerrainOverlay(overlay))
+      expect(visibleLayers()).toEqual([`${overlay}-raster`])
+    }
+    act(() => useUiStore.getState().setTerrainOverlay(null))
+    expect(visibleLayers()).toEqual([])
+  })
+
   describe('freezing overlay', () => {
     const T0 = 1_800_000_000_000
     const withLevel = (levelM: number) =>
